@@ -34,6 +34,8 @@ dependencies {
     implementation(libs.lifecycle.viewmodel)
     implementation(libs.datastore)
     debugImplementation(libs.compose.tooling)
+    debugImplementation(project(":integration:vtop"))
+    debugImplementation(project(":integration:monitoring"))
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.compose.test)

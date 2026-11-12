@@ -8,6 +8,10 @@ Purpose comments in source and the progress log describe responsibilities.
 |---|---|
 | `app/build.gradle.kts` | Source/config/schema |
 | `app/src/androidTest/kotlin/dev/personalhub/app/ShellTest.kt` | Test |
+| `app/src/debug/AndroidManifest.xml` | Source/config/schema |
+| `app/src/debug/kotlin/dev/personalhub/app/ProbeActivity.kt` | Source/config/schema |
+| `app/src/debug/res/values/strings.xml` | Source/config/schema |
+| `app/src/debug/res/xml/probe_accessibility.xml` | Source/config/schema |
 | `app/src/main/AndroidManifest.xml` | Source/config/schema |
 | `app/src/main/kotlin/dev/personalhub/app/MainActivity.kt` | Source/config/schema |
 | `app/src/main/kotlin/dev/personalhub/app/PersonalHubApplication.kt` | Source/config/schema |
@@ -22,3 +26,12 @@ Purpose comments in source and the progress log describe responsibilities.
 | `focus/data/schemas/dev.personalhub.focus.data.FocusDatabase/1.json` | Source/config/schema |
 | `focus/data/src/androidTest/kotlin/dev/personalhub/focus/data/FocusDatabaseTest.kt` | Test |
 | `focus/data/src/main/kotlin/dev/personalhub/focus/data/FocusDatabase.kt` | Source/config/schema |
+| `integration/monitoring/build.gradle.kts` | Source/config/schema |
+| `integration/monitoring/src/main/kotlin/dev/personalhub/monitoring/ProbeAccessibilityService.kt` | Source/config/schema |
+| `integration/monitoring/src/main/kotlin/dev/personalhub/monitoring/ProbeSignals.kt` | Source/config/schema |
+| `integration/monitoring/src/test/kotlin/dev/personalhub/monitoring/ProbeSignalsTest.kt` | Test |
+| `integration/vtop/build.gradle.kts` | Source/config/schema |
+| `integration/vtop/src/main/AndroidManifest.xml` | Source/config/schema |
+| `integration/vtop/src/main/kotlin/dev/personalhub/vtop/PortalPolicy.kt` | Source/config/schema |
+| `integration/vtop/src/main/kotlin/dev/personalhub/vtop/VtopProbeView.kt` | Source/config/schema |
+| `integration/vtop/src/test/kotlin/dev/personalhub/vtop/PortalPolicyTest.kt` | Test |

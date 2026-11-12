@@ -9,3 +9,4 @@ dependencyResolutionManagement {
 rootProject.name = "PersonalHub"
 include(":app", ":core:model", ":core:designsystem")
 include(":focus:data")
+include(":integration:vtop", ":integration:monitoring")

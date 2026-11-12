@@ -6,7 +6,7 @@ installation and sequential tested commits/pushes. Original planning history is 
 
 ## Current checkpoint
 
-I00 toolchain/source audit verified; phone now attached. I01 functional foundation verified; I02 probes next. Baseline `b354486`, branch
+I00 toolchain/source audit verified; phone now attached. I02 debug probes verified locally; live gates pending. Next: I03 local daily tools. Baseline `b354486`, branch
 `main`, remote `https://github.com/Ace-9999/personalhub.git`. Clean initial tree.
 Gradle wrapper generation passed (19s); SDK API 36, build-tools 35.0.0 and
 platform-tools installed. JDK 21.0.9 / Gradle 8.13 verified. `adb devices` returned
@@ -18,7 +18,7 @@ no attached devices; physical-phone audit remains pending. No Android app exists
 |---|---|---|
 | I00 | Complete | Toolchain/source audit passed; OnePlus CPH2661/API 36 recorded |
 | I01 | Verification pending | Functional gate passed on API 29 emulator and API 36 phone; manual TalkBack/200%/landscape review pending |
-| I02 | Not started | VTOP and monitoring probes; phone required |
+| I02 | Verification pending | Debug probes built/tested; live validated read and monitoring/redirect evidence pending |
 | I03 | Not started | Local tasks, habits, moods, trends |
 | I04–I06 | Blocked | I02 live VTOP gate needed |
 | I07 | Not started | Catalog and routines; independent of VTOP |
@@ -85,3 +85,20 @@ is not yet verified. Debug APKs are not a signed production release.
 Migration: Focus schema v1 exported; no destructive fallback. Revert code using
 forward-compatible schema; retain local data. Next: debug-only I02 origin-restricted
 VTOP and opt-in monitoring probes, then I03 while live source gates are pending.
+
+### I02 bounded probe checkpoint ? 12 November 2026
+
+Base `f3fb80a`. Added debug-only VTOP WebView with strict HTTPS-origin policy,
+no credential extraction/native JavaScript bridge and bounded structural counters.
+Added opt-in allowlisted accessibility event metadata and reversible Reddit-native
+Home probe; no node/content reads, duration/category claims or persistent data.
+Capability matrix and ADR-003 record every pending source row. Instagram/X native
+packages are unavailable. No personal source content appears in tracked evidence.
+
+PASS: all nine JVM tests (three shared, three origin/shape, three monitoring/privacy);
+both debug APK assemblies; lint; boundary check; existing API 29 Compose regression
+(34s total Gradle run, exit 0). I02 physical source gates remain pending; structural
+page counts do not validate a dataset. I04?I06 and I10?I12 stay blocked. Release
+flavors exclude the debug probes. No schema change; disable/close probes and revert
+this checkpoint safely. Next: I03 tasks/manual habits/moods, explicitly independent
+of live integrations per the plan.

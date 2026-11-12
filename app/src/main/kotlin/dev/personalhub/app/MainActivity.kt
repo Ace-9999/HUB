@@ -15,6 +15,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
+import android.content.Intent
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.personalhub.core.*
 import dev.personalhub.design.*
@@ -41,6 +43,7 @@ val sections = SectionRegistry(listOf(Section("today", "Today"), Section("colleg
     var settings by rememberSaveable { mutableStateOf(false) }
     val holder = rememberSaveableStateHolder()
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     val icons = listOf(Icons.Default.Home, Icons.Default.DateRange, Icons.Default.PlayArrow, Icons.Default.CheckCircle)
     Scaffold(
         topBar = { TopAppBar(title = { Text(if (settings) "Settings" else "PersonalHub", style = MaterialTheme.typography.headlineSmall) },
@@ -67,7 +70,10 @@ val sections = SectionRegistry(listOf(Section("today", "Today"), Section("colleg
                         HubCard("A little more intentional.") { Text("Your day, in one place. College, training and daily focus — available locally.") }
                         StatusCard(DataStatus.EMPTY, "Start with one thing", "Your tasks and training will appear here. No personal records have been added.")
                     }
-                    "college" -> StatusCard(DataStatus.UNAVAILABLE, "Not connected", "Chennai VTOP login and source validation need an owner-device probe. No academic values have been acquired.")
+                    "college" -> {
+                        StatusCard(DataStatus.UNAVAILABLE, "Not connected", "Chennai VTOP login and source validation need an owner-device probe. No academic values have been acquired.")
+                        if (BuildConfig.DEBUG) Button(onClick = { context.startActivity(Intent().setClassName(context, "dev.personalhub.app.ProbeActivity")) }) { Text("Open device probes") }
+                    }
                     "training" -> StatusCard(DataStatus.EMPTY, "Make room for progress", "Your offline exercise catalog, routines and workouts arrive in the training increments.")
                     "focus" -> StatusCard(DataStatus.EMPTY, "A clearer day", "Tasks, manual habits and timestamped moods arrive in I03. Monitoring stays off until you choose it and device checks pass.")
                 }
