@@ -15,8 +15,16 @@ class VtopProbeView(context: Context, private val status: (String) -> Unit) : We
         settings.allowFileAccess = false
         settings.allowContentAccess = false
         settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+        importantForAutofill = android.view.View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS
+        setWebContentsDebuggingEnabled(false)
+        webChromeClient = object : WebChromeClient() {
+            override fun onProgressChanged(view: WebView, progress: Int) {
+                if (progress < 100 && progress % 10 == 0) status("Loading official portal: $progress%")
+            }
+        }
         CookieManager.getInstance().setAcceptThirdPartyCookies(this, false)
         webViewClient = object : WebViewClient() {
+            override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) { status("Loading official portal…") }
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val reject = !PortalPolicy.permits(request.url.toString())
                 if (reject) status("External navigation blocked; challenge origin needs audit.")
@@ -27,7 +35,7 @@ class VtopProbeView(context: Context, private val status: (String) -> Unit) : We
             override fun onPageFinished(view: WebView, url: String) { status("Page loaded. Sign in and solve challenges on this device, then inspect shape.") }
             override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: android.net.http.SslError) { handler.cancel(); status("TLS validation failed. Connection stopped.") }
             override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
-                if (request.isForMainFrame) status("Portal unavailable. No saved academic data changed.")
+                if (request.isForMainFrame) status("Portal unavailable (WebView code ${error.errorCode}). No saved academic data changed.")
             }
         }
         loadUrl(PortalPolicy.landing)

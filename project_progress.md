@@ -102,3 +102,13 @@ page counts do not validate a dataset. I04?I06 and I10?I12 stay blocked. Release
 flavors exclude the debug probes. No schema change; disable/close probes and revert
 this checkpoint safely. Next: I03 tasks/manual habits/moods, explicitly independent
 of live integrations per the plan.
+
+### I02 repair checkpoint
+
+Owner reported blank portal. Added explicit full-height layout, progress/retry and
+redacted error codes; added separately opt-in public-page instrumentation test.
+PASS: real public page load plus bounded structural inspection on API 29 emulator
+(17s) and OnePlus API 36 (18s). No login or private table read occurred.
+PASS: normal JVM/build/lint/Compose regression after repair (22s).
+No TLS bypass. Authenticated dataset gate remains pending. No schema changes.
+Rollback: revert repair; production/offline modules unaffected. Next: I03.

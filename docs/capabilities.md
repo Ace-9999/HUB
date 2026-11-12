@@ -6,7 +6,7 @@ Asia/Kolkata. No device identifier, credentials or personal content retained her
 | Capability | Evidence | Gate |
 |---|---|---|
 | Native local shell/SQLite | Phone and API 29 emulator smoke passed | Functional foundation verified |
-| VTOP portal | Public host fetch from workstation timed out; origin-restricted owner-operated debug WebView prepared | Login/challenge/semester/read not tested |
+| VTOP portal | Public page HTTP 200 via Windows TLS; visible WebView public-page/shape test passed on API 29 emulator and API 36 phone | Authenticated login/challenge/semester/read not tested |
 | VTOP timetable/attendance/marks/grades/calendar | No validated live datasets yet | I04–I06 blocked |
 | Instagram native / Chrome | Native package not installed; debug events only | Pending |
 | X native / Chrome | Native package not installed; debug events only | Pending |
@@ -35,3 +35,15 @@ whether normal timetable/attendance views are reachable. Never send credentials,
 HTML, screenshots or personal rows. For monitoring, opt in, manually grant the
 debug service in Android settings, test Reddit/Chrome and reversible redirect,
 then turn it off. Full scripts remain in the planning verification guide.
+
+Blank-page repair: explicit full-height probe layout, loading progress, redacted WebView
+error codes and retry. Public-page tests passed on API 29 (17s) and physical API 36
+(18s); these tests never enter credentials. Regular offline regressions passed
+after the repair (22s). A Python trust-store failure on the PC was investigated
+separately; Windows TLS and the WebViews verified the connection without bypass.
+
+Optional public-page diagnostic command: `python scripts/run_gradle.py
+connectedDemoDebugAndroidTest -PportalProbe
+-Pandroid.testInstrumentationRunnerArguments.class=dev.personalhub.app.PublicPortalProbeTest`.
+Quote the final argument in PowerShell. The live test source is excluded from
+normal offline/CI suites unless `portalProbe` is explicitly enabled.

@@ -29,7 +29,7 @@ class ProbeActivity : ComponentActivity() {
             var opted by remember { mutableStateOf(false) }
             var redirect by remember { mutableStateOf(false) }
             DisposableEffect(Unit) { onDispose { ProbeControl.reset() } }
-            Surface(Modifier.fillMaxSize()) { Column(Modifier.statusBarsPadding().navigationBarsPadding().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Surface(Modifier.fillMaxSize()) { Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("Device feasibility probes", style = MaterialTheme.typography.titleLarge)
                 Text("Debug only · no connected-data claim", color = MaterialTheme.colorScheme.primary)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -39,6 +39,7 @@ class ProbeActivity : ComponentActivity() {
                 if (portal) {
                     Text("Enter credentials only in the portal below. No remember-password option in this probe. External/challenge origins stay blocked until audited.")
                     Text(status, style = MaterialTheme.typography.bodySmall)
+                    TextButton(onClick = { view?.loadUrl(dev.personalhub.vtop.PortalPolicy.landing) }) { Text("Retry portal") }
                     Button(onClick = { view?.inspect { result -> status = if (result == null) "Shape could not be read; no data changed." else "${result.page} · ${result.tableCount} tables · ${result.semesterOptions} semester options. Dataset validation still pending." } }) { Text("Inspect page shape") }
                     AndroidView(factory = { context -> VtopProbeView(context) { status = it }.also { view = it } },
                         modifier = Modifier.fillMaxWidth().weight(1f), onRelease = { it.closeProbe(); view = null })

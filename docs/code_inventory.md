@@ -17,6 +17,7 @@ Purpose comments in source and the progress log describe responsibilities.
 | `app/src/main/kotlin/dev/personalhub/app/PersonalHubApplication.kt` | Source/config/schema |
 | `app/src/main/res/values/styles.xml` | Source/config/schema |
 | `app/src/main/res/xml/data_extraction_rules.xml` | Source/config/schema |
+| `app/src/portalProbe/kotlin/dev/personalhub/app/PublicPortalProbeTest.kt` | Source/config/schema |
 | `core/designsystem/build.gradle.kts` | Source/config/schema |
 | `core/designsystem/src/main/kotlin/dev/personalhub/design/Design.kt` | Source/config/schema |
 | `core/model/build.gradle.kts` | Source/config/schema |

@@ -22,6 +22,9 @@ android {
     buildFeatures { compose = true; buildConfig = true }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
+    if (providers.gradleProperty("portalProbe").isPresent) {
+        sourceSets.getByName("androidTest").java.srcDir("src/portalProbe/kotlin")
+    }
 }
 dependencies {
     implementation(project(":core:model"))
