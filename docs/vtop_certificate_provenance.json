@@ -1,0 +1,15 @@
+{
+  "purpose": "Public intermediate omitted by VTOP server; debug-only, exact-domain trust and CA SPKI pins",
+  "retrievedAt": "2026-11-12",
+  "subject": "Sectigo Public Server Authentication CA DV R36",
+  "issuer": "Sectigo Public Server Authentication Root R46",
+  "source": "http://crt.sectigo.com/SectigoPublicServerAuthenticationCADVR36.crt",
+  "verification": "OpenSSL verify passed against existing Git CA bundle and Root R46 from that pre-existing bundle; VTOP leaf verifies with this intermediate",
+  "sha256": "b40358316fd9e1caaaab92c382927d2c13ef51b481eec9371a82e16c86f2a687",
+  "spkiPins": [
+    "a9khLOZJxlnJyrxstg/P+seiDCm+Yf3OsrXyFocBaI0=",
+    "Douxi77vs4G+Ib/BogbTFymEYq0QSFXwSgVCaZcI09Q="
+  ],
+  "rotation": "Fail closed on unsupported CA rotation; reverify issuer and update explicitly. No pin expiry or automatic remote trust update.",
+  "privacy": "Public CA certificate only, no private key, credential, session token or personal record"
+}

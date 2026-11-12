@@ -1,4 +1,4 @@
-# Source/device capability matrix — I02
+# Source/device capability matrix â€” I02
 
 12 November 2026. OnePlus CPH2661 / Android 16 / API 36. Reported timezone
 Asia/Kolkata. No device identifier, credentials or personal content retained here.
@@ -6,8 +6,8 @@ Asia/Kolkata. No device identifier, credentials or personal content retained her
 | Capability | Evidence | Gate |
 |---|---|---|
 | Native local shell/SQLite | Phone and API 29 emulator smoke passed | Functional foundation verified |
-| VTOP portal | Public page HTTP 200 via Windows TLS; visible WebView public-page/shape test passed on API 29 emulator and API 36 phone | Authenticated login/challenge/semester/read not tested |
-| VTOP timetable/attendance/marks/grades/calendar | No validated live datasets yet | I04–I06 blocked |
+| VTOP portal | Public page HTTP 200 via Windows TLS; actual nonblank WebView painting passed on API 29 emulator and API 36 phone after missing-intermediate repair | Authenticated login/challenge/semester/read not tested |
+| VTOP timetable/attendance/marks/grades/calendar | No validated live datasets yet | I04â€“I06 blocked |
 | Instagram native / Chrome | Native package not installed; debug events only | Pending |
 | X native / Chrome | Native package not installed; debug events only | Pending |
 | Reddit native / Chrome | Reddit 2026.44.0, Chrome 156.0.8078.80 installed | Opt-in/event/redirect/semantic evaluation pending |
@@ -29,7 +29,7 @@ Home redirect probe is explicitly selected for Reddit native only, with cooldown
 browser-wide redirects cannot be configured. Owner must measure reopen/escape
 before any production enforcement claim. Closing disables the probe.
 
-Owner procedure: College → Open device probes → VTOP; sign in locally and solve
+Owner procedure: College â†’ Open device probes â†’ VTOP; sign in locally and solve
 available challenge, choose semester, Inspect page shape. Report only state and
 whether normal timetable/attendance views are reachable. Never send credentials,
 HTML, screenshots or personal rows. For monitoring, opt in, manually grant the
@@ -47,3 +47,6 @@ connectedDemoDebugAndroidTest -PportalProbe
 -Pandroid.testInstrumentationRunnerArguments.class=dev.personalhub.app.PublicPortalProbeTest`.
 Quote the final argument in PowerShell. The live test source is excluded from
 normal offline/CI suites unless `portalProbe` is explicitly enabled.
+
+The earlier public callback/shape test missed a TLS blank-page defect. Superseded by
+actual viewport pixel verification; see ADR-004. No authenticated source claim.

@@ -9,6 +9,7 @@ import org.json.JSONTokener
 // Visible owner-operated WebView. Never reads credentials or sends raw DOM to native code.
 @SuppressLint("SetJavaScriptEnabled")
 class VtopProbeView(context: Context, private val status: (String) -> Unit) : WebView(context) {
+    private var mainFailure: String? = null
     init {
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true
@@ -24,7 +25,7 @@ class VtopProbeView(context: Context, private val status: (String) -> Unit) : We
         }
         CookieManager.getInstance().setAcceptThirdPartyCookies(this, false)
         webViewClient = object : WebViewClient() {
-            override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) { status("Loading official portal…") }
+            override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) { mainFailure = null; status("Loading official portal…") }
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val reject = !PortalPolicy.permits(request.url.toString())
                 if (reject) status("External navigation blocked; challenge origin needs audit.")
@@ -32,14 +33,20 @@ class VtopProbeView(context: Context, private val status: (String) -> Unit) : We
             }
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
                 if (PortalPolicy.permits(request.url.toString())) null else WebResourceResponse("text/plain", "UTF-8", 403, "Blocked", emptyMap(), "".byteInputStream())
-            override fun onPageFinished(view: WebView, url: String) { status("Page loaded. Sign in and solve challenges on this device, then inspect shape.") }
-            override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: android.net.http.SslError) { handler.cancel(); status("TLS validation failed. Connection stopped.") }
+            override fun onPageFinished(view: WebView, url: String) { status(mainFailure ?: "Page loaded. Sign in and solve challenges on this device, then inspect shape.") }
+            override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: android.net.http.SslError) {
+                mainFailure = "TLS validation failed (code ${error.primaryError}). Connection stopped."
+                handler.cancel(); status(mainFailure!!)
+            }
+            override fun onReceivedHttpError(view: WebView, request: WebResourceRequest, response: WebResourceResponse) {
+                if (request.isForMainFrame) { mainFailure = "Portal HTTP error ${response.statusCode}. No data changed."; status(mainFailure!!) }
+            }
             override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
-                if (request.isForMainFrame) status("Portal unavailable (WebView code ${error.errorCode}). No saved academic data changed.")
+                if (request.isForMainFrame) { mainFailure = "Portal unavailable (WebView code ${error.errorCode}). No saved academic data changed."; status(mainFailure!!) }
             }
         }
-        loadUrl(PortalPolicy.landing)
     }
+    fun openPortal() { loadUrl(PortalPolicy.landing) }
     fun inspect(result: (ProbeResult?) -> Unit) {
         if (!PortalPolicy.permits(url.orEmpty())) { result(null); return }
         // Return only bounded structural counts/booleans. No text, HTML, credentials or grade rows.

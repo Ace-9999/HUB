@@ -6,11 +6,14 @@ installation and sequential tested commits/pushes. Original planning history is 
 
 ## Current checkpoint
 
-I00 toolchain/source audit verified; phone now attached. I02 debug probes verified locally; live gates pending. Next: I03 local daily tools. Baseline `b354486`, branch
-`main`, remote `https://github.com/Ace-9999/personalhub.git`. Clean initial tree.
-Gradle wrapper generation passed (19s); SDK API 36, build-tools 35.0.0 and
-platform-tools installed. JDK 21.0.9 / Gradle 8.13 verified. `adb devices` returned
-no attached devices; physical-phone audit remains pending. No Android app exists yet.
+I00 toolchain/source audit complete. Native app exists, with four destinations,
+themes/settings and a Focus Room schema skeleton. Last previous checkpoint:
+`3f1c6ae`; current I02 repair passes public portal painting on API 29 and API 36.
+Repository: `Ace-9999/personalhub`, branch `main`. JDK 21.0.9 / Gradle 8.13,
+compile/target API 36, minimum API 29. OnePlus CPH2661/API 36 attached; API 29
+emulator available. Live authenticated dataset and monitoring gates remain pending.
+UI is functional scaffolding; owner requested functionality first and later redesign.
+Next implementation: I03 local tasks/habits/moods after this repair checkpoint.
 
 ## Increment gates
 
@@ -20,11 +23,11 @@ no attached devices; physical-phone audit remains pending. No Android app exists
 | I01 | Verification pending | Functional gate passed on API 29 emulator and API 36 phone; manual TalkBack/200%/landscape review pending |
 | I02 | Verification pending | Debug probes built/tested; live validated read and monitoring/redirect evidence pending |
 | I03 | Not started | Local tasks, habits, moods, trends |
-| I04–I06 | Blocked | I02 live VTOP gate needed |
+| I04â€“I06 | Blocked | I02 live VTOP gate needed |
 | I07 | Not started | Catalog and routines; independent of VTOP |
 | I08 | Not started | Workout engine and timers |
 | I09 | Not started | Training history/analytics/body map |
-| I10–I12 | Blocked | I02 physical monitoring gate needed |
+| I10â€“I12 | Blocked | I02 physical monitoring gate needed |
 | I13 | Not started | Backups/hardening and release gates |
 | I14 | Blocked | Final module, after I13 |
 
@@ -49,8 +52,7 @@ Gradle 8.13 and Android CLI, verified Gradle checksum. SDK installation exited 0
 Migration/rollback: no user database exists. Revert implementation commits; ignored
 SDK/build files may be removed separately. Never rewrite remote history.
 
-Next exact task: build/test the I01 shell (I00 toolchain gate passed). Physical-device tests remain
-pending and independent work proceeds per the increment plan.
+Next exact task: I03 offline daily tools. I04-I06 and I10-I12 remain gated by live source/device evidence; independent Training work follows I03.
 
 ### I01 working evidence (not a completed checkpoint)
 
@@ -112,3 +114,22 @@ PASS: real public page load plus bounded structural inspection on API 29 emulato
 PASS: normal JVM/build/lint/Compose regression after repair (22s).
 No TLS bypass. Authenticated dataset gate remains pending. No schema changes.
 Rollback: revert repair; production/offline modules unaffected. Next: I03.
+
+### I02 verified white-screen repair - 12 November 2026
+
+The earlier callback/count-only test was insufficient: a failed TLS page could
+finish and overwrite its error. Reproduced a genuinely all-white WebView viewport
+(0/23552 ink samples). Native host alone did not solve it. The portal serves only
+the leaf certificate; adding the official R36 intermediate validates it against
+existing trusted roots. Added exact-host debug NSC, verified public intermediate,
+R36/R46 CA key pins, retained TLS/HTTP failures, full-height native debug host and
+FLAG_SECURE for owner login. ADR-004 documents provenance/rotation/rollback.
+
+PASS: actual public page painting on API 29 (9866/23552 nonwhite samples, visual
+callback responded) and physical API 36 (25s). Public-page image visually inspected
+in ignored tooling output; no authenticated screenshot or HTML committed.
+PASS: final public visual run (32s), then JVM tests, both APKs, lint, Compose and
+Room emulator regression (43s, exit 0), boundaries and release-manifest isolation.
+Owner authenticated login/semester/validated read remains PENDING. Installed repair
+next. No database schema changes. Revert this repair only with offline modules
+preserved; failed TLS must remain visible. UI replacement map: docs/ui_architecture.md.

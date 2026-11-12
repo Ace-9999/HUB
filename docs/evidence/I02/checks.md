@@ -13,3 +13,12 @@ and OnePlus API 36 (18s). It loads only the public portal and inspects structura
 counts; never authenticates. Normal offline JVM/build/lint/Compose suite passed
 after repair (22s). TLS remained verified. Public reachability passes; authenticated
 dataset gate remains pending.
+
+White-screen repair: callback-only checks did not verify painting. Initial actual
+viewport 0/23552 ink samples; native host alone still failed. Official missing
+intermediate independently verified against existing trusted roots; exact-domain
+NSC and R36/R46 pins added (debug-only). No SSL-error proceed or hostname bypass.
+Actual paint check passed on API 29 and physical API 36 (25s); final public visual
+run passed (32s). Final JVM/APK/lint/Compose/Room regression passed (43s). Release
+manifests exclude probes/config; boundary check passed. See ADR-004/provenance JSON.
+Authenticated data gate remains pending.

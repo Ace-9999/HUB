@@ -9,9 +9,12 @@ Purpose comments in source and the progress log describe responsibilities.
 | `app/build.gradle.kts` | Source/config/schema |
 | `app/src/androidTest/kotlin/dev/personalhub/app/ShellTest.kt` | Test |
 | `app/src/debug/AndroidManifest.xml` | Source/config/schema |
+| `app/src/debug/kotlin/dev/personalhub/app/PortalProbeActivity.kt` | Source/config/schema |
 | `app/src/debug/kotlin/dev/personalhub/app/ProbeActivity.kt` | Source/config/schema |
+| `app/src/debug/res/raw/vtop_sectigo_r36.pem` | Source/config/schema |
 | `app/src/debug/res/values/strings.xml` | Source/config/schema |
 | `app/src/debug/res/xml/probe_accessibility.xml` | Source/config/schema |
+| `app/src/debug/res/xml/vtop_network_security.xml` | Source/config/schema |
 | `app/src/main/AndroidManifest.xml` | Source/config/schema |
 | `app/src/main/kotlin/dev/personalhub/app/MainActivity.kt` | Source/config/schema |
 | `app/src/main/kotlin/dev/personalhub/app/PersonalHubApplication.kt` | Source/config/schema |

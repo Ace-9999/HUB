@@ -1,0 +1,14 @@
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="false">vtopcc.vit.ac.in</domain>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="@raw/vtop_sectigo_r36" />
+        </trust-anchors>
+        <pin-set>
+            <pin digest="SHA-256">a9khLOZJxlnJyrxstg/P+seiDCm+Yf3OsrXyFocBaI0=</pin>
+            <pin digest="SHA-256">Douxi77vs4G+Ib/BogbTFymEYq0QSFXwSgVCaZcI09Q=</pin>
+        </pin-set>
+    </domain-config>
+</network-security-config>
