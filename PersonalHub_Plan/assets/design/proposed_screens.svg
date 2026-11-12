@@ -1,0 +1,438 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1330" height="2935" viewBox="0 0 1330 2935">
+<rect x="0" y="0" width="1330" height="2935" rx="0" fill="#080B0D"/>
+<text x="40" y="59" fill="#F4F6EE" font-size="36" font-weight="700" font-family="DejaVu Sans, sans-serif">PersonalHub</text>
+<text x="40" y="94" fill="#B1BBB4" font-size="18" font-weight="400" font-family="DejaVu Sans, sans-serif">One private app. One design system. Nine conceptual Android screens.</text>
+<text x="40" y="123" fill="#FFCB77" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Wireframes · synthetic values · proposed behavior, not application screenshots</text>
+<g transform="translate(40,185)">
+<text x="0" y="-18" fill="#FFFFFF" font-size="18" font-weight="700" font-family="DejaVu Sans, sans-serif">Today</text>
+<rect x="0" y="0" width="390" height="820" rx="28" fill="#0D1013" stroke="#46534A" stroke-width="1.3"/>
+<text x="20" y="30" fill="#B1BBB4" font-size="12" font-weight="400" font-family="DejaVu Sans, sans-serif">9:41</text>
+<text x="277" y="30" fill="#B1BBB4" font-size="11" font-weight="400" font-family="DejaVu Sans, sans-serif">DEMO  •  100%</text>
+<text x="20" y="83" fill="#F4F6EE" font-size="29" font-weight="700" font-family="DejaVu Sans, sans-serif">Your day, in view.</text>
+<text x="20" y="110" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Thursday, 12 November · illustrative data</text>
+<rect x="20" y="130" width="90" height="30" rx="15" fill="#C8F542"/>
+<text x="32" y="151" fill="#172000" font-size="12" font-weight="600" font-family="DejaVu Sans, sans-serif">TODAY</text>
+<rect x="120" y="130" width="144" height="30" rx="15" fill="#222A31"/>
+<text x="132" y="151" fill="#F4F6EE" font-size="12" font-weight="600" font-family="DejaVu Sans, sans-serif">LOCAL FIRST</text>
+<rect x="20" y="180" width="350" height="130" rx="18" fill="#171C21" stroke="#46534A" stroke-width="1.3"/>
+<text x="38" y="210" fill="#B1BBB4" font-size="12" font-weight="600" font-family="DejaVu Sans, sans-serif">NEXT CLASS</text>
+<text x="38" y="242" fill="#F4F6EE" font-size="22" font-weight="700" font-family="DejaVu Sans, sans-serif">Data Science</text>
+<text x="38" y="271" fill="#B1BBB4" font-size="14" font-weight="400" font-family="DejaVu Sans, sans-serif">10:00–10:50  ·  AB1-204</text>
+<rect x="38" y="281" width="138" height="30" rx="15" fill="#222A31"/>
+<text x="50" y="302" fill="#F4F6EE" font-size="12" font-weight="600" font-family="DejaVu Sans, sans-serif">View timetable</text>
+<rect x="20" y="326" width="350" height="82" rx="18" fill="#171C21" stroke="#46534A" stroke-width="1.3"/>
+<text x="38" y="355" fill="#FFCB77" font-size="16" font-weight="700" font-family="DejaVu Sans, sans-serif">Attendance needs a look</text>
+<text x="38" y="381" fill="#B1BBB4" font-size="14" font-weight="400" font-family="DejaVu Sans, sans-serif">Information Security · 73.3%</text>
+<rect x="20" y="424" width="350" height="142" rx="18" fill="#171C21" stroke="#46534A" stroke-width="1.3"/>
+<text x="38" y="454" fill="#F4F6EE" font-size="18" font-weight="700" font-family="DejaVu Sans, sans-serif">Today’s priorities</text>
+<rect x="38" y="469" width="22" height="22" rx="6" fill="#0D1013" stroke="#46534A" stroke-width="1.3"/>
+<text x="72" y="486" fill="#F4F6EE" font-size="15" font-weight="400" font-family="DejaVu Sans, sans-serif">Finish lab notes</text>
+<rect x="38" y="507" width="22" height="22" rx="6" fill="#0D1013" stroke="#46534A" stroke-width="1.3"/>
+<text x="72" y="524" fill="#F4F6EE" font-size="15" font-weight="400" font-family="DejaVu Sans, sans-serif">Pack for training</text>
+<rect x="20" y="582" width="350" height="128" rx="18" fill="#171C21" stroke="#46534A" stroke-width="1.3"/>
+<text x="38" y="611" fill="#F4F6EE" font-size="18" font-weight="700" font-family="DejaVu Sans, sans-serif">Ready for Push?</text>
+<text x="38" y="636" fill="#B1BBB4" font-size="14" font-weight="400" font-family="DejaVu Sans, sans-serif">4 exercises · your routine</text>
+<rect x="38" y="648" width="314" height="48" rx="14" fill="#C8F542"/>
+<text x="56" y="679" fill="#172000" font-size="16" font-weight="700" font-family="DejaVu Sans, sans-serif">Open training</text>
+<rect x="1" y="740" width="388" height="79" rx="0" fill="#171C21"/>
+<path d="M1 740 L389 740" stroke="#46534A" fill="none"/>
+<rect x="16" y="755" width="88" height="44" rx="14" fill="#222A31"/>
+<text x="28" y="783" fill="#C8F542" font-size="13" font-weight="700" font-family="DejaVu Sans, sans-serif">Today</text>
+<text x="123" y="783" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">College</text>
+<text x="218" y="783" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Train</text>
+<text x="313" y="783" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Focus</text>
+</g>
+<g transform="translate(470,185)">
+<text x="0" y="-18" fill="#FFFFFF" font-size="18" font-weight="700" font-family="DejaVu Sans, sans-serif">College / attendance</text>
+<rect x="0" y="0" width="390" height="820" rx="28" fill="#0D1013" stroke="#46534A" stroke-width="1.3"/>
+<text x="20" y="30" fill="#B1BBB4" font-size="12" font-weight="400" font-family="DejaVu Sans, sans-serif">9:41</text>
+<text x="277" y="30" fill="#B1BBB4" font-size="11" font-weight="400" font-family="DejaVu Sans, sans-serif">DEMO  •  100%</text>
+<text x="20" y="83" fill="#F4F6EE" font-size="29" font-weight="700" font-family="DejaVu Sans, sans-serif">Attendance</text>
+<text x="20" y="110" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">College  /  Attendance</text>
+<rect x="20" y="130" width="188" height="30" rx="15" fill="#222A31"/>
+<text x="32" y="151" fill="#F4F6EE" font-size="12" font-weight="600" font-family="DejaVu Sans, sans-serif">Fall semester 2026–27</text>
+<text x="20" y="185" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Synced 08:15 · sample only</text>
+<rect x="20" y="207" width="350" height="144" rx="18" fill="#171C21" stroke="#46534A" stroke-width="1.3"/>
+<text x="38" y="240" fill="#F4F6EE" font-size="18" font-weight="700" font-family="DejaVu Sans, sans-serif">Data Science</text>
+<text x="38" y="268" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">30 of 36 attended</text>
+<text x="276" y="270" fill="#8DE2AD" font-size="20" font-weight="700" font-family="DejaVu Sans, sans-serif">83.3%</text>
+<rect x="38" y="285" width="314" height="8" rx="4" fill="#222A31"/>
+<rect x="38" y="285" width="261.562" height="8" rx="4" fill="#8DE2AD"/>
+<text x="38" y="328" fill="#8DE2AD" font-size="14" font-weight="600" font-family="DejaVu Sans, sans-serif">4 safe absences</text>
+<rect x="20" y="367" width="350" height="144" rx="18" fill="#171C21" stroke="#46534A" stroke-width="1.3"/>
+<text x="38" y="400" fill="#F4F6EE" font-size="18" font-weight="700" font-family="DejaVu Sans, sans-serif">Information Security</text>
+<text x="38" y="428" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">22 of 30 attended</text>
+<text x="276" y="430" fill="#FFCB77" font-size="20" font-weight="700" font-family="DejaVu Sans, sans-serif">73.3%</text>
+<rect x="38" y="445" width="314" height="8" rx="4" fill="#222A31"/>
+<rect x="38" y="445" width="230.162" height="8" rx="4" fill="#FFCB77"/>
+<text x="38" y="488" fill="#FFCB77" font-size="14" font-weight="600" font-family="DejaVu Sans, sans-serif">Attend next 2 classes</text>
+<rect x="20" y="527" width="350" height="144" rx="18" fill="#171C21" stroke="#46534A" stroke-width="1.3"/>
+<text x="38" y="560" fill="#F4F6EE" font-size="18" font-weight="700" font-family="DejaVu Sans, sans-serif">Web Programming</text>
+<text x="38" y="588" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">28 of 32 attended</text>
+<text x="276" y="590" fill="#8DE2AD" font-size="20" font-weight="700" font-family="DejaVu Sans, sans-serif">87.5%</text>
+<rect x="38" y="605" width="314" height="8" rx="4" fill="#222A31"/>
+<rect x="38" y="605" width="274.75" height="8" rx="4" fill="#8DE2AD"/>
+<text x="38" y="648" fill="#8DE2AD" font-size="14" font-weight="600" font-family="DejaVu Sans, sans-serif">5 safe absences</text>
+<text x="20" y="710" fill="#B1BBB4" font-size="12" font-weight="400" font-family="DejaVu Sans, sans-serif">Target 75% · tap a course for calculation</text>
+<rect x="1" y="740" width="388" height="79" rx="0" fill="#171C21"/>
+<path d="M1 740 L389 740" stroke="#46534A" fill="none"/>
+<text x="28" y="783" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Today</text>
+<rect x="111" y="755" width="88" height="44" rx="14" fill="#222A31"/>
+<text x="123" y="783" fill="#C8F542" font-size="13" font-weight="700" font-family="DejaVu Sans, sans-serif">College</text>
+<text x="218" y="783" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Train</text>
+<text x="313" y="783" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Focus</text>
+</g>
+<g transform="translate(900,185)">
+<text x="0" y="-18" fill="#FFFFFF" font-size="18" font-weight="700" font-family="DejaVu Sans, sans-serif">College / grade scenario</text>
+<rect x="0" y="0" width="390" height="820" rx="28" fill="#0D1013" stroke="#46534A" stroke-width="1.3"/>
+<text x="20" y="30" fill="#B1BBB4" font-size="12" font-weight="400" font-family="DejaVu Sans, sans-serif">9:41</text>
+<text x="277" y="30" fill="#B1BBB4" font-size="11" font-weight="400" font-family="DejaVu Sans, sans-serif">DEMO  •  100%</text>
+<text x="20" y="83" fill="#F4F6EE" font-size="29" font-weight="700" font-family="DejaVu Sans, sans-serif">Grade scenario</text>
+<text x="20" y="110" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">College  /  Projections</text>
+<rect x="20" y="133" width="350" height="119" rx="18" fill="#171C21" stroke="#46534A" stroke-width="1.3"/>
+<text x="38" y="162" fill="#B1BBB4" font-size="11" font-weight="600" font-family="DejaVu Sans, sans-serif">OFFICIAL CGPA</text>
+<text x="38" y="202" fill="#F4F6EE" font-size="34" font-weight="700" font-family="DejaVu Sans, sans-serif">8.64</text>
+<text x="208" y="162" fill="#C8F542" font-size="11" font-weight="600" font-family="DejaVu Sans, sans-serif">SCENARIO</text>
+<text x="208" y="202" fill="#C8F542" font-size="34" font-weight="700" font-family="DejaVu Sans, sans-serif">8.67</text>
+<text x="38" y="231" fill="#B1BBB4" font-size="11" font-weight="400" font-family="DejaVu Sans, sans-serif">Illustrative verified-credit example</text>
+<text x="20" y="286" fill="#F4F6EE" font-size="17" font-weight="600" font-family="DejaVu Sans, sans-serif">Choose your expected grades</text>
+<rect x="20" y="305" width="350" height="111" rx="18" fill="#171C21" stroke="#46534A" stroke-width="1.3"/>
+<text x="38" y="335" fill="#F4F6EE" font-size="17" font-weight="700" font-family="DejaVu Sans, sans-serif">Data Science</text>
+<text x="38" y="357" fill="#B1BBB4" font-size="12" font-weight="400" font-family="DejaVu Sans, sans-serif">Theory · 3 credits · scenario only</text>
+<rect x="38" y="369" width="39" height="33" rx="8" fill="#222A31"/>
+<text x="51" y="392" fill="#F4F6EE" font-size="14" font-weight="700" font-family="DejaVu Sans, sans-serif">F</text>
+<rect x="83" y="369" width="39" height="33" rx="8" fill="#222A31"/>
+<text x="96" y="392" fill="#F4F6EE" font-size="14" font-weight="700" font-family="DejaVu Sans, sans-serif">E</text>
+<rect x="128" y="369" width="39" height="33" rx="8" fill="#222A31"/>
+<text x="141" y="392" fill="#F4F6EE" font-size="14" font-weight="700" font-family="DejaVu Sans, sans-serif">D</text>
+<rect x="173" y="369" width="39" height="33" rx="8" fill="#222A31"/>
+<text x="186" y="392" fill="#F4F6EE" font-size="14" font-weight="700" font-family="DejaVu Sans, sans-serif">C</text>
+<rect x="218" y="369" width="39" height="33" rx="8" fill="#C8F542"/>
+<text x="231" y="392" fill="#172000" font-size="14" font-weight="700" font-family="DejaVu Sans, sans-serif">B</text>
+<rect x="263" y="369" width="39" height="33" rx="8" fill="#222A31"/>
+<text x="276" y="392" fill="#F4F6EE" font-size="14" font-weight="700" font-family="DejaVu Sans, sans-serif">A</text>
+<rect x="308" y="369" width="39" height="33" rx="8" fill="#222A31"/>
+<text x="321" y="392" fill="#F4F6EE" font-size="14" font-weight="700" font-family="DejaVu Sans, sans-serif">S</text>
+<rect x="20" y="431" width="350" height="111" rx="18" fill="#171C21" stroke="#46534A" stroke-width="1.3"/>
+<text x="38" y="461" fill="#F4F6EE" font-size="17" font-weight="700" font-family="DejaVu Sans, sans-serif">Information Security</text>
+<text x="38" y="483" fill="#B1BBB4" font-size="12" font-weight="400" font-family="DejaVu Sans, sans-serif">Theory · 3 credits · scenario only</text>
+<rect x="38" y="495" width="39" height="33" rx="8" fill="#222A31"/>
+<text x="51" y="518" fill="#F4F6EE" font-size="14" font-weight="700" font-family="DejaVu Sans, sans-serif">F</text>
+<rect x="83" y="495" width="39" height="33" rx="8" fill="#222A31"/>
+<text x="96" y="518" fill="#F4F6EE" font-size="14" font-weight="700" font-family="DejaVu Sans, sans-serif">E</text>
+<rect x="128" y="495" width="39" height="33" rx="8" fill="#222A31"/>
+<text x="141" y="518" fill="#F4F6EE" font-size="14" font-weight="700" font-family="DejaVu Sans, sans-serif">D</text>
+<rect x="173" y="495" width="39" height="33" rx="8" fill="#222A31"/>
+<text x="186" y="518" fill="#F4F6EE" font-size="14" font-weight="700" font-family="DejaVu Sans, sans-serif">C</text>
+<rect x="218" y="495" width="39" height="33" rx="8" fill="#222A31"/>
+<text x="231" y="518" fill="#F4F6EE" font-size="14" font-weight="700" font-family="DejaVu Sans, sans-serif">B</text>
+<rect x="263" y="495" width="39" height="33" rx="8" fill="#C8F542"/>
+<text x="276" y="518" fill="#172000" font-size="14" font-weight="700" font-family="DejaVu Sans, sans-serif">A</text>
+<rect x="308" y="495" width="39" height="33" rx="8" fill="#222A31"/>
+<text x="321" y="518" fill="#F4F6EE" font-size="14" font-weight="700" font-family="DejaVu Sans, sans-serif">S</text>
+<rect x="20" y="557" width="350" height="111" rx="18" fill="#171C21" stroke="#46534A" stroke-width="1.3"/>
+<text x="38" y="587" fill="#F4F6EE" font-size="17" font-weight="700" font-family="DejaVu Sans, sans-serif">Web Programming</text>
+<text x="38" y="609" fill="#B1BBB4" font-size="12" font-weight="400" font-family="DejaVu Sans, sans-serif">Theory · 3 credits · scenario only</text>
+<rect x="38" y="621" width="39" height="33" rx="8" fill="#222A31"/>
+<text x="51" y="644" fill="#F4F6EE" font-size="14" font-weight="700" font-family="DejaVu Sans, sans-serif">F</text>
+<rect x="83" y="621" width="39" height="33" rx="8" fill="#222A31"/>
+<text x="96" y="644" fill="#F4F6EE" font-size="14" font-weight="700" font-family="DejaVu Sans, sans-serif">E</text>
+<rect x="128" y="621" width="39" height="33" rx="8" fill="#222A31"/>
+<text x="141" y="644" fill="#F4F6EE" font-size="14" font-weight="700" font-family="DejaVu Sans, sans-serif">D</text>
+<rect x="173" y="621" width="39" height="33" rx="8" fill="#222A31"/>
+<text x="186" y="644" fill="#F4F6EE" font-size="14" font-weight="700" font-family="DejaVu Sans, sans-serif">C</text>
+<rect x="218" y="621" width="39" height="33" rx="8" fill="#222A31"/>
+<text x="231" y="644" fill="#F4F6EE" font-size="14" font-weight="700" font-family="DejaVu Sans, sans-serif">B</text>
+<rect x="263" y="621" width="39" height="33" rx="8" fill="#222A31"/>
+<text x="276" y="644" fill="#F4F6EE" font-size="14" font-weight="700" font-family="DejaVu Sans, sans-serif">A</text>
+<rect x="308" y="621" width="39" height="33" rx="8" fill="#C8F542"/>
+<text x="321" y="644" fill="#172000" font-size="14" font-weight="700" font-family="DejaVu Sans, sans-serif">S</text>
+<text x="20" y="702" fill="#B1BBB4" font-size="11" font-weight="400" font-family="DejaVu Sans, sans-serif">History suggestions: view method and sample size</text>
+<rect x="1" y="740" width="388" height="79" rx="0" fill="#171C21"/>
+<path d="M1 740 L389 740" stroke="#46534A" fill="none"/>
+<text x="28" y="783" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Today</text>
+<rect x="111" y="755" width="88" height="44" rx="14" fill="#222A31"/>
+<text x="123" y="783" fill="#C8F542" font-size="13" font-weight="700" font-family="DejaVu Sans, sans-serif">College</text>
+<text x="218" y="783" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Train</text>
+<text x="313" y="783" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Focus</text>
+</g>
+<g transform="translate(40,1095)">
+<text x="0" y="-18" fill="#FFFFFF" font-size="18" font-weight="700" font-family="DejaVu Sans, sans-serif">Train / routines</text>
+<rect x="0" y="0" width="390" height="820" rx="28" fill="#0D1013" stroke="#46534A" stroke-width="1.3"/>
+<text x="20" y="30" fill="#B1BBB4" font-size="12" font-weight="400" font-family="DejaVu Sans, sans-serif">9:41</text>
+<text x="277" y="30" fill="#B1BBB4" font-size="11" font-weight="400" font-family="DejaVu Sans, sans-serif">DEMO  •  100%</text>
+<text x="20" y="83" fill="#F4F6EE" font-size="29" font-weight="700" font-family="DejaVu Sans, sans-serif">Train</text>
+<text x="20" y="110" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Routines  /  Exercises  /  History</text>
+<rect x="20" y="133" width="350" height="48" rx="14" fill="#C8F542"/>
+<text x="38" y="164" fill="#172000" font-size="16" font-weight="700" font-family="DejaVu Sans, sans-serif">+ Start empty workout</text>
+<text x="20" y="221" fill="#F4F6EE" font-size="22" font-weight="700" font-family="DejaVu Sans, sans-serif">Your routines</text>
+<text x="305" y="221" fill="#C8F542" font-size="14" font-weight="700" font-family="DejaVu Sans, sans-serif">+ New</text>
+<rect x="20" y="242" width="350" height="195" rx="18" fill="#171C21" stroke="#46534A" stroke-width="1.3"/>
+<text x="38" y="280" fill="#F4F6EE" font-size="25" font-weight="700" font-family="DejaVu Sans, sans-serif">Push A</text>
+<text x="38" y="315" fill="#B1BBB4" font-size="14" font-weight="400" font-family="DejaVu Sans, sans-serif">Bench press · Chest fly</text>
+<text x="38" y="340" fill="#B1BBB4" font-size="14" font-weight="400" font-family="DejaVu Sans, sans-serif">Triceps pushdown · Lateral raise</text>
+<rect x="38" y="354" width="133" height="30" rx="15" fill="#222A31"/>
+<text x="50" y="375" fill="#F4F6EE" font-size="12" font-weight="600" font-family="DejaVu Sans, sans-serif">4 exercises</text>
+<rect x="38" y="389" width="314" height="48" rx="14" fill="#C8F542"/>
+<text x="56" y="420" fill="#172000" font-size="16" font-weight="700" font-family="DejaVu Sans, sans-serif">Start routine</text>
+<rect x="20" y="459" width="350" height="195" rx="18" fill="#171C21" stroke="#46534A" stroke-width="1.3"/>
+<text x="38" y="497" fill="#F4F6EE" font-size="25" font-weight="700" font-family="DejaVu Sans, sans-serif">Pull</text>
+<text x="38" y="532" fill="#B1BBB4" font-size="14" font-weight="400" font-family="DejaVu Sans, sans-serif">Lat pulldown · Cable row</text>
+<text x="38" y="557" fill="#B1BBB4" font-size="14" font-weight="400" font-family="DejaVu Sans, sans-serif">Incline row · Dumbbell curl</text>
+<rect x="38" y="571" width="133" height="30" rx="15" fill="#222A31"/>
+<text x="50" y="592" fill="#F4F6EE" font-size="12" font-weight="600" font-family="DejaVu Sans, sans-serif">4 exercises</text>
+<rect x="38" y="606" width="314" height="48" rx="14" fill="#C8F542"/>
+<text x="56" y="637" fill="#172000" font-size="16" font-weight="700" font-family="DejaVu Sans, sans-serif">Start routine</text>
+<text x="20" y="699" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Private training. Your pace.</text>
+<rect x="1" y="740" width="388" height="79" rx="0" fill="#171C21"/>
+<path d="M1 740 L389 740" stroke="#46534A" fill="none"/>
+<text x="28" y="783" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Today</text>
+<text x="123" y="783" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">College</text>
+<rect x="206" y="755" width="88" height="44" rx="14" fill="#222A31"/>
+<text x="218" y="783" fill="#C8F542" font-size="13" font-weight="700" font-family="DejaVu Sans, sans-serif">Train</text>
+<text x="313" y="783" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Focus</text>
+</g>
+<g transform="translate(470,1095)">
+<text x="0" y="-18" fill="#FFFFFF" font-size="18" font-weight="700" font-family="DejaVu Sans, sans-serif">Train / active workout</text>
+<rect x="0" y="0" width="390" height="820" rx="28" fill="#0D1013" stroke="#46534A" stroke-width="1.3"/>
+<text x="20" y="30" fill="#B1BBB4" font-size="12" font-weight="400" font-family="DejaVu Sans, sans-serif">9:41</text>
+<text x="277" y="30" fill="#B1BBB4" font-size="11" font-weight="400" font-family="DejaVu Sans, sans-serif">DEMO  •  100%</text>
+<text x="20" y="83" fill="#F4F6EE" font-size="29" font-weight="700" font-family="DejaVu Sans, sans-serif">Push A</text>
+<text x="20" y="110" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Active workout · saved locally</text>
+<text x="20" y="148" fill="#C8F542" font-size="30" font-weight="700" font-family="DejaVu Sans, sans-serif">12:42</text>
+<text x="154" y="144" fill="#F4F6EE" font-size="17" font-weight="600" font-family="DejaVu Sans, sans-serif">900 kg·reps</text>
+<text x="154" y="166" fill="#B1BBB4" font-size="12" font-weight="400" font-family="DejaVu Sans, sans-serif">3 working sets</text>
+<rect x="20" y="188" width="350" height="66" rx="16" fill="#222A31"/>
+<text x="38" y="217" fill="#F4F6EE" font-size="22" font-weight="700" font-family="DejaVu Sans, sans-serif">REST   00:54</text>
+<text x="249" y="235" fill="#C8F542" font-size="13" font-weight="600" font-family="DejaVu Sans, sans-serif">+15s   Skip</text>
+<rect x="20" y="274" width="350" height="319" rx="18" fill="#171C21" stroke="#46534A" stroke-width="1.3"/>
+<text x="38" y="309" fill="#F4F6EE" font-size="21" font-weight="700" font-family="DejaVu Sans, sans-serif">Bench Press</text>
+<text x="38" y="334" fill="#B1BBB4" font-size="12" font-weight="400" font-family="DejaVu Sans, sans-serif">Barbell · kg is total load</text>
+<text x="38" y="368" fill="#B1BBB4" font-size="10" font-weight="600" font-family="DejaVu Sans, sans-serif">SET</text>
+<text x="83" y="368" fill="#B1BBB4" font-size="10" font-weight="600" font-family="DejaVu Sans, sans-serif">PREV</text>
+<text x="199" y="368" fill="#B1BBB4" font-size="10" font-weight="600" font-family="DejaVu Sans, sans-serif">KG</text>
+<text x="266" y="368" fill="#B1BBB4" font-size="10" font-weight="600" font-family="DejaVu Sans, sans-serif">REPS</text>
+<text x="327" y="368" fill="#B1BBB4" font-size="10" font-weight="600" font-family="DejaVu Sans, sans-serif">DONE</text>
+<text x="40" y="413" fill="#F4F6EE" font-size="16" font-weight="400" font-family="DejaVu Sans, sans-serif">1</text>
+<text x="83" y="413" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">45 × 7</text>
+<rect x="187" y="387" width="64" height="42" rx="10" fill="#222A31"/>
+<text x="204" y="414" fill="#F4F6EE" font-size="16" font-weight="400" font-family="DejaVu Sans, sans-serif">45</text>
+<rect x="260" y="387" width="51" height="42" rx="10" fill="#222A31"/>
+<text x="277" y="414" fill="#F4F6EE" font-size="16" font-weight="400" font-family="DejaVu Sans, sans-serif">7</text>
+<rect x="324" y="387" width="28" height="42" rx="9" fill="#C8F542"/>
+<text x="331" y="414" fill="#172000" font-size="17" font-weight="700" font-family="DejaVu Sans, sans-serif">✓</text>
+<text x="40" y="469" fill="#F4F6EE" font-size="16" font-weight="400" font-family="DejaVu Sans, sans-serif">2</text>
+<text x="83" y="469" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">45 × 7</text>
+<rect x="187" y="443" width="64" height="42" rx="10" fill="#222A31"/>
+<text x="204" y="470" fill="#F4F6EE" font-size="16" font-weight="400" font-family="DejaVu Sans, sans-serif">45</text>
+<rect x="260" y="443" width="51" height="42" rx="10" fill="#222A31"/>
+<text x="277" y="470" fill="#F4F6EE" font-size="16" font-weight="400" font-family="DejaVu Sans, sans-serif">7</text>
+<rect x="324" y="443" width="28" height="42" rx="9" fill="#C8F542"/>
+<text x="331" y="470" fill="#172000" font-size="17" font-weight="700" font-family="DejaVu Sans, sans-serif">✓</text>
+<text x="40" y="525" fill="#F4F6EE" font-size="16" font-weight="400" font-family="DejaVu Sans, sans-serif">3</text>
+<text x="83" y="525" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">45 × 6</text>
+<rect x="187" y="499" width="64" height="42" rx="10" fill="#222A31"/>
+<text x="204" y="526" fill="#F4F6EE" font-size="16" font-weight="400" font-family="DejaVu Sans, sans-serif">45</text>
+<rect x="260" y="499" width="51" height="42" rx="10" fill="#222A31"/>
+<text x="277" y="526" fill="#F4F6EE" font-size="16" font-weight="400" font-family="DejaVu Sans, sans-serif">6</text>
+<rect x="324" y="499" width="28" height="42" rx="9" fill="#C8F542"/>
+<text x="331" y="526" fill="#172000" font-size="17" font-weight="700" font-family="DejaVu Sans, sans-serif">✓</text>
+<text x="38" y="574" fill="#C8F542" font-size="15" font-weight="600" font-family="DejaVu Sans, sans-serif">+ Add set</text>
+<text x="20" y="635" fill="#B1BBB4" font-size="15" font-weight="400" font-family="DejaVu Sans, sans-serif">Next: Chest Fly (Machine)</text>
+<rect x="20" y="666" width="350" height="48" rx="14" fill="#C8F542"/>
+<text x="38" y="697" fill="#172000" font-size="16" font-weight="700" font-family="DejaVu Sans, sans-serif">Finish workout</text>
+<rect x="1" y="740" width="388" height="79" rx="0" fill="#171C21"/>
+<path d="M1 740 L389 740" stroke="#46534A" fill="none"/>
+<text x="28" y="783" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Today</text>
+<text x="123" y="783" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">College</text>
+<rect x="206" y="755" width="88" height="44" rx="14" fill="#222A31"/>
+<text x="218" y="783" fill="#C8F542" font-size="13" font-weight="700" font-family="DejaVu Sans, sans-serif">Train</text>
+<text x="313" y="783" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Focus</text>
+</g>
+<g transform="translate(900,1095)">
+<text x="0" y="-18" fill="#FFFFFF" font-size="18" font-weight="700" font-family="DejaVu Sans, sans-serif">Focus / overview</text>
+<rect x="0" y="0" width="390" height="820" rx="28" fill="#0D1013" stroke="#46534A" stroke-width="1.3"/>
+<text x="20" y="30" fill="#B1BBB4" font-size="12" font-weight="400" font-family="DejaVu Sans, sans-serif">9:41</text>
+<text x="277" y="30" fill="#B1BBB4" font-size="11" font-weight="400" font-family="DejaVu Sans, sans-serif">DEMO  •  100%</text>
+<text x="20" y="83" fill="#F4F6EE" font-size="29" font-weight="700" font-family="DejaVu Sans, sans-serif">Focus</text>
+<text x="20" y="110" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Today  /  Limits  /  Tasks  /  Habits</text>
+<rect x="20" y="130" width="211" height="30" rx="15" fill="#222A31"/>
+<text x="32" y="151" fill="#FFCB77" font-size="12" font-weight="600" font-family="DejaVu Sans, sans-serif">Tracking: partial coverage</text>
+<rect x="20" y="180" width="350" height="198" rx="18" fill="#171C21" stroke="#46534A" stroke-width="1.3"/>
+<text x="38" y="211" fill="#B1BBB4" font-size="12" font-weight="600" font-family="DejaVu Sans, sans-serif">RECORDED TARGET USE</text>
+<text x="38" y="247" fill="#F4F6EE" font-size="14" font-weight="400" font-family="DejaVu Sans, sans-serif">Text feed</text>
+<text x="280" y="247" fill="#9EDDD5" font-size="14" font-weight="600" font-family="DejaVu Sans, sans-serif">18 min</text>
+<rect x="38" y="256" width="314" height="7" rx="4" fill="#222A31"/>
+<rect x="38" y="256" width="179" height="7" rx="4" fill="#9EDDD5"/>
+<text x="38" y="297" fill="#F4F6EE" font-size="14" font-weight="400" font-family="DejaVu Sans, sans-serif">Video surface</text>
+<text x="280" y="297" fill="#C8F542" font-size="14" font-weight="600" font-family="DejaVu Sans, sans-serif">12 min</text>
+<rect x="38" y="306" width="314" height="7" rx="4" fill="#222A31"/>
+<rect x="38" y="306" width="120" height="7" rx="4" fill="#C8F542"/>
+<text x="38" y="347" fill="#F4F6EE" font-size="14" font-weight="400" font-family="DejaVu Sans, sans-serif">Unknown</text>
+<text x="280" y="347" fill="#FFCB77" font-size="14" font-weight="600" font-family="DejaVu Sans, sans-serif">3 min</text>
+<rect x="38" y="356" width="314" height="7" rx="4" fill="#222A31"/>
+<rect x="38" y="356" width="30" height="7" rx="4" fill="#FFCB77"/>
+<rect x="20" y="396" width="350" height="142" rx="18" fill="#171C21" stroke="#46534A" stroke-width="1.3"/>
+<text x="38" y="431" fill="#F4F6EE" font-size="17" font-weight="700" font-family="DejaVu Sans, sans-serif">Instagram · shared limit</text>
+<text x="38" y="457" fill="#B1BBB4" font-size="12" font-weight="400" font-family="DejaVu Sans, sans-serif">App + supported web · all categories</text>
+<rect x="38" y="475" width="314" height="9" rx="4" fill="#222A31"/>
+<rect x="38" y="475" width="235" height="9" rx="4" fill="#C8F542"/>
+<text x="38" y="513" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">15 / 20 min · resets at midnight</text>
+<rect x="20" y="554" width="350" height="87" rx="18" fill="#171C21" stroke="#46534A" stroke-width="1.3"/>
+<text x="38" y="589" fill="#F4F6EE" font-size="18" font-weight="700" font-family="DejaVu Sans, sans-serif">Daily tasks</text>
+<text x="38" y="616" fill="#B1BBB4" font-size="14" font-weight="400" font-family="DejaVu Sans, sans-serif">2 remaining · open your list</text>
+<rect x="20" y="657" width="350" height="64" rx="18" fill="#171C21" stroke="#46534A" stroke-width="1.3"/>
+<text x="38" y="695" fill="#B1BBB4" font-size="16" font-weight="600" font-family="DejaVu Sans, sans-serif">Private habit · hidden</text>
+<rect x="1" y="740" width="388" height="79" rx="0" fill="#171C21"/>
+<path d="M1 740 L389 740" stroke="#46534A" fill="none"/>
+<text x="28" y="783" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Today</text>
+<text x="123" y="783" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">College</text>
+<text x="218" y="783" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Train</text>
+<rect x="301" y="755" width="88" height="44" rx="14" fill="#222A31"/>
+<text x="313" y="783" fill="#C8F542" font-size="13" font-weight="700" font-family="DejaVu Sans, sans-serif">Focus</text>
+</g>
+<g transform="translate(40,2005)">
+<text x="0" y="-18" fill="#FFFFFF" font-size="18" font-weight="700" font-family="DejaVu Sans, sans-serif">College / calendar</text>
+<rect x="0" y="0" width="390" height="820" rx="28" fill="#0D1013" stroke="#46534A" stroke-width="1.3"/>
+<text x="20" y="30" fill="#B1BBB4" font-size="12" font-weight="400" font-family="DejaVu Sans, sans-serif">9:41</text>
+<text x="277" y="30" fill="#B1BBB4" font-size="11" font-weight="400" font-family="DejaVu Sans, sans-serif">DEMO  •  100%</text>
+<text x="20" y="83" fill="#F4F6EE" font-size="29" font-weight="700" font-family="DejaVu Sans, sans-serif">Academic calendar</text>
+<text x="20" y="110" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">November 2026 · illustrative calendar</text>
+<rect x="20" y="131" width="131" height="30" rx="15" fill="#222A31"/>
+<text x="32" y="152" fill="#F4F6EE" font-size="12" font-weight="600" font-family="DejaVu Sans, sans-serif">Source labels</text>
+<text x="20" y="189" fill="#B1BBB4" font-size="12" font-weight="400" font-family="DejaVu Sans, sans-serif">Selected date</text>
+<rect x="20" y="207" width="350" height="310" rx="18" fill="#171C21" stroke="#46534A" stroke-width="1.3"/>
+<text x="40" y="240" fill="#B1BBB4" font-size="13" font-weight="600" font-family="DejaVu Sans, sans-serif">M</text>
+<text x="85" y="240" fill="#B1BBB4" font-size="13" font-weight="600" font-family="DejaVu Sans, sans-serif">T</text>
+<text x="130" y="240" fill="#B1BBB4" font-size="13" font-weight="600" font-family="DejaVu Sans, sans-serif">W</text>
+<text x="175" y="240" fill="#B1BBB4" font-size="13" font-weight="600" font-family="DejaVu Sans, sans-serif">T</text>
+<text x="220" y="240" fill="#B1BBB4" font-size="13" font-weight="600" font-family="DejaVu Sans, sans-serif">F</text>
+<text x="265" y="240" fill="#B1BBB4" font-size="13" font-weight="600" font-family="DejaVu Sans, sans-serif">S</text>
+<text x="310" y="240" fill="#B1BBB4" font-size="13" font-weight="600" font-family="DejaVu Sans, sans-serif">S</text>
+<text x="316" y="279" fill="#F4F6EE" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">1</text>
+<text x="40" y="320" fill="#F4F6EE" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">2</text>
+<text x="86" y="320" fill="#F4F6EE" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">3</text>
+<text x="132" y="320" fill="#F4F6EE" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">4</text>
+<text x="178" y="320" fill="#F4F6EE" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">5</text>
+<rect x="182" y="327" width="5" height="5" rx="2" fill="#9EDDD5"/>
+<text x="224" y="320" fill="#F4F6EE" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">6</text>
+<text x="270" y="320" fill="#F4F6EE" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">7</text>
+<text x="316" y="320" fill="#F4F6EE" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">8</text>
+<text x="40" y="361" fill="#F4F6EE" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">9</text>
+<text x="86" y="361" fill="#F4F6EE" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">10</text>
+<text x="132" y="361" fill="#F4F6EE" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">11</text>
+<rect x="170" y="336" width="37" height="37" rx="10" fill="#C8F542"/>
+<text x="178" y="361" fill="#172000" font-size="13" font-weight="700" font-family="DejaVu Sans, sans-serif">12</text>
+<rect x="182" y="368" width="5" height="5" rx="2" fill="#9EDDD5"/>
+<text x="224" y="361" fill="#F4F6EE" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">13</text>
+<text x="270" y="361" fill="#F4F6EE" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">14</text>
+<text x="316" y="361" fill="#F4F6EE" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">15</text>
+<text x="40" y="402" fill="#F4F6EE" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">16</text>
+<text x="86" y="402" fill="#F4F6EE" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">17</text>
+<rect x="90" y="409" width="5" height="5" rx="2" fill="#9EDDD5"/>
+<text x="132" y="402" fill="#F4F6EE" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">18</text>
+<text x="178" y="402" fill="#F4F6EE" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">19</text>
+<text x="224" y="402" fill="#F4F6EE" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">20</text>
+<text x="270" y="402" fill="#F4F6EE" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">21</text>
+<text x="316" y="402" fill="#F4F6EE" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">22</text>
+<text x="40" y="443" fill="#F4F6EE" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">23</text>
+<text x="86" y="443" fill="#F4F6EE" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">24</text>
+<rect x="90" y="450" width="5" height="5" rx="2" fill="#9EDDD5"/>
+<text x="132" y="443" fill="#F4F6EE" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">25</text>
+<text x="178" y="443" fill="#F4F6EE" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">26</text>
+<text x="224" y="443" fill="#F4F6EE" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">27</text>
+<text x="270" y="443" fill="#F4F6EE" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">28</text>
+<text x="316" y="443" fill="#F4F6EE" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">29</text>
+<text x="40" y="484" fill="#F4F6EE" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">30</text>
+<rect x="20" y="536" width="350" height="132" rx="18" fill="#171C21" stroke="#46534A" stroke-width="1.3"/>
+<text x="38" y="572" fill="#F4F6EE" font-size="18" font-weight="700" font-family="DejaVu Sans, sans-serif">Thursday, 12 November</text>
+<rect x="38" y="588" width="150" height="30" rx="15" fill="#222A31"/>
+<text x="50" y="609" fill="#F4F6EE" font-size="12" font-weight="600" font-family="DejaVu Sans, sans-serif">Manual event</text>
+<text x="38" y="643" fill="#B1BBB4" font-size="14" font-weight="400" font-family="DejaVu Sans, sans-serif">Lab submission reminder</text>
+<text x="20" y="711" fill="#B1BBB4" font-size="11" font-weight="400" font-family="DejaVu Sans, sans-serif">Imported, manual and inferred states stay distinct.</text>
+<rect x="1" y="740" width="388" height="79" rx="0" fill="#171C21"/>
+<path d="M1 740 L389 740" stroke="#46534A" fill="none"/>
+<text x="28" y="783" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Today</text>
+<rect x="111" y="755" width="88" height="44" rx="14" fill="#222A31"/>
+<text x="123" y="783" fill="#C8F542" font-size="13" font-weight="700" font-family="DejaVu Sans, sans-serif">College</text>
+<text x="218" y="783" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Train</text>
+<text x="313" y="783" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Focus</text>
+</g>
+<g transform="translate(470,2005)">
+<text x="0" y="-18" fill="#FFFFFF" font-size="18" font-weight="700" font-family="DejaVu Sans, sans-serif">Train / muscle map</text>
+<rect x="0" y="0" width="390" height="820" rx="28" fill="#0D1013" stroke="#46534A" stroke-width="1.3"/>
+<text x="20" y="30" fill="#B1BBB4" font-size="12" font-weight="400" font-family="DejaVu Sans, sans-serif">9:41</text>
+<text x="277" y="30" fill="#B1BBB4" font-size="11" font-weight="400" font-family="DejaVu Sans, sans-serif">DEMO  •  100%</text>
+<text x="20" y="83" fill="#F4F6EE" font-size="29" font-weight="700" font-family="DejaVu Sans, sans-serif">Muscle distribution</text>
+<text x="20" y="110" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Train  /  Statistics</text>
+<rect x="20" y="132" width="145" height="30" rx="15" fill="#C8F542"/>
+<text x="32" y="153" fill="#172000" font-size="12" font-weight="600" font-family="DejaVu Sans, sans-serif">Last 7 days</text>
+<rect x="175" y="132" width="161" height="30" rx="15" fill="#222A31"/>
+<text x="187" y="153" fill="#F4F6EE" font-size="12" font-weight="600" font-family="DejaVu Sans, sans-serif">Working sets only</text>
+<rect x="20" y="180" width="350" height="312" rx="18" fill="#171C21" stroke="#46534A" stroke-width="1.3"/>
+<text x="38" y="209" fill="#B1BBB4" font-size="11" font-weight="600" font-family="DejaVu Sans, sans-serif">ILLUSTRATIVE REGION MAP</text>
+<circle cx="119" cy="242" r="17" fill="#B1BBB4"/>
+<path d="M87 270 Q119 256 151 270 L163 345 L147 350 L136 307 L141 360 L138 439 L122 439 L119 370 L115 439 L99 439 L97 360 L102 307 L90 350 L74 345 Z" fill="#46534A" stroke="#B1BBB4"/>
+<rect x="96" y="278" width="46" height="31" rx="8" fill="#C8F542"/>
+<rect x="104" y="316" width="30" height="28" rx="7" fill="#9EDDD5"/>
+<text x="99" y="472" fill="#B1BBB4" font-size="12" font-weight="400" font-family="DejaVu Sans, sans-serif">Front</text>
+<circle cx="273" cy="242" r="17" fill="#B1BBB4"/>
+<path d="M241 270 Q273 256 305 270 L317 345 L301 350 L290 307 L295 360 L292 439 L276 439 L273 370 L269 439 L253 439 L251 360 L256 307 L244 350 L228 345 Z" fill="#46534A" stroke="#B1BBB4"/>
+<rect x="251" y="278" width="44" height="55" rx="8" fill="#FFCB77"/>
+<text x="253" y="472" fill="#B1BBB4" font-size="12" font-weight="400" font-family="DejaVu Sans, sans-serif">Back</text>
+<text x="20" y="526" fill="#F4F6EE" font-size="18" font-weight="700" font-family="DejaVu Sans, sans-serif">Heuristic contributions</text>
+<rect x="20" y="550" width="10" height="10" rx="3" fill="#C8F542"/>
+<text x="42" y="563" fill="#F4F6EE" font-size="15" font-weight="400" font-family="DejaVu Sans, sans-serif">Chest</text>
+<text x="320" y="563" fill="#C8F542" font-size="16" font-weight="600" font-family="DejaVu Sans, sans-serif">6.0</text>
+<rect x="20" y="591" width="10" height="10" rx="3" fill="#9EDDD5"/>
+<text x="42" y="604" fill="#F4F6EE" font-size="15" font-weight="400" font-family="DejaVu Sans, sans-serif">Triceps</text>
+<text x="320" y="604" fill="#9EDDD5" font-size="16" font-weight="600" font-family="DejaVu Sans, sans-serif">3.0</text>
+<rect x="20" y="632" width="10" height="10" rx="3" fill="#FFCB77"/>
+<text x="42" y="645" fill="#F4F6EE" font-size="15" font-weight="400" font-family="DejaVu Sans, sans-serif">Upper back</text>
+<text x="320" y="645" fill="#FFCB77" font-size="16" font-weight="600" font-family="DejaVu Sans, sans-serif">4.0</text>
+<text x="20" y="703" fill="#B1BBB4" font-size="11" font-weight="400" font-family="DejaVu Sans, sans-serif">Primary 1.0 · secondary 0.5 / completed set</text>
+<rect x="1" y="740" width="388" height="79" rx="0" fill="#171C21"/>
+<path d="M1 740 L389 740" stroke="#46534A" fill="none"/>
+<text x="28" y="783" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Today</text>
+<text x="123" y="783" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">College</text>
+<rect x="206" y="755" width="88" height="44" rx="14" fill="#222A31"/>
+<text x="218" y="783" fill="#C8F542" font-size="13" font-weight="700" font-family="DejaVu Sans, sans-serif">Train</text>
+<text x="313" y="783" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Focus</text>
+</g>
+<g transform="translate(900,2005)">
+<text x="0" y="-18" fill="#FFFFFF" font-size="18" font-weight="700" font-family="DejaVu Sans, sans-serif">Focus / habits</text>
+<rect x="0" y="0" width="390" height="820" rx="28" fill="#0D1013" stroke="#46534A" stroke-width="1.3"/>
+<text x="20" y="30" fill="#B1BBB4" font-size="12" font-weight="400" font-family="DejaVu Sans, sans-serif">9:41</text>
+<text x="277" y="30" fill="#B1BBB4" font-size="11" font-weight="400" font-family="DejaVu Sans, sans-serif">DEMO  •  100%</text>
+<text x="20" y="83" fill="#F4F6EE" font-size="29" font-weight="700" font-family="DejaVu Sans, sans-serif">Daily habits</text>
+<text x="20" y="110" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Focus  /  Habits</text>
+<rect x="20" y="134" width="350" height="151" rx="18" fill="#171C21" stroke="#46534A" stroke-width="1.3"/>
+<rect x="38" y="149" width="114" height="30" rx="15" fill="#222A31"/>
+<text x="50" y="170" fill="#F4F6EE" font-size="12" font-weight="600" font-family="DejaVu Sans, sans-serif">AUTOMATIC</text>
+<text x="38" y="210" fill="#F4F6EE" font-size="21" font-weight="700" font-family="DejaVu Sans, sans-serif">Video surface</text>
+<text x="38" y="240" fill="#C8F542" font-size="15" font-weight="600" font-family="DejaVu Sans, sans-serif">12 / 20 min target</text>
+<text x="38" y="267" fill="#FFCB77" font-size="12" font-weight="400" font-family="DejaVu Sans, sans-serif">Coverage incomplete · view details</text>
+<rect x="20" y="305" width="350" height="151" rx="18" fill="#171C21" stroke="#46534A" stroke-width="1.3"/>
+<rect x="38" y="320" width="114" height="30" rx="15" fill="#222A31"/>
+<text x="50" y="341" fill="#F4F6EE" font-size="12" font-weight="600" font-family="DejaVu Sans, sans-serif">AUTOMATIC</text>
+<text x="38" y="381" fill="#F4F6EE" font-size="21" font-weight="700" font-family="DejaVu Sans, sans-serif">Text scrolling</text>
+<text x="38" y="411" fill="#9EDDD5" font-size="15" font-weight="600" font-family="DejaVu Sans, sans-serif">18 min recorded</text>
+<text x="38" y="438" fill="#B1BBB4" font-size="11" font-weight="400" font-family="DejaVu Sans, sans-serif">Reduce goal · estimate, not post count</text>
+<rect x="20" y="476" width="350" height="216" rx="18" fill="#171C21" stroke="#46534A" stroke-width="1.3"/>
+<rect x="38" y="492" width="158" height="30" rx="15" fill="#222A31"/>
+<text x="50" y="513" fill="#F4F6EE" font-size="12" font-weight="600" font-family="DejaVu Sans, sans-serif">MANUAL · PRIVATE</text>
+<text x="38" y="551" fill="#F4F6EE" font-size="22" font-weight="700" font-family="DejaVu Sans, sans-serif">Private habit</text>
+<text x="38" y="578" fill="#B1BBB4" font-size="14" font-weight="400" font-family="DejaVu Sans, sans-serif">Tap to reveal and log</text>
+<text x="38" y="605" fill="#B1BBB4" font-size="12" font-weight="400" font-family="DejaVu Sans, sans-serif">No entry is different from zero.</text>
+<rect x="38" y="624" width="314" height="48" rx="14" fill="#C8F542"/>
+<text x="56" y="655" fill="#172000" font-size="16" font-weight="700" font-family="DejaVu Sans, sans-serif">Open private log</text>
+<rect x="1" y="740" width="388" height="79" rx="0" fill="#171C21"/>
+<path d="M1 740 L389 740" stroke="#46534A" fill="none"/>
+<text x="28" y="783" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Today</text>
+<text x="123" y="783" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">College</text>
+<text x="218" y="783" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Train</text>
+<rect x="301" y="755" width="88" height="44" rx="14" fill="#222A31"/>
+<text x="313" y="783" fill="#C8F542" font-size="13" font-weight="700" font-family="DejaVu Sans, sans-serif">Focus</text>
+</g>
+<text x="40" y="2903" fill="#B1BBB4" font-size="13" font-weight="400" font-family="DejaVu Sans, sans-serif">Shared tokens: graphite / lime / off-white · no social surfaces · clear source, coverage and save states</text>
+</svg>

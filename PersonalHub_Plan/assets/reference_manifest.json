@@ -1,0 +1,106 @@
+[
+  {
+    "reference_id": "REF-01",
+    "original_filename": "image(20261112-061602).png",
+    "path": "assets/references/01_academic_welcome.png",
+    "sha256": "535b59473fa0e5b9eea5a52bd2dc02d6b8e8aecd376858f8f06f7b4d4444e84b",
+    "usage": "User-supplied design reference only; do not bundle in application",
+    "duplicate_of": null
+  },
+  {
+    "reference_id": "REF-02",
+    "original_filename": "image(20261112-061619).png",
+    "path": "assets/references/02_academic_signin.png",
+    "sha256": "452e473638afe59bac5df50afcda35b71fe3f3dd1bd8cca94c9d2cdc9f5ab219",
+    "usage": "User-supplied design reference only; do not bundle in application",
+    "duplicate_of": null
+  },
+  {
+    "reference_id": "REF-03",
+    "original_filename": "image(20261112-061624).png",
+    "path": "assets/references/03_academic_schedule.png",
+    "sha256": "50143c0820b3a8250db0e9f5cb133dc6d3021a8c3dc03acbf5e3e02467c2e3e6",
+    "usage": "User-supplied design reference only; do not bundle in application",
+    "duplicate_of": null
+  },
+  {
+    "reference_id": "REF-04",
+    "original_filename": "image(20261112-061633).png",
+    "path": "assets/references/04_academic_calendar.png",
+    "sha256": "eda27006d52f29bcafaadd04789a400db9f93f697b7a75d0f67cb2424ec68ee4",
+    "usage": "User-supplied design reference only; do not bundle in application",
+    "duplicate_of": null
+  },
+  {
+    "reference_id": "REF-05",
+    "original_filename": "image(20261112-061637).png",
+    "path": "assets/references/05_academic_cgpa.png",
+    "sha256": "cf18b7eba2dc51807db165ef74fe18cd3066402937a562fa9298e71b1cc60b66",
+    "usage": "User-supplied design reference only; do not bundle in application",
+    "duplicate_of": null
+  },
+  {
+    "reference_id": "REF-06",
+    "original_filename": "image(20261112-062501).png",
+    "path": "assets/references/06_exercise_demo_reference.png",
+    "sha256": "fe5bdb4b0e85b074730cb4ac9b6141bb158ac280c53266aec7697c2da1e058cd",
+    "usage": "User-supplied design reference only; do not bundle in application",
+    "duplicate_of": null
+  },
+  {
+    "reference_id": "REF-07",
+    "original_filename": "image(20261112-062727).png",
+    "path": "assets/references/07_training_statistics_menu.png",
+    "sha256": "4766a2bd171fc5948ee3cdb9dd26e37a6e557592e472e42c28b3ac8a2ef96fbb",
+    "usage": "User-supplied design reference only; do not bundle in application",
+    "duplicate_of": null
+  },
+  {
+    "reference_id": "REF-08",
+    "original_filename": "image(20261112-062733).png",
+    "path": "assets/references/08_training_bodymap.png",
+    "sha256": "ba7a9d3c6a771c32bf172103babfeb14644a50af23132d99811e1b59b23a52d6",
+    "usage": "User-supplied design reference only; do not bundle in application",
+    "duplicate_of": null
+  },
+  {
+    "reference_id": "REF-09",
+    "original_filename": "image(20261112-062738).png",
+    "path": "assets/references/09_training_dashboard.png",
+    "sha256": "80f8c3ec9b87d013d37443bbec07d7fce8d9d04f1f22c4a5f0ab7d4d396a9166",
+    "usage": "User-supplied design reference only; do not bundle in application",
+    "duplicate_of": null
+  },
+  {
+    "reference_id": "REF-10",
+    "original_filename": "image(20261112-062815).png",
+    "path": "assets/references/10_training_dashboard_duplicate.png",
+    "sha256": "80f8c3ec9b87d013d37443bbec07d7fce8d9d04f1f22c4a5f0ab7d4d396a9166",
+    "usage": "User-supplied design reference only; do not bundle in application",
+    "duplicate_of": "REF-09"
+  },
+  {
+    "reference_id": "REF-11",
+    "original_filename": "image(20261112-062819).png",
+    "path": "assets/references/11_training_exercise_detail.png",
+    "sha256": "51ae5528b123cd6a4ebe3f5d20182af7a33f0c7a73756e050976f55a8822b453",
+    "usage": "User-supplied design reference only; do not bundle in application",
+    "duplicate_of": null
+  },
+  {
+    "reference_id": "REF-12",
+    "original_filename": "image(20261112-062824).png",
+    "path": "assets/references/12_training_log.png",
+    "sha256": "f0a1794e40f8da426f49324f8ce9d68656165a901252197d0a06c451c6c9cdb1",
+    "usage": "User-supplied design reference only; do not bundle in application",
+    "duplicate_of": null
+  },
+  {
+    "reference_id": "REF-13",
+    "original_filename": "image(20261112-062828).png",
+    "path": "assets/references/13_training_routines.png",
+    "sha256": "ce77e76c1974026f8d76139a24f796af8235cbf796aa2bce91ff7085e32e963b",
+    "usage": "User-supplied design reference only; do not bundle in application",
+    "duplicate_of": null
+  }
+]
