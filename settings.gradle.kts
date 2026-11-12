@@ -7,3 +7,5 @@ dependencyResolutionManagement {
     repositories { google(); mavenCentral() }
 }
 rootProject.name = "PersonalHub"
+include(":app", ":core:model", ":core:designsystem")
+include(":focus:data")

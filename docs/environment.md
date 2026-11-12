@@ -24,6 +24,9 @@ Build: `./gradlew.bat test assembleDemoDebug assembleConnectedDebug lintDemoDebu
 Additional boundary check: `python scripts/check_boundaries.py`.
 Reports: each module's `build/reports/tests/`; APKs: `app/build/outputs/apk/`.
 
-Owner phone/OEM/OS, browser and target app versions: **not available yet**.
-Physical-device tests and live source comparisons remain pending. No credentials
+Owner phone attached after I00: OnePlus CPH2661, Android 16 / API 36,
+security patch 2026-09-01, Asia/Kolkata. USB debugging authorized by owner.
+Device identifier is deliberately not included in tracked evidence.
+Room revision close/reopen smoke passed on phone during I01. UI smoke failed
+while the phone screen was off; rerun pending. Live source comparisons pending. No credentials
 requested. Device/SDK installation results are recorded in progress/evidence.
