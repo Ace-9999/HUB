@@ -26,7 +26,7 @@ Implementation is being handed off at the owner's request. Read
 | I00 | Complete | Toolchain/source audit passed; OnePlus CPH2661/API 36 recorded |
 | I01 | Verification pending | Functional gate passed on API 29 emulator and API 36 phone; manual TalkBack/200%/landscape review pending |
 | I02 | Verification pending | Debug probes built/tested; live validated read and monitoring/redirect evidence pending |
-| I03 | In progress | API/data/migration/test source written locally; not compiled/run; feature UI and app wiring not created |
+| I03 | In progress | API/data/schema v2 verified (9 JVM + 4 Room emulator tests); Focus UI/app wiring next |
 | I04-I06 | Blocked | I02 live VTOP gate needed |
 | I07 | Not started | Catalog and routines; independent of VTOP |
 | I08 | Not started | Workout engine and timers |
@@ -195,3 +195,17 @@ Rollback: no device database has been upgraded to v2 by this work. Preserve a WI
 patch before any intentional code rollback. Keep schema v1; do not reset/clean this
 folder or downgrade/delete owner data. Later applied migrations require tested
 forward-compatible rollback or verified backup restoration.
+
+### I03 data checkpoint - 13 November 2026
+
+Base `caab4ba`. Preserved WIP compiled unchanged. Created `feature/focus` module
+(build file + package stub) so the reserved include configures. Room generated
+`focus/data/schemas/.../2.json`.
+PASS: `:focus:api:test` 9/9 domain tests; `:focus:data:connectedDebugAndroidTest`
+4/4 on API 29 emulator (v1->v2 additive migration validated against exported v2
+schema with revision preserved, ten same-millisecond moods survive reopen, undo,
+explicit-zero private entry, invalid commands leave records untouched).
+PASS: boundaries; `test assembleDemoDebug assembleConnectedDebug lintDemoDebug` (37s).
+Not yet: Focus ViewModel/screens, Today summary, reminders, Focus lock. No owner
+database upgraded yet (app does not open the repository until wiring lands).
+Rollback: revert commit; schema v1 retained. Next: shared UI redesign + Focus UI.
