@@ -51,6 +51,7 @@ Purpose comments in source and the progress log describe responsibilities.
 | `college/data/build.gradle.kts` | Source/config/schema |
 | `college/data/schemas/dev.personalhub.college.data.CollegeDatabase/1.json` | Source/config/schema |
 | `college/data/schemas/dev.personalhub.college.data.CollegeDatabase/2.json` | Source/config/schema |
+| `college/data/schemas/dev.personalhub.college.data.CollegeDatabase/3.json` | Source/config/schema |
 | `college/data/src/androidTest/kotlin/dev/personalhub/college/data/CollegePersistenceTest.kt` | Test |
 | `college/data/src/main/kotlin/dev/personalhub/college/data/CollegeDatabase.kt` | Source/config/schema |
 | `feature/college/build.gradle.kts` | Source/config/schema |

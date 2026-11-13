@@ -63,10 +63,24 @@ object VtopImport {
         val (calTables, calErr) = tables("calendar")
         val calendar = calTables?.let { VtopParser.calendar(it) }
         statuses += calendar?.status ?: DatasetStatus(Dataset.CALENDAR, ImportState.FAILED, 0, calErr ?: "failed")
+        val results = data.optJSONObject("results")?.optJSONArray("semesters")?.let { arr ->
+            (0 until arr.length()).mapNotNull { i ->
+                val o = arr.getJSONObject(i)
+                val courses = VtopParser.gradeView(VtopScripts.tables(o.optJSONArray("tables")))
+                if (courses.isEmpty()) return@mapNotNull null
+                val details = o.optJSONArray("details")
+                val byCode = (0 until (details?.length() ?: 0)).associate { j -> val d = details!!.getJSONObject(j); d.optString("code") to VtopParser.gradeDetail(d.optString("code"), VtopScripts.tables(d.optJSONArray("tables"))) }
+                SemesterResult(Semester(o.optString("semester"), o.optString("name").ifBlank { o.optString("semester") }),
+                    courses.map { c -> byCode[c.code]?.let { (comps, ranges) -> c.copy(components = comps, ranges = ranges) } ?: c })
+            }
+        }
+        statuses += if (results == null) DatasetStatus(Dataset.RESULTS, ImportState.FAILED, 0, "not fetched")
+            else DatasetStatus(Dataset.RESULTS, if (results.isEmpty()) ImportState.EMPTY else ImportState.OK, results.size,
+                "${results.size} semesters · ${results.sumOf { it.courses.size }} courses · ${results.sumOf { r -> r.courses.count { it.ranges.isNotEmpty() } }} with ranges")
         if (statuses.all { it.state == ImportState.FAILED }) return SyncOutcome.Failure("Every dataset failed: ${statuses.joinToString { "${it.dataset.label} ${it.detail}" }}.")
         return SyncOutcome.Success(CollegeImport(semester, semesters.ifEmpty { listOf(semester) }, now,
             courses?.rows.orEmpty(), meetings?.rows.orEmpty(), attendance?.rows.orEmpty(), marks?.rows.orEmpty(),
-            grades?.first?.rows.orEmpty(), grades?.second, statuses, exams?.rows.orEmpty(), calendar?.rows.orEmpty()))
+            grades?.first?.rows.orEmpty(), grades?.second, statuses, exams?.rows.orEmpty(), calendar?.rows.orEmpty(), results.orEmpty()))
     }
 }
 
@@ -142,7 +156,7 @@ class VtopSyncView(context: Context, private val status: (String) -> Unit) : Web
         syncing = true
         status("Signed in. Reading semesters…")
         evaluateJavascript(VtopScripts.sync(semesterId), null)
-        val deadline = System.currentTimeMillis() + 120_000
+        val deadline = System.currentTimeMillis() + 300_000
         val poll = object : Runnable {
             override fun run() {
                 evaluateJavascript(VtopScripts.POLL) { encoded ->

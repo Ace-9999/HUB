@@ -51,9 +51,18 @@ fun calendarKind(label: String): CalendarKind {
     }
 }
 
+/** Grade range for one letter in one course, as published (e.g. "A" -> "65 - 72"). */
+data class GradeRange(val grade: String, val range: String)
+/** One graded course from Examination -> Grade View, with its assessment breakdown and ranges. */
+data class GradedCourse(val code: String, val title: String, val type: String?, val credits: Double?, val gradingType: String?,
+    val grandTotal: Double?, val grade: String?, val components: List<MarkComponent> = emptyList(), val ranges: List<GradeRange> = emptyList())
+data class SemesterResult(val semester: Semester, val courses: List<GradedCourse>) {
+    val gpa: GpaResult get() = gpa(courses.mapNotNull { c -> c.credits?.let { cr -> c.grade?.let { g -> cr to g } } })
+}
+
 data class CgpaSummary(val creditsRegistered: Double?, val creditsEarned: Double?, val cgpa: Double?)
 
-enum class Dataset(val label: String) { TIMETABLE("Timetable"), ATTENDANCE("Attendance"), MARKS("Marks"), GRADES("Grade history"), EXAMS("Exam schedule"), CALENDAR("Academic calendar") }
+enum class Dataset(val label: String) { TIMETABLE("Timetable"), ATTENDANCE("Attendance"), MARKS("Marks"), GRADES("Grade history"), EXAMS("Exam schedule"), CALENDAR("Academic calendar"), RESULTS("Semester results") }
 enum class ImportState { OK, EMPTY, FAILED, SKIPPED }
 data class DatasetStatus(val dataset: Dataset, val state: ImportState, val rows: Int, val detail: String)
 
@@ -65,6 +74,7 @@ data class CollegeImport(
     val grades: List<GradeRecord> = emptyList(), val summary: CgpaSummary? = null,
     val statuses: List<DatasetStatus> = emptyList(),
     val exams: List<ExamSlot> = emptyList(), val calendar: List<CalendarDay> = emptyList(),
+    val results: List<SemesterResult> = emptyList(),
 ) {
     fun ok(dataset: Dataset) = statuses.any { it.dataset == dataset && it.state in setOf(ImportState.OK, ImportState.EMPTY) }
 }
@@ -75,6 +85,7 @@ data class CollegeSnapshot(
     val attendance: List<AttendanceRecord> = emptyList(), val marks: List<MarkComponent> = emptyList(),
     val grades: List<GradeRecord> = emptyList(), val summary: CgpaSummary? = null, val statuses: List<DatasetStatus> = emptyList(),
     val exams: List<ExamSlot> = emptyList(), val calendar: List<CalendarDay> = emptyList(),
+    val results: List<SemesterResult> = emptyList(),
 ) {
     fun calendarOn(day: java.time.LocalDate) = calendar.filter { it.date == day }
     fun examsOn(day: java.time.LocalDate) = exams.filter { it.date == day }

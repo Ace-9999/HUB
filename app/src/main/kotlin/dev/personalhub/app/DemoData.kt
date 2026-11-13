@@ -48,6 +48,13 @@ object DemoData {
         val calendar = listOf(CalendarDay(today.plusDays(2), "Holiday - Sample Festival", CalendarKind.HOLIDAY),
             CalendarDay(today.plusDays(1), "Instructional Day", CalendarKind.INSTRUCTIONAL), CalendarDay(today.plusDays(3), "Instructional Day", CalendarKind.INSTRUCTIONAL))
         val all = statuses + listOf(DatasetStatus(Dataset.EXAMS, ImportState.OK, 2, "2 exams (sample)"), DatasetStatus(Dataset.CALENDAR, ImportState.OK, 3, "3 labelled days (sample)"))
-        return CollegeImport(sem, listOf(sem), now, courses, meetings, attendance, marks, grades, CgpaSummary(48.0, 48.0, 8.64), all, exams, calendar)
+        fun comp(code: String, vararg s: Double) = listOf("CAT1" to 50.0, "CAT2" to 50.0, "DA" to 30.0, "FAT" to 100.0).zip(s.toList()).map { (m, v) ->
+            MarkComponent(code, null, m.first, m.second, if (m.first == "FAT") 40.0 else if (m.first == "DA") 30.0 else 15.0, v, v / m.second * (if (m.first == "FAT") 40.0 else if (m.first == "DA") 30.0 else 15.0), "Present") }
+        val ranges = listOf("S" to ">= 80", "A" to "72 - 79", "B" to "65 - 71", "C" to "58 - 64", "D" to "50 - 57", "E" to "45 - 49", "F" to "< 45").map { GradeRange(it.first, it.second) }
+        val results = listOf(SemesterResult(Semester("DEMO-W", "Winter Semester 2025-26 (sample)"), listOf(
+            GradedCourse("DEM001L", "Foundations Sample", "Theory Only", 3.0, "RG", 76.4, "A", comp("DEM001L", 41.0, 38.0, 27.0, 72.0), ranges),
+            GradedCourse("DEM003L", "Calculus Sample", "Theory Only", 4.0, "RG", 68.1, "B", comp("DEM003L", 33.0, 36.0, 25.0, 66.0), ranges))))
+        val withResults = all + DatasetStatus(Dataset.RESULTS, ImportState.OK, 1, "1 semester (sample)")
+        return CollegeImport(sem, listOf(sem), now, courses, meetings, attendance, marks, grades, CgpaSummary(48.0, 48.0, 8.64), withResults, exams, calendar, results)
     }
 }

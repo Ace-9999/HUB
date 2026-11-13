@@ -29,6 +29,14 @@ internal data class ExamRow(val semesterId: String, val position: Int, val examT
     val date: String?, val session: String?, val reportingTime: String?, val examTime: String?, val venue: String?, val seatLocation: String?, val seatNumber: String?)
 @Entity(tableName = "calendar_days", primaryKeys = ["semesterId", "position"])
 internal data class CalendarRow(val semesterId: String, val position: Int, val date: String, val label: String, val kind: String)
+@Entity(tableName = "result_courses", primaryKeys = ["semesterId", "position"])
+internal data class ResultCourseRow(val semesterId: String, val position: Int, val semesterName: String, val semesterOrder: Int, val code: String, val title: String,
+    val type: String?, val credits: Double?, val gradingType: String?, val grandTotal: Double?, val grade: String?)
+@Entity(tableName = "result_components", primaryKeys = ["semesterId", "coursePosition", "position"])
+internal data class ResultComponentRow(val semesterId: String, val coursePosition: Int, val position: Int, val title: String, val maxMark: Double?,
+    val weightage: Double?, val scored: Double?, val weighted: Double?, val status: String?)
+@Entity(tableName = "result_ranges", primaryKeys = ["semesterId", "coursePosition", "grade"])
+internal data class ResultRangeRow(val semesterId: String, val coursePosition: Int, val grade: String, val range: String, val position: Int)
 /** Last attempt outcome per dataset; [lastSuccessAt] is the age of the rows currently shown. */
 @Entity(tableName = "dataset_status") internal data class StatusRow(@PrimaryKey val dataset: String, val state: String, val rows: Int, val detail: String, val attemptedAt: Long, val lastSuccessAt: Long?)
 
@@ -66,6 +74,18 @@ internal data class CalendarRow(val semesterId: String, val position: Int, val d
     @Query("SELECT * FROM calendar_days WHERE semesterId = :s ORDER BY position") suspend fun calendar(s: String): List<CalendarRow>
     @Query("DELETE FROM calendar_days WHERE semesterId = :s") suspend fun clearCalendar(s: String)
     @Insert suspend fun calendar(rows: List<CalendarRow>)
+    @Query("SELECT * FROM result_courses ORDER BY semesterOrder, position") suspend fun resultCourses(): List<ResultCourseRow>
+    @Query("SELECT * FROM result_components ORDER BY semesterId, coursePosition, position") suspend fun resultComponents(): List<ResultComponentRow>
+    @Query("SELECT * FROM result_ranges ORDER BY semesterId, coursePosition, position") suspend fun resultRanges(): List<ResultRangeRow>
+    @Query("DELETE FROM result_courses WHERE semesterId = :s") suspend fun clearResultCourses(s: String)
+    @Query("DELETE FROM result_components WHERE semesterId = :s") suspend fun clearResultComponents(s: String)
+    @Query("DELETE FROM result_ranges WHERE semesterId = :s") suspend fun clearResultRanges(s: String)
+    @Insert suspend fun resultCourses(rows: List<ResultCourseRow>)
+    @Insert suspend fun resultComponents(rows: List<ResultComponentRow>)
+    @Insert suspend fun resultRanges(rows: List<ResultRangeRow>)
+    @Query("DELETE FROM result_courses") suspend fun clearAllResultCourses()
+    @Query("DELETE FROM result_components") suspend fun clearAllResultComponents()
+    @Query("DELETE FROM result_ranges") suspend fun clearAllResultRanges()
     @Query("DELETE FROM exams") suspend fun clearAllExams()
     @Query("DELETE FROM calendar_days") suspend fun clearAllCalendar()
     @Query("DELETE FROM college_meta") suspend fun clearMeta()
@@ -76,7 +96,7 @@ internal data class CalendarRow(val semesterId: String, val position: Int, val d
     @Query("DELETE FROM marks") suspend fun clearAllMarks()
 }
 
-@Database(entities = [MetaRow::class, SemesterRow::class, CourseRow::class, MeetingRow::class, AttendanceRow::class, MarkRow::class, GradeRow::class, SummaryRow::class, StatusRow::class, ExamRow::class, CalendarRow::class], version = 2, exportSchema = true)
+@Database(entities = [MetaRow::class, SemesterRow::class, CourseRow::class, MeetingRow::class, AttendanceRow::class, MarkRow::class, GradeRow::class, SummaryRow::class, StatusRow::class, ExamRow::class, CalendarRow::class, ResultCourseRow::class, ResultComponentRow::class, ResultRangeRow::class], version = 3, exportSchema = true)
 internal abstract class CollegeDatabase : RoomDatabase() {
     abstract fun dao(): CollegeDao
     companion object {
@@ -85,6 +105,14 @@ internal abstract class CollegeDatabase : RoomDatabase() {
             override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
                 db.execSQL("CREATE TABLE IF NOT EXISTS `exams` (`semesterId` TEXT NOT NULL, `position` INTEGER NOT NULL, `examType` TEXT NOT NULL, `courseCode` TEXT NOT NULL, `courseTitle` TEXT, `courseType` TEXT, `date` TEXT, `session` TEXT, `reportingTime` TEXT, `examTime` TEXT, `venue` TEXT, `seatLocation` TEXT, `seatNumber` TEXT, PRIMARY KEY(`semesterId`, `position`))")
                 db.execSQL("CREATE TABLE IF NOT EXISTS `calendar_days` (`semesterId` TEXT NOT NULL, `position` INTEGER NOT NULL, `date` TEXT NOT NULL, `label` TEXT NOT NULL, `kind` TEXT NOT NULL, PRIMARY KEY(`semesterId`, `position`))")
+            }
+        }
+        /** Additive: per-semester results (Grade View), assessment components and grade ranges. */
+        val MIGRATION_2_3 = object : androidx.room.migration.Migration(2, 3) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS `result_courses` (`semesterId` TEXT NOT NULL, `position` INTEGER NOT NULL, `semesterName` TEXT NOT NULL, `semesterOrder` INTEGER NOT NULL, `code` TEXT NOT NULL, `title` TEXT NOT NULL, `type` TEXT, `credits` REAL, `gradingType` TEXT, `grandTotal` REAL, `grade` TEXT, PRIMARY KEY(`semesterId`, `position`))")
+                db.execSQL("CREATE TABLE IF NOT EXISTS `result_components` (`semesterId` TEXT NOT NULL, `coursePosition` INTEGER NOT NULL, `position` INTEGER NOT NULL, `title` TEXT NOT NULL, `maxMark` REAL, `weightage` REAL, `scored` REAL, `weighted` REAL, `status` TEXT, PRIMARY KEY(`semesterId`, `coursePosition`, `position`))")
+                db.execSQL("CREATE TABLE IF NOT EXISTS `result_ranges` (`semesterId` TEXT NOT NULL, `coursePosition` INTEGER NOT NULL, `grade` TEXT NOT NULL, `range` TEXT NOT NULL, `position` INTEGER NOT NULL, PRIMARY KEY(`semesterId`, `coursePosition`, `grade`))")
             }
         }
     }
@@ -108,7 +136,21 @@ class RoomCollegeRepository private constructor(private val db: CollegeDatabase)
                 dao.statuses().mapNotNull { r -> runCatching { DatasetStatus(Dataset.valueOf(r.dataset), ImportState.valueOf(r.state), r.rows, r.detail) }.getOrNull() },
                 dao.exams(s).map { ExamSlot(it.examType, it.courseCode, it.courseTitle, it.courseType, it.date?.let(java.time.LocalDate::parse), it.session, it.reportingTime, it.examTime, it.venue, it.seatLocation, it.seatNumber) },
                 dao.calendar(s).mapNotNull { r -> runCatching { CalendarDay(java.time.LocalDate.parse(r.date), r.label, CalendarKind.valueOf(r.kind)) }.getOrNull() },
+                results(),
             )
+        }
+    }
+
+    private suspend fun results(): List<SemesterResult> {
+        val comps = dao.resultComponents().groupBy { it.semesterId to it.coursePosition }
+        val ranges = dao.resultRanges().groupBy { it.semesterId to it.coursePosition }
+        return dao.resultCourses().groupBy { it.semesterId }.values.map { rows ->
+            val first = rows.first()
+            SemesterResult(Semester(first.semesterId, first.semesterName), rows.map { r ->
+                GradedCourse(r.code, r.title, r.type, r.credits, r.gradingType, r.grandTotal, r.grade,
+                    comps[r.semesterId to r.position].orEmpty().map { MarkComponent(r.code, r.type, it.title, it.maxMark, it.weightage, it.scored, it.weighted, it.status) },
+                    ranges[r.semesterId to r.position].orEmpty().map { GradeRange(it.grade, it.range) })
+            })
         }
     }
 
@@ -131,6 +173,13 @@ class RoomCollegeRepository private constructor(private val db: CollegeDatabase)
         }
         if (import.ok(Dataset.EXAMS)) { dao.clearExams(s); dao.exams(import.exams.mapIndexed { i, e -> ExamRow(s, i, e.examType, e.courseCode, e.courseTitle, e.courseType, e.date?.toString(), e.session, e.reportingTime, e.examTime, e.venue, e.seatLocation, e.seatNumber) }) }
         if (import.ok(Dataset.CALENDAR)) { dao.clearCalendar(s); dao.calendar(import.calendar.mapIndexed { i, d -> CalendarRow(s, i, d.date.toString(), d.label, d.kind.name) }) }
+        if (import.ok(Dataset.RESULTS)) import.results.forEachIndexed { order, res ->
+            val sid = res.semester.id
+            dao.clearResultCourses(sid); dao.clearResultComponents(sid); dao.clearResultRanges(sid)
+            dao.resultCourses(res.courses.mapIndexed { i, c -> ResultCourseRow(sid, i, res.semester.name, order, c.code, c.title, c.type, c.credits, c.gradingType, c.grandTotal, c.grade) })
+            dao.resultComponents(res.courses.flatMapIndexed { i, c -> c.components.mapIndexed { j, m -> ResultComponentRow(sid, i, j, m.title, m.maxMark, m.weightage, m.scored, m.weighted, m.status) } })
+            dao.resultRanges(res.courses.flatMapIndexed { i, c -> c.ranges.distinctBy { it.grade }.mapIndexed { j, g -> ResultRangeRow(sid, i, g.grade, g.range, j) } })
+        }
         import.statuses.forEach { st ->
             val previous = dao.status(st.dataset.name)
             val success = st.state == ImportState.OK || st.state == ImportState.EMPTY
@@ -142,11 +191,12 @@ class RoomCollegeRepository private constructor(private val db: CollegeDatabase)
     override suspend fun clear() = db.withTransaction {
         dao.clearMeta(); dao.clearSemesters(); dao.clearAllCourses(); dao.clearAllMeetings(); dao.clearAllAttendance(); dao.clearAllMarks()
         dao.clearGrades(); dao.clearSummary(); dao.clearStatuses(); dao.clearAllExams(); dao.clearAllCalendar()
+        dao.clearAllResultCourses(); dao.clearAllResultComponents(); dao.clearAllResultRanges()
     }
 
     override fun close() = db.close()
 
     companion object {
-        fun open(context: Context, name: String = "college.db") = RoomCollegeRepository(Room.databaseBuilder(context, CollegeDatabase::class.java, name).addMigrations(CollegeDatabase.MIGRATION_1_2).build())
+        fun open(context: Context, name: String = "college.db") = RoomCollegeRepository(Room.databaseBuilder(context, CollegeDatabase::class.java, name).addMigrations(CollegeDatabase.MIGRATION_1_2, CollegeDatabase.MIGRATION_2_3).build())
     }
 }

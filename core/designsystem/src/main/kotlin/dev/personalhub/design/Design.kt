@@ -199,7 +199,7 @@ enum class ButtonTone { Primary, Plain, Danger, Mint }
     Box(modifier.clip(shape).background(fill).border(1.5.dp, c.outline, shape)
         .then(if (onClick != null) Modifier.clickable(role = Role.Tab, onClick = onClick).defaultMinSize(minHeight = 40.dp) else Modifier)
         .padding(horizontal = 12.dp, vertical = 5.dp), contentAlignment = Alignment.Center) {
-        Text(text, style = MaterialTheme.typography.labelMedium, color = if (fill == c.surface) c.ink else c.onAccent)
+        Text(text, style = MaterialTheme.typography.labelMedium, color = if (fill == c.surface) c.ink else c.onAccent, maxLines = 1, softWrap = false)
     }
 }
 

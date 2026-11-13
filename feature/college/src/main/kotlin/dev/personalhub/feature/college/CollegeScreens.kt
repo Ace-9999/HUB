@@ -32,7 +32,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle as NameStyle
 import java.util.Locale
 
-enum class CollegePage(val title: String) { OVERVIEW("College"), TIMETABLE("Schedule"), ATTENDANCE("Attendance"), CALENDAR("Calendar"), MARKS("Marks"), CGPA("CGPA"), EXAMS("Exams") }
+enum class CollegePage(val title: String) { OVERVIEW("College"), TIMETABLE("Schedule"), ATTENDANCE("Attendance"), CALENDAR("Calendar"), MARKS("Marks"), CGPA("CGPA"), EXAMS("Exams"), HISTORY("Grade History") }
 
 private val timeFmt = DateTimeFormatter.ofPattern("h:mm a")
 private val syncFmt = DateTimeFormatter.ofPattern("d MMM, h:mm a")
@@ -57,6 +57,7 @@ private val palette @Composable get() = listOf(Hub.colors.lime, Hub.colors.mint,
             CollegePage.CALENDAR -> AcademicCalendar(ui.snapshot, vm)
             CollegePage.MARKS -> Marks(ui.snapshot)
             CollegePage.EXAMS -> Exams(ui.snapshot, vm)
+            CollegePage.HISTORY -> GradeHistory(ui.snapshot)
             CollegePage.CGPA -> Cgpa(vm, ui)
         }
     }
@@ -97,6 +98,7 @@ private val palette @Composable get() = listOf(Hub.colors.lime, Hub.colors.mint,
         Tile("Exams", HubIcons.Edit, Hub.colors.peach, Modifier.weight(1f)) { onPage(CollegePage.EXAMS) }
         Tile("CGPA", HubIcons.Sparkle, Hub.colors.lime, Modifier.weight(1f)) { onPage(CollegePage.CGPA) }
     }
+    Tile("Grade History", HubIcons.Chart, Hub.colors.mint, Modifier.fillMaxWidth()) { onPage(CollegePage.HISTORY) }
     SyncCard(vm, s, onConnect)
 }
 
@@ -211,8 +213,9 @@ private val weekDays = listOf(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WED
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(course?.title ?: m.courseCode, style = MaterialTheme.typography.titleMedium, color = Hub.colors.ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Pill(m.courseCode, Hub.colors.cyan); Pill(componentLabel(m.component), Hub.colors.mint); m.venue?.let { Pill(it, Hub.colors.apricot) }
+                    Pill(m.courseCode, Hub.colors.cyan); Pill(componentLabel(m.component), Hub.colors.mint)
                 }
+                m.venue?.let { Pill(it, Hub.colors.apricot) }
             }
         }
     }
@@ -451,8 +454,31 @@ private val examDateFmt = DateTimeFormatter.ofPattern("EEE d MMM")
         }
     }
     if (ui.scenario.isNotEmpty()) HubButton("Reset scenario", vm::resetScenario, tone = ButtonTone.Plain, icon = HubIcons.Undo)
+}
+
+// ---------------------------------------------------------------- Grade History
+@Composable private fun GradeHistory(s: CollegeSnapshot) {
+    staleNote(s, Dataset.RESULTS)
+    val results = s.results.reversed()
+    var index by rememberSaveable { mutableIntStateOf(0) }
+    if (results.isEmpty()) {
+        EmptyState("No semester results yet", "Sync again to import Grade View for semesters with published grades.")
+    } else {
+        val r = results[index.coerceIn(0, results.lastIndex)]
+        PillTabs(results.map { shortSemester(it.semester.name) }, index.coerceIn(0, results.lastIndex), { index = it }, color = Hub.colors.cyan)
+        Text(r.semester.name, style = MaterialTheme.typography.titleMedium, color = Hub.colors.ink)
+        val g = r.gpa
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+            BigStat("GPA", g.gpa?.let { "%.2f".format(it) } ?: "—", caption = "computed")
+            BigStat("Credits", trim(g.credits), caption = "graded")
+            BigStat("CGPA", s.summary?.cgpa?.let { "%.2f".format(it) } ?: "—", caption = "official")
+        }
+        Text("Semester GPA is computed from the credits and letters below (S=10 … F=0); the portal's own value may differ for non-letter grades.",
+            style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+        r.courses.forEach { c -> ResultCard(c) }
+    }
     if (s.grades.isNotEmpty()) {
-        SectionHeader("Grade history · ${s.grades.size}")
+        SectionHeader("All attempts · ${s.grades.size}")
         HubPanel(padding = 12.dp) {
             s.grades.forEach { g ->
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -463,6 +489,51 @@ private val examDateFmt = DateTimeFormatter.ofPattern("EEE d MMM")
                 }
             }
         }
+    }
+}
+
+private fun shortSemester(name: String): String {
+    val season = listOf("Fall", "Winter", "Summer", "Short").firstOrNull { name.contains(it, ignoreCase = true) } ?: return name.take(18)
+    val year = Regex("""\d{4}-\d{2}""").find(name)?.value ?: return season
+    return "$season $year"
+}
+
+@Composable private fun ResultCard(c: GradedCourse) {
+    HubPanel {
+        Row(verticalAlignment = Alignment.Top) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(c.title, style = MaterialTheme.typography.titleLarge, color = Hub.colors.ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScrollRow()) {
+                    Pill(c.code, Hub.colors.cyan); c.type?.let { Pill(componentLabel(it), Hub.colors.mint) }
+                    c.credits?.let { Pill("${trim(it)} Credits", Hub.colors.apricot) }
+                }
+            }
+            HubSurface(color = if (c.grade == "F") Hub.colors.peach else Hub.colors.lime, radius = 12.dp, shadow = 3.dp) {
+                Column(Modifier.widthIn(min = 58.dp).padding(horizontal = 12.dp, vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(c.grade ?: "—", style = MaterialTheme.typography.displaySmall, color = Hub.colors.onAccent)
+                    c.grandTotal?.let { Text(trim(it), style = MaterialTheme.typography.labelMedium, color = Hub.colors.onAccent) }
+                }
+            }
+        }
+        if (c.components.isNotEmpty()) {
+            HubDivider()
+            c.components.forEach { m ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(m.title, style = MaterialTheme.typography.bodyMedium, color = Hub.colors.ink, modifier = Modifier.weight(1f))
+                    Text(m.scored?.let { sc -> "${trim(sc)}/${m.maxMark?.let(::trim) ?: "?"}" } ?: "—", style = MaterialTheme.typography.titleSmall, color = Hub.colors.ink)
+                    Text(m.weighted?.let { " → ${trim(it)}" } ?: "", style = MaterialTheme.typography.labelMedium, color = Hub.colors.inkSoft, modifier = Modifier.widthIn(min = 56.dp), textAlign = TextAlign.End)
+                }
+            }
+            c.grandTotal?.let {
+                Row { Text("Total", style = MaterialTheme.typography.titleSmall, color = Hub.colors.ink, modifier = Modifier.weight(1f)); Text(trim(it), style = MaterialTheme.typography.titleSmall, color = Hub.colors.ink) }
+            }
+        }
+        if (c.ranges.isNotEmpty()) {
+            Text("GRADE RANGES", style = MaterialTheme.typography.labelMedium, color = Hub.colors.inkSoft)
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScrollRow()) {
+                c.ranges.forEach { g -> Pill("${g.grade}  ${g.range}", if (g.grade == c.grade) Hub.colors.lime else Hub.colors.surface) }
+            }
+        } else if (c.components.isEmpty()) Text("No mark breakdown published for this course.", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
     }
 }
 

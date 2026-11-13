@@ -143,6 +143,39 @@ internal object VtopScripts {
             result.shapes.calendar = { months: months.length, statuses, tables: all.length };
           });
           await step('grades', async () => store('grades', await menuOpen('examinations/examGradeView/StudentGradeHistory')));
+          // Semester results: Grade View per semester with published grades, then each course's detail (marks + ranges).
+          await step('results', async () => {
+            const menu = await menuOpen('examinations/examGradeView/StudentGradeView');
+            const sel = menu.doc.getElementById('semesterSubId');
+            const opts = sel ? Array.from(sel.options).map(o => o.value) : [];
+            const sems = result.semesters.filter(o => o[0] && opts.includes(o[0])).slice(0, 10);
+            const out = [];
+            for (const [sm, name] of sems) {
+              window.__phSync = { phase: 'running', step: 'results ' + (out.length + 1) };
+              const r = await postMultipart('examinations/examGradeView/doStudentGradeView', { authorizedID: id, semesterSubId: sm, _csrf: token });
+              const tbs = tables(r.doc);
+              if (r.status !== 200 || !tbs.length) continue;
+              const buttons = Array.from(r.doc.querySelectorAll('[onclick*=getGradeViewDetails]')).slice(0, 25).map(b => {
+                const cid = ((b.getAttribute('onclick') || '').match(/getGradeViewDetails\(\s*['"]([^'"]+)['"]/) || [])[1];
+                const tr = b.closest('tr');
+                const code = tr ? ((tr.textContent || '').match(/[A-Z]{3,5}\d{3,4}[A-Z]?/) || [])[0] : null;
+                return { cid, code };
+              }).filter(x => x.cid && x.code);
+              const details = [];
+              for (const b of buttons) {
+                const fields = { authorizedID: id, semesterSubId: sm, courseId: b.cid, _csrf: token, x: new Date().toUTCString() };
+                let d = await post('examinations/examGradeView/getGradeViewDetails', fields);
+                if (d.status !== 200 || !d.doc.querySelectorAll('table').length) d = await postMultipart('examinations/examGradeView/getGradeViewDetails', fields);
+                details.push({ code: b.code, status: d.status, tables: d.status === 200 ? tables(d.doc) : [] });
+              }
+              out.push({ semester: sm, name, tables: tbs, details });
+            }
+            result.datasets.results = { status: 200, semesters: out };
+            const d0 = (out[0] && out[0].details[0]) || null;
+            result.shapes.results = { semesters: out.length, courses: out.map(x => x.details.length),
+              detailStatus: d0 && d0.status, detailTables: d0 && d0.tables.map(tb => tb.rows.length + 'x' + Math.max(0, ...tb.rows.map(rw => rw.length))),
+              detailHeads: d0 && d0.tables.map(tb => (tb.rows[0] || []).map(c => String(c).replace(/[0-9]/g, '9').slice(0, 20))) };
+          });
           window.__phSync = result;
         } catch (e) { window.__phSync = { phase: 'error', reason: 'script_failed' }; }
       })();

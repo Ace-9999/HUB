@@ -235,6 +235,50 @@ object VtopParser {
             "${dedup.size} labelled days · ${dedup.count { it.kind == CalendarKind.HOLIDAY }} holidays"))
     }
 
+    /** Grade View rows for one semester (header-mapped). */
+    fun gradeView(tables: List<PortalTable>): List<GradedCourse> {
+        for (t in tables) {
+            val h = Header.find(t, "course code", "grade") ?: continue
+            val code = h.col("course code") ?: continue
+            val grade = h.col("grade") ?: continue
+            val title = h.col("course title"); val type = h.col("course type"); val credits = h.col("credit")
+            val gtype = h.col("grading type"); val total = h.col("grand total", "total")
+            val out = t.rows.drop(h.row + 1).mapNotNull { r ->
+                val c = Header.expand(r)
+                val cc = CODE.find(c.getOrNull(code).orEmpty())?.value ?: return@mapNotNull null
+                GradedCourse(cc, title?.let { blank(c.getOrNull(it)) } ?: cc, type?.let { blank(c.getOrNull(it)) },
+                    credits?.let { c.getOrNull(it) }?.let { s -> Regex("""\d+(\.\d+)?""").findAll(s).lastOrNull()?.value?.toDoubleOrNull() },
+                    gtype?.let { blank(c.getOrNull(it)) }, num(total?.let { c.getOrNull(it) }), blank(c.getOrNull(grade))?.uppercase()?.takeIf { it.length <= 3 })
+            }
+            if (out.isNotEmpty()) return out
+        }
+        return emptyList()
+    }
+
+    private val LETTERS = setOf("S", "A", "B", "C", "D", "E", "F", "N", "U", "P")
+    /**
+     * Course detail: assessment components (any table with a Mark Title column) and the grade-range table — a row whose
+     * cells are grade letters, with the ranges in the next row (or the letter/range pairs as rows).
+     */
+    fun gradeDetail(code: String, tables: List<PortalTable>): Pair<List<MarkComponent>, List<GradeRange>> {
+        val comps = marks(tables.map { it.copy(context = listOf(code)) }).rows
+        val ranges = mutableListOf<GradeRange>()
+        for (t in tables) {
+            val rows = t.rows.map { r -> Header.expand(r).map { it.trim() } }
+            for ((i, r) in rows.withIndex()) {
+                val letterCols = r.withIndex().filter { it.value.uppercase() in LETTERS }
+                if (letterCols.size >= 4 && i + 1 < rows.size) {
+                    val next = rows[i + 1]
+                    letterCols.forEach { (col, letter) -> next.getOrNull(col)?.takeIf { it.isNotBlank() && it.any(Char::isDigit) }?.let { ranges += GradeRange(letter.uppercase(), it) } }
+                    if (ranges.isNotEmpty()) break
+                }
+                if (r.size >= 2 && r[0].uppercase() in LETTERS && r.drop(1).any { s -> s.any(Char::isDigit) }) ranges += GradeRange(r[0].uppercase(), r.drop(1).first { s -> s.any(Char::isDigit) })
+            }
+            if (ranges.isNotEmpty()) break
+        }
+        return comps to ranges.distinctBy { it.grade }
+    }
+
     fun grades(tables: List<PortalTable>): Pair<Parsed<GradeRecord>, CgpaSummary?> {
         val out = mutableListOf<GradeRecord>(); var summary: CgpaSummary? = null
         // Nested per-course attempt tables (with a context row) repeat rows of the main history table.

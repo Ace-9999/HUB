@@ -122,6 +122,20 @@ class VtopParserTest {
         assertEquals(java.time.LocalDate.of(2026, 7, 1), VtopParser.date("01-JUL-2026"))
         assertEquals(java.time.LocalDate.of(2026, 11, 4), VtopParser.date("4-Nov-2026")); assertNull(VtopParser.date("soon"))
     }
+    @Test fun gradeViewRowsAndDetailRangesParse() {
+        val view = table(listOf("Sl.No.", "Course Code", "Course Title", "Course Type", "Credits", "Grading Type", "Grand Total", "Grade", "View Mark"),
+            listOf("1", "ZZZ0101L", "Intro", "Theory Only", "3", "RG", "71.5", "A", "View"))
+        val c = VtopParser.gradeView(listOf(view)).single()
+        assertEquals("A", c.grade); assertEquals(71.5, c.grandTotal!!, 0.0); assertEquals(3.0, c.credits!!, 0.0)
+        val comps = table(listOf("Sl.No.", "Mark Title", "Max. Mark", "Weightage %", "Status", "Scored Mark", "Weightage Mark"),
+            listOf("1", "CAT1", "50", "15", "Present", "40", "12"), listOf("2", "FAT", "100", "40", "Present", "70", "28"))
+        val rangesRow = table(listOf("Grade", "S", "A", "B", "C", "D", "E", "F"), listOf("Range", ">= 80", "72 - 79", "65 - 71", "58 - 64", "50 - 57", "45 - 49", "< 45"))
+        val (parts, ranges) = VtopParser.gradeDetail("ZZZ0101L", listOf(comps, rangesRow))
+        assertEquals(listOf("CAT1", "FAT"), parts.map { it.title }); assertEquals("ZZZ0101L", parts[0].courseCode)
+        assertEquals("72 - 79", ranges.single { it.grade == "A" }.range); assertEquals(7, ranges.size)
+        val vertical = table(listOf("Grade", "Range"), listOf("S", "86 - 100"), listOf("A", "78 - 85"), listOf("B", "70 - 77"))
+        assertEquals("78 - 85", VtopParser.gradeDetail("X", listOf(vertical)).second.single { it.grade == "A" }.range)
+    }
     @Test fun semesterPlaceholdersAreDropped() {
         val s = VtopParser.semesters(listOf("" to "-- Choose Semester --", "S1" to "Fall  Semester 2026-27", "S1" to "dup"))
         assertEquals(listOf(Semester("S1", "Fall Semester 2026-27")), s)

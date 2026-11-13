@@ -302,3 +302,19 @@ I04-I06 finish -> Focus (I03 lock/reminders, then I10-I12 monitoring under its d
 Owner sync with 60805c3 (OnePlus API 36): TIMETABLE 12, ATTENDANCE 11, MARKS 61, GRADES 46,
 EXAMS 14, CALENDAR 129 labelled days, 25 meetings, CGPA found. All six datasets import.
 Remaining I04-I06 acceptance: owner comparison of values with the portal (P02).
+
+### Grade History section (I06) - 13 November 2026
+
+Owner confirmed timetable, attendance, marks, CGPA, exams and calendar match the portal
+(P02 PASS for those datasets). Owner requested a Grade History section with selectable
+semesters, CAT1/CAT2/DA/FAT, total, grade and grade ranges. Discovery (structure only) found
+Grade View = multipart `examinations/examGradeView/doStudentGradeView` (Course Code/Title/
+Type/Credits/Grading Type/Grand Total/Grade/View Mark) and per-course
+`getGradeViewDetails(courseId)` with authorizedID/semesterSubId/courseId/x/_csrf.
+Implemented `SemesterResult`/`GradedCourse`/`GradeRange`, `VtopParser.gradeView/gradeDetail`
+(+1 test, vtop 16/16), college Room v3 additive migration (+1 test, college data 4/4),
+Grade History page (semester pills, computed GPA, components, total, grade, range chips;
+all-attempts list moved here from CGPA). Schedule day view: room moved under the course
+pills (owner report); pills never wrap. PASS: boundaries, test/assemble/lint, Compose 2/2,
+focus 4/4 on API 29. PENDING: owner sync of results and check of the detail layout
+(components/ranges are parsed generically; structural log reports the detail tables).
