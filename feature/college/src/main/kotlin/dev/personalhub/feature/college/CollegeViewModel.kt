@@ -24,6 +24,20 @@ class CollegeViewModel(private val repository: CollegeRepository, val time: AppT
     fun resetScenario() { scenario.value = emptyMap() }
     fun disconnect(clearSession: () -> Unit) = viewModelScope.launch { repository.clear(); clearSession() }
 
+    /** Upcoming meetings in time order across the next week (skipping portal holidays), for the swipeable strip. */
+    fun upcoming(s: CollegeSnapshot, limit: Int = 20): List<NextClass> {
+        val now = LocalDateTime.now(time.clock.withZone(time.zone))
+        val out = mutableListOf<NextClass>()
+        for (offset in 0L..7L) {
+            val date = now.toLocalDate().plusDays(offset)
+            if (s.calendarOn(date).any { it.kind == CalendarKind.HOLIDAY }) continue
+            s.meetingsOn(date.dayOfWeek).filter { offset > 0 || it.end.isAfter(now.toLocalTime()) }
+                .forEach { m -> out += NextClass(m, date.atTime(m.start), s.course(m.courseCode, m.component)) }
+            if (out.size >= limit) break
+        }
+        return out.take(limit)
+    }
+
     fun nextClass(s: CollegeSnapshot): NextClass? {
         val now = LocalDateTime.now(time.clock.withZone(time.zone))
         for (offset in 0L..7L) {

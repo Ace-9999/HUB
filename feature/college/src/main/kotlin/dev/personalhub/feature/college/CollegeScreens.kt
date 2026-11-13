@@ -85,20 +85,19 @@ private val palette @Composable get() = listOf(Hub.colors.lime, Hub.colors.mint,
         val low = s.attendance.count { (it.percent ?: 100.0) < ui.target }
         BigStat("Low att.", if (s.attendance.isEmpty()) "—" else low.toString(), caption = "below ${ui.target}%")
     }
-    vm.nextClass(s)?.let { NextClassCard(it, s) }
+    UpcomingClasses(vm, s) { onPage(CollegePage.TIMETABLE) }
     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        Tile("Schedule", HubIcons.Grid, Hub.colors.cyan, Modifier.weight(1f)) { onPage(CollegePage.TIMETABLE) }
         Tile("Attendance", HubIcons.Check, Hub.colors.mint, Modifier.weight(1f)) { onPage(CollegePage.ATTENDANCE) }
-    }
-    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         Tile("Calendar", HubIcons.Calendar, Hub.colors.lavender, Modifier.weight(1f)) { onPage(CollegePage.CALENDAR) }
-        Tile("Marks", HubIcons.Chart, Hub.colors.apricot, Modifier.weight(1f)) { onPage(CollegePage.MARKS) }
     }
     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Tile("Marks", HubIcons.Chart, Hub.colors.apricot, Modifier.weight(1f)) { onPage(CollegePage.MARKS) }
         Tile("Exams", HubIcons.Edit, Hub.colors.peach, Modifier.weight(1f)) { onPage(CollegePage.EXAMS) }
-        Tile("CGPA", HubIcons.Sparkle, Hub.colors.lime, Modifier.weight(1f)) { onPage(CollegePage.CGPA) }
     }
-    Tile("Grade History", HubIcons.Chart, Hub.colors.mint, Modifier.fillMaxWidth()) { onPage(CollegePage.HISTORY) }
+    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Tile("CGPA", HubIcons.Sparkle, Hub.colors.lime, Modifier.weight(1f)) { onPage(CollegePage.CGPA) }
+        Tile("Grades", HubIcons.Chart, Hub.colors.cyan, Modifier.weight(1f)) { onPage(CollegePage.HISTORY) }
+    }
     SyncCard(vm, s, onConnect)
 }
 
@@ -117,12 +116,22 @@ private val palette @Composable get() = listOf(Hub.colors.lime, Hub.colors.mint,
     }
 }
 
-@Composable fun NextClassCard(next: NextClass, s: CollegeSnapshot, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
+/** Swipeable strip of upcoming classes: swipe for the class after, tap to open the schedule. Cards share one size. */
+@Composable fun UpcomingClasses(vm: CollegeViewModel, s: CollegeSnapshot, onOpen: () -> Unit) {
+    val list = remember(s) { vm.upcoming(s) }
+    if (list.isEmpty()) return
+    val pager = androidx.compose.foundation.pager.rememberPagerState { list.size }
+    androidx.compose.foundation.pager.HorizontalPager(pager, Modifier.fillMaxWidth(), pageSpacing = 8.dp, beyondViewportPageCount = 1) { i ->
+        NextClassCard(list[i], s, onClick = onOpen, label = if (i == 0) "Next class" else "Then", position = "${i + 1}/${list.size}")
+    }
+}
+
+@Composable fun NextClassCard(next: NextClass, s: CollegeSnapshot, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null, label: String = "Next class", position: String? = null) {
     val m = next.meeting
     val today = next.at.toLocalDate() == LocalDate.now()
-    HubCard(if (today) "Next class · ${next.at.toLocalTime().format(timeFmt)}" else "Next class · ${next.at.dayOfWeek.getDisplayName(NameStyle.SHORT, Locale.getDefault())} ${next.at.toLocalTime().format(timeFmt)}",
-        modifier, color = courseColor(s, m.courseCode), onClick = onClick) {
-        Text(next.course?.title ?: m.courseCode, style = MaterialTheme.typography.headlineSmall, color = Hub.colors.onAccent)
+    HubCard(if (today) "$label · ${next.at.toLocalTime().format(timeFmt)}" else "$label · ${next.at.dayOfWeek.getDisplayName(NameStyle.SHORT, Locale.getDefault())} ${next.at.toLocalTime().format(timeFmt)}",
+        modifier, color = courseColor(s, m.courseCode), onClick = onClick, trailing = position?.let { p -> { Pill(p, Hub.colors.surface) } }) {
+        Text(next.course?.title ?: m.courseCode, style = MaterialTheme.typography.headlineSmall, color = Hub.colors.onAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Pill(m.courseCode, Hub.colors.surface)
             Pill(componentLabel(m.component), Hub.colors.surface)

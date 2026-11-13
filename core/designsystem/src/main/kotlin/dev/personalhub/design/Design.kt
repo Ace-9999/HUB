@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -124,11 +125,16 @@ fun Modifier.hardShadow(color: Color, offset: Dp, radius: Dp): Modifier = drawBe
 }
 
 /** Faint dotted grid used on the screen canvas (decorative; never behind dense tables). */
-fun Modifier.dottedCanvas(background: Color, dot: Color, spacing: Dp = 22.dp): Modifier = drawBehind {
-    drawRect(background)
-    val step = spacing.toPx(); val r = 1.1.dp.toPx()
-    var y = step / 2
-    while (y < size.height) { var x = step / 2; while (x < size.width) { drawCircle(dot, r, Offset(x, y)); x += step }; y += step }
+/** One dot rendered into a small tile once, then repeated by a shader: a single draw call per frame. */
+fun Modifier.dottedCanvas(background: Color, dot: Color, spacing: Dp = 22.dp): Modifier = drawWithCache {
+    val step = spacing.toPx().coerceAtLeast(4f).toInt()
+    val tile = androidx.compose.ui.graphics.ImageBitmap(step, step)
+    androidx.compose.ui.graphics.Canvas(tile).apply {
+        drawRect(0f, 0f, step.toFloat(), step.toFloat(), androidx.compose.ui.graphics.Paint().apply { color = background })
+        drawCircle(Offset(step / 2f, step / 2f), 1.1.dp.toPx(), androidx.compose.ui.graphics.Paint().apply { color = dot; isAntiAlias = true })
+    }
+    val brush = androidx.compose.ui.graphics.ShaderBrush(androidx.compose.ui.graphics.ImageShader(tile, androidx.compose.ui.graphics.TileMode.Repeated, androidx.compose.ui.graphics.TileMode.Repeated))
+    onDrawBehind { drawRect(brush) }
 }
 
 @Composable fun HubCanvas(modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit) {
@@ -153,7 +159,6 @@ fun Modifier.dottedCanvas(background: Color, dot: Color, spacing: Dp = 22.dp): M
     Box(modifier.padding(end = shadow, bottom = shadow)) {
         Box(
             Modifier.offset(travel, travel).hardShadow(c.shadow, depth, radius).clip(shape).background(fill).border(stroke, c.outline, shape)
-                .animateContentSize(spring(stiffness = Spring.StiffnessMediumLow))
                 .then(if (onClick != null) Modifier.clickable(source, LocalIndicationNone, enabled = enabled, onClickLabel = onClickLabel, role = Role.Button, onClick = onClick) else Modifier),
             content = content,
         )

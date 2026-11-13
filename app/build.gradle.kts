@@ -14,6 +14,16 @@ android {
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
+    buildTypes {
+        create("fast") {
+            initWith(getByName("release"))
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += "release"
+        }
+    }
     flavorDimensions += "source"
     productFlavors {
         create("demo") { dimension = "source"; applicationIdSuffix = ".demo"; buildConfigField("boolean", "DEMO", "true") }

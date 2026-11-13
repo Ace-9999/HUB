@@ -403,3 +403,20 @@ collects only `isVisibleToUser` node ids (hypothesis: Instagram keeps the reels 
 behind Home); debug calibration now writes id names/masked URL shapes to a private capped file
 (this OnePlus rotates logcat within minutes) and is on by default in debug builds. Instagram
 fix NOT yet confirmed on the phone.
+
+### Performance, swipe navigation and next-class strip - 13 November 2026
+
+Owner: Instagram/X classification now correct on the phone (classifier v3, owner-confirmed).
+Owner reported stuttery transitions (Habits -> Usage, opening Grade History, changing semester).
+Causes addressed: debug (unoptimised) build on the phone -> new `fast` build type (R8 minify +
+resource shrink, non-debuggable, signed with the local debug key so it upgrades in place);
+dotted background redrew ~700 circles per frame -> cached tiled shader (one draw); global
+`animateContentSize` on every surface removed; whole-page AnimatedContent inside one scroll
+container -> `HorizontalPager` (each tab its own scroll state, beyondViewportPageCount 0).
+Owner requests: swipe between Today/College/Train/Focus (pager; disabled inside College
+sub-pages and Settings); College next-class card is a swipeable strip of upcoming classes over
+the next week (skips portal holidays), fixed card size, tap opens Schedule; separate Schedule
+tile removed, tiles regrouped. PASS: boundaries, JVM tests, lint, Compose 2/2 (API 29),
+`assembleConnectedFast`; fast build installed on the phone in place, tracker still enabled,
+cold start 338 ms, no crash. Install: `python scripts/run_gradle.py installConnectedFast`.
+Debug-only probes/calibration are absent from the fast build by design. Owner smoothness check pending.

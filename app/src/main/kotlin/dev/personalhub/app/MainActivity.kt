@@ -10,6 +10,8 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -55,75 +57,74 @@ val sections = SectionRegistry(listOf(Section("today", "Today"), Section("colleg
 private val navItems = listOf(NavItem("today", "Today", HubIcons.Home), NavItem("college", "College", HubIcons.School),
     NavItem("training", "Train", HubIcons.Dumbbell), NavItem("focus", "Focus", HubIcons.Bolt))
 
+private val tabs = listOf("today", "college", "training", "focus")
+
 @Composable fun HubApp(app: PersonalHubApplication, theme: String, openUsage: Boolean = false) {
-    var selected by rememberSaveable { mutableStateOf(if (openUsage) "focus" else "today") }
+    // Bottom destinations are pages of a horizontal pager: swipe or tap to move between Today, College, Train and Focus.
+    val pager = rememberPagerState(initialPage = if (openUsage) 3 else 0) { tabs.size }
     var settings by rememberSaveable { mutableStateOf(false) }
     var collegePage by rememberSaveable { mutableStateOf(CollegePage.OVERVIEW) }
     var focusTab by rememberSaveable { mutableIntStateOf(if (openUsage) 4 else 0) }
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val focus: FocusViewModel = viewModel(factory = viewModelFactory { initializer { FocusViewModel(app.focus, app.time) } })
     val usage: UsageViewModel = viewModel(factory = viewModelFactory { initializer { UsageViewModel(app.usage, app.usageEngine, app.time.zone) } })
     val openAccessibility = { context.startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
     val college: CollegeViewModel = viewModel(factory = viewModelFactory { initializer { CollegeViewModel(app.college, app.time) } })
     val connect: (String?) -> Unit = { semester -> context.startActivity(Intent(context, CollegeConnectActivity::class.java).apply { semester?.let { putExtra(CollegeConnectActivity.SEMESTER, it) } }) }
-    val scroll = rememberScrollState()
-    LaunchedEffect(selected, settings, collegePage, focusTab) { scroll.scrollTo(0) }
+    val selected = tabs[pager.currentPage]
+    val go: (String) -> Unit = { tab -> settings = false; scope.launch { pager.animateScrollToPage(tabs.indexOf(tab)) } }
 
-    BackHandler(enabled = settings || (selected == "college" && collegePage != CollegePage.OVERVIEW) || selected != "today") {
+    BackHandler(enabled = settings || collegePage != CollegePage.OVERVIEW || pager.currentPage != 0) {
         when {
             settings -> settings = false
             selected == "college" && collegePage != CollegePage.OVERVIEW -> collegePage = CollegePage.OVERVIEW
-            else -> selected = "today"
+            else -> go("today")
         }
     }
 
     HubCanvas {
         Column(Modifier.fillMaxSize()) {
             Box(Modifier.weight(1f)) {
-                Column(Modifier.fillMaxSize().verticalScroll(scroll).statusBarsPadding().padding(horizontal = Hub.ScreenPadding).padding(top = 12.dp, bottom = 96.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    val screen = Screen(settings, selected, if (selected == "college") collegePage else CollegePage.OVERVIEW)
-                    AnimatedContent(screen, transitionSpec = { pageTransition(initialState, targetState) }, label = "page") { s ->
-                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                            if (s.settings) SettingsScreen(app, theme) { settings = false }
-                            else when (s.tab) {
-                                "today" -> TodayScreen(focus, college, onSettings = { settings = true }, openCollege = { collegePage = it; selected = "college" }, openFocus = { focusTab = it; selected = "focus" })
-                                "college" -> {
-                                    if (s.page == CollegePage.OVERVIEW) Header("College", college.state.collectAsStateWithLifecycle().value.snapshot.semester?.name ?: "VTOP · Chennai") { settings = true }
-                                    CollegeContent(college, s.page, { collegePage = it }, connect)
+                HorizontalPager(pager, Modifier.fillMaxSize(), userScrollEnabled = !settings && !(selected == "college" && collegePage != CollegePage.OVERVIEW),
+                    beyondViewportPageCount = 0, key = { tabs[it] }) { index ->
+                    PageColumn {
+                        when (tabs[index]) {
+                            "today" -> TodayScreen(focus, college, onSettings = { settings = true }, openCollege = { collegePage = it; go("college") }, openFocus = { focusTab = it; go("focus") })
+                            "college" -> AnimatedContent(collegePage, transitionSpec = { subPageTransition(initialState == CollegePage.OVERVIEW) }, label = "college") { page ->
+                                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                    if (page == CollegePage.OVERVIEW) Header("College", college.state.collectAsStateWithLifecycle().value.snapshot.semester?.name ?: "VTOP · Chennai") { settings = true }
+                                    CollegeContent(college, page, { collegePage = it }, connect)
                                 }
-                                "training" -> { Header("Train", "Routines & workouts") { settings = true }; TrainingPlaceholder() }
-                                else -> { Header("Focus", "Tasks, habits & mood") { settings = true }; FocusContent(focus, usage, focusTab, { focusTab = it }, openAccessibility) }
                             }
+                            "training" -> { Header("Train", "Routines & workouts") { settings = true }; TrainingPlaceholder() }
+                            else -> { Header("Focus", "Tasks, habits & mood") { settings = true }; FocusContent(focus, usage, focusTab, { focusTab = it }, openAccessibility) }
                         }
                     }
+                }
+                androidx.compose.animation.AnimatedVisibility(visible = settings, enter = slideInHorizontally(tween(260)) { it / 4 } + fadeIn(tween(200)), exit = slideOutHorizontally(tween(220)) { it / 4 } + fadeOut(tween(160))) {
+                    HubCanvas { PageColumn { SettingsScreen(app, theme) { settings = false } } }
                 }
                 // Canvas-coloured scrim keeps scrolled content out from under the status bar icons.
                 Box(Modifier.fillMaxWidth().windowInsetsTopHeight(WindowInsets.statusBars).background(Hub.colors.canvas).align(Alignment.TopCenter))
                 FocusUndoBar(focus, Modifier.align(Alignment.BottomCenter).padding(horizontal = Hub.ScreenPadding, vertical = 12.dp))
             }
-            HubBottomBar(navItems, if (settings) null else selected, { selected = it; settings = false; if (it == "college") collegePage = CollegePage.OVERVIEW })
+            HubBottomBar(navItems, if (settings) null else selected, { tab -> if (tab == "college" && selected == "college") collegePage = CollegePage.OVERVIEW; go(tab) })
         }
     }
 }
 
-/** Navigation position used to pick a transition direction. */
-private data class Screen(val settings: Boolean, val tab: String, val page: CollegePage) {
-    val order: Int get() = listOf("today", "college", "training", "focus").indexOf(tab)
-    val depth: Int get() = (if (settings) 2 else 0) + (if (page != CollegePage.OVERVIEW) 1 else 0)
+/** One scrollable page; each pager page keeps its own scroll position. */
+@Composable private fun PageColumn(content: @Composable ColumnScope.() -> Unit) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(horizontal = Hub.ScreenPadding).padding(top = 12.dp, bottom = 96.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp), content = content)
 }
 
-/** Deeper pages push in from the right; sibling tabs slide by their bar order; everything fades. */
-private fun pageTransition(from: Screen, to: Screen): ContentTransform {
-    val dir = when {
-        to.depth != from.depth -> if (to.depth > from.depth) 1 else -1
-        to.order != from.order -> if (to.order > from.order) 1 else -1
-        else -> 0
-    }
-    val enter = fadeIn(tween(240, delayMillis = 40)) + slideInHorizontally(tween(320, easing = FastOutSlowInEasing)) { it / 5 * dir } +
-        scaleIn(tween(320), initialScale = if (dir == 0) 0.98f else 1f)
-    val exit = fadeOut(tween(140)) + slideOutHorizontally(tween(320, easing = FastOutSlowInEasing)) { -it / 8 * dir }
-    return (enter togetherWith exit).apply { targetContentZIndex = to.depth.toFloat() }
+/** College sub-pages push in from the right and slide back on return. */
+private fun subPageTransition(forward: Boolean): ContentTransform {
+    val dir = if (forward) 1 else -1
+    return (fadeIn(tween(200, 40)) + slideInHorizontally(tween(260, easing = FastOutSlowInEasing)) { it / 6 * dir }) togetherWith
+        (fadeOut(tween(120)) + slideOutHorizontally(tween(260, easing = FastOutSlowInEasing)) { -it / 10 * dir })
 }
 
 @Composable private fun Header(title: String, subtitle: String, onSettings: () -> Unit) {
