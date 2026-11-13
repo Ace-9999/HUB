@@ -32,11 +32,34 @@ import dev.personalhub.design.*
 import dev.personalhub.feature.college.*
 import dev.personalhub.feature.focus.*
 import kotlinx.coroutines.launch
+import androidx.lifecycle.lifecycleScope
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 class MainActivity : ComponentActivity() {
     companion object { const val OPEN_USAGE = "openUsage" }
+    private val consent = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartIntentSenderForResult()) { r ->
+        val app = application as PersonalHubApplication
+        val token = dev.personalhub.googletasks.GoogleAuth.tokenFromConsent(this, r.data)
+        lifecycleScope.launch { if (token != null) { app.googleTasks.sync(token); app.googleTasks.schedule(this@MainActivity) } }
+    }
+    /** Enables sync and runs it; launches Google's consent screen when needed. */
+    fun connectGoogleTasks() {
+        val app = application as PersonalHubApplication
+        lifecycleScope.launch {
+            app.settings.googleTasks(true)
+            when (val a = runCatching { dev.personalhub.googletasks.GoogleAuth.authorize(this@MainActivity) }.getOrNull()) {
+                is dev.personalhub.googletasks.Auth.NeedsConsent -> consent.launch(androidx.activity.result.IntentSenderRequest.Builder(a.intent.intentSender).build())
+                is dev.personalhub.googletasks.Auth.Token -> { app.googleTasks.sync(a.value); app.googleTasks.schedule(this@MainActivity) }
+                null -> app.googleTasks.sync()
+            }
+        }
+    }
+    override fun onStart() {
+        super.onStart()
+        val app = application as PersonalHubApplication
+        lifecycleScope.launch { if (app.googleTasks.enabled()) app.googleTasks.syncSoon(this@MainActivity, 1) }
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -73,6 +96,12 @@ private val tabs = listOf("today", "college", "training", "focus")
     val college: CollegeViewModel = viewModel(factory = viewModelFactory { initializer { CollegeViewModel(app.college, app.time) } })
     val connect: (String?) -> Unit = { semester -> context.startActivity(Intent(context, CollegeConnectActivity::class.java).apply { semester?.let { putExtra(CollegeConnectActivity.SEMESTER, it) } }) }
     val selected = tabs[pager.currentPage]
+    val googleControls = remember {
+        GoogleTasksControls(app.googleTasks.state, app.settings.googleTasks,
+            connect = { (context as? MainActivity)?.connectGoogleTasks() },
+            syncNow = { scope.launch { app.googleTasks.sync() } },
+            disconnect = { scope.launch { app.settings.googleTasks(false); app.googleTasks.cancel(context) } })
+    }
     val go: (String) -> Unit = { tab -> settings = false; scope.launch { pager.animateScrollToPage(tabs.indexOf(tab)) } }
 
     BackHandler(enabled = settings || collegePage != CollegePage.OVERVIEW || pager.currentPage != 0) {
@@ -98,7 +127,7 @@ private val tabs = listOf("today", "college", "training", "focus")
                                 }
                             }
                             "training" -> { Header("Train", "Routines & workouts") { settings = true }; TrainingPlaceholder() }
-                            else -> { Header("Focus", "Tasks, habits & mood") { settings = true }; FocusContent(focus, usage, focusTab, { focusTab = it }, openAccessibility) }
+                            else -> { Header("Focus", "Tasks, habits & mood") { settings = true }; FocusContent(focus, usage, focusTab, { focusTab = it }, openAccessibility, googleControls) }
                         }
                     }
                 }

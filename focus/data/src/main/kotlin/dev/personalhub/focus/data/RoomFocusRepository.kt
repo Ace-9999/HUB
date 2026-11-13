@@ -9,12 +9,14 @@ import java.io.Closeable
 import java.time.*
 
 // All commands commit rows and the dirty revision atomically; snapshots read one transaction.
-class RoomFocusRepository private constructor(private val db: FocusDatabase, private val time: AppTime, private val ids: IdSource) : FocusRepository, Closeable {
+class RoomFocusRepository private constructor(private val db: FocusDatabase, private val time: AppTime, private val ids: IdSource) : FocusRepository, TaskSyncStore, Closeable {
+    /** Called after every committed local task change so the host can schedule a debounced sync. */
+    @Volatile var onTasksChanged: (() -> Unit)? = null
     private val dao get() = db.records()
     override val snapshots = db.revision().observe().map {
         db.withTransaction {
             FocusSnapshot(
-                dao.tasks().map { Task(it.id, it.title, LocalDate.parse(it.firstDay), Priority.valueOf(it.priority), it.dueTime?.let(LocalTime::parse), Recurrence.valueOf(it.recurrence), it.carryForward, Instant.ofEpochMilli(it.createdAt), Instant.ofEpochMilli(it.updatedAt)) },
+                dao.tasks().map { Task(it.id, it.title, LocalDate.parse(it.firstDay), Priority.valueOf(it.priority), it.dueTime?.let(LocalTime::parse), Recurrence.valueOf(it.recurrence), it.carryForward, Instant.ofEpochMilli(it.createdAt), Instant.ofEpochMilli(it.updatedAt), it.googleId != null) },
                 dao.occurrences().map { TaskOccurrence(it.taskId, LocalDate.parse(it.day), it.completed) },
                 dao.habits().map { Habit(it.id, it.label, HabitUnit.valueOf(it.unit), GoalDirection.valueOf(it.direction), it.target, it.sensitive, Instant.ofEpochMilli(it.createdAt), Instant.ofEpochMilli(it.updatedAt)) },
                 dao.entries().map { HabitEntry(it.habitId, LocalDate.parse(it.day), it.value, it.explicitZero, it.note, Instant.ofEpochMilli(it.updatedAt)) },
@@ -27,9 +29,10 @@ class RoomFocusRepository private constructor(private val db: FocusDatabase, pri
         val old = draft.id?.let { requireNotNull(dao.task(it)) { "Task no longer exists." } }
         val id = old?.id ?: ids.next(); val now = time.clock.millis()
         require(old == null || !old.deleted) { "Restore the task before editing." }
-        dao.task(TaskRow(id, draft.title.trim(), draft.firstDay.toString(), draft.priority.name, draft.dueTime?.toString(), draft.recurrence.name, draft.carryForward, old?.createdAt ?: now, now))
+        dao.task(TaskRow(id, draft.title.trim(), draft.firstDay.toString(), draft.priority.name, draft.dueTime?.toString(), draft.recurrence.name, draft.carryForward, old?.createdAt ?: now, now,
+            googleId = old?.googleId, googleList = old?.googleList, dirty = draft.recurrence == Recurrence.NONE))
         id
-    }
+    }.also { onTasksChanged?.invoke() }
     override suspend fun completeTask(id: String, day: LocalDate, completed: Boolean) = change {
         val row = requireNotNull(dao.task(id)) { "Task no longer exists." }
         require(!row.deleted)
@@ -39,10 +42,12 @@ class RoomFocusRepository private constructor(private val db: FocusDatabase, pri
         require(day >= start && (recurrence != Recurrence.WEEKLY || day.dayOfWeek == start.dayOfWeek)) { "Task does not occur on this day." }
         val key = if (recurrence == Recurrence.NONE) start else day
         dao.occurrence(OccurrenceRow(id, key.toString(), completed, time.clock.millis()))
-    }
+        if (recurrence == Recurrence.NONE) dao.task(row.copy(dirty = true, updatedAt = time.clock.millis()))
+    }.also { onTasksChanged?.invoke() }
     override suspend fun trashTask(id: String, deleted: Boolean) = change {
-        val row = requireNotNull(dao.task(id)) { "Task no longer exists." }; dao.task(row.copy(deleted = deleted, updatedAt = time.clock.millis()))
-    }
+        val row = requireNotNull(dao.task(id)) { "Task no longer exists." }
+        dao.task(row.copy(deleted = deleted, updatedAt = time.clock.millis(), dirty = row.recurrence == Recurrence.NONE.name))
+    }.also { onTasksChanged?.invoke() }
     override suspend fun saveHabit(draft: HabitDraft): String = change {
         val old = draft.id?.let { requireNotNull(dao.habit(it)) { "Habit no longer exists." } }
         val id = old?.id ?: ids.next(); val now = time.clock.millis()
@@ -75,6 +80,36 @@ class RoomFocusRepository private constructor(private val db: FocusDatabase, pri
     override suspend fun trashMood(id: String, deleted: Boolean) = change {
         val row = requireNotNull(dao.mood(id)) { "Mood entry no longer exists." }; dao.mood(row.copy(deleted = deleted, revision = row.revision + 1, updatedAt = time.clock.millis()))
     }
+    // ---------------------------------------------------------------- TaskSyncStore (Google Tasks adapter only)
+    private suspend fun completedOn(row: TaskRow) = dao.occurrences().any { it.taskId == row.id && it.day == row.firstDay && it.completed }
+    override suspend fun syncCandidates(): List<LocalSyncTask> = db.withTransaction {
+        dao.oneOffTasks().map { r -> LocalSyncTask(r.id, r.googleId, r.googleList, r.title, LocalDate.parse(r.firstDay), completedOn(r), r.deleted, Instant.ofEpochMilli(r.updatedAt), r.dirty) }
+    }
+    override suspend fun applyRemote(remote: RemoteTask) = change {
+        val row = dao.taskByGoogle(remote.googleId)
+        val local = row?.let { r -> LocalSyncTask(r.id, r.googleId, r.googleList, r.title, LocalDate.parse(r.firstDay), completedOn(r), r.deleted, Instant.ofEpochMilli(r.updatedAt), r.dirty) }
+        if (!remoteWins(local, remote)) return@change
+        if (row == null) {
+            if (remote.deleted) return@change
+            val id = ids.next(); val now = time.clock.millis()
+            val first = remote.due ?: time.today()
+            dao.task(TaskRow(id, remote.title.trim().ifEmpty { "(untitled)" }.take(160), first.toString(), Priority.NORMAL.name, null, Recurrence.NONE.name, true, now, remote.updated.toEpochMilli(),
+                googleId = remote.googleId, googleList = remote.list, dirty = false))
+            if (remote.completed) dao.occurrence(OccurrenceRow(id, first.toString(), true, now))
+        } else {
+            val first = remote.due?.toString() ?: row.firstDay
+            dao.task(row.copy(title = remote.title.trim().ifEmpty { row.title }.take(160), firstDay = first, deleted = remote.deleted, googleList = remote.list,
+                updatedAt = remote.updated.toEpochMilli(), dirty = false))
+            dao.occurrence(OccurrenceRow(row.id, first, remote.completed, time.clock.millis()))
+        }
+    }
+    override suspend fun linkPushed(localId: String, googleId: String, list: String, remoteUpdated: Instant) = change {
+        dao.task(localId)?.let { dao.task(it.copy(googleId = googleId, googleList = list, dirty = false)) }; Unit
+    }
+    override suspend fun unlink(localId: String) = change { dao.task(localId)?.let { dao.task(it.copy(googleId = null, googleList = null, dirty = false)) }; Unit }
+    override suspend fun lastSync(): Instant? = dao.syncValue("googleLastSync")?.let(Instant::parse)
+    override suspend fun setLastSync(at: Instant) = dao.syncValue(SyncStateRow("googleLastSync", at.toString()))
+
     override fun close() { db.close() }
     companion object {
         fun open(context: Context, time: AppTime = AppTime(), ids: IdSource = UuidSource, name: String = "focus.db") = RoomFocusRepository(FocusDatabase.open(context, name), time, ids)

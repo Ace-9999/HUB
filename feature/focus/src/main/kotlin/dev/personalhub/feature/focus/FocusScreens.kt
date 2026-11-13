@@ -40,7 +40,11 @@ private val timeFmt = DateTimeFormatter.ofPattern("h:mm a")
 }
 
 /** Focus destination body (FOC-05/06/08/09). The host supplies scrolling and the title row. */
-@Composable fun FocusContent(vm: FocusViewModel, usage: UsageViewModel, tab: Int, onTab: (Int) -> Unit, openAccessibilitySettings: () -> Unit) {
+/** Google Tasks controls supplied by the app (the feature never touches the network adapter directly). */
+class GoogleTasksControls(val state: kotlinx.coroutines.flow.StateFlow<GoogleSyncState>, val connected: kotlinx.coroutines.flow.Flow<Boolean>,
+    val connect: () -> Unit, val syncNow: () -> Unit, val disconnect: () -> Unit)
+
+@Composable fun FocusContent(vm: FocusViewModel, usage: UsageViewModel, tab: Int, onTab: (Int) -> Unit, openAccessibilitySettings: () -> Unit, google: GoogleTasksControls? = null) {
     val ui by vm.state.collectAsStateWithLifecycle()
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         PillTabs(listOf("Tasks", "Habits", "Mood", "Trends", "Usage"), tab, onTab)
@@ -52,7 +56,7 @@ private val timeFmt = DateTimeFormatter.ofPattern("h:mm a")
         }, label = "focusTab") { t ->
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 when (t) {
-                    0 -> TasksPane(vm, ui)
+                    0 -> { google?.let { GoogleTasksCard(it) }; TasksPane(vm, ui) }
                     1 -> HabitsPane(vm, ui)
                     2 -> MoodPane(vm, ui)
                     3 -> TrendsPane(ui)
@@ -81,6 +85,39 @@ private val timeFmt = DateTimeFormatter.ofPattern("h:mm a")
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(current.message, style = MaterialTheme.typography.bodyMedium, color = Hub.colors.canvas, modifier = Modifier.weight(1f).padding(start = 6.dp), maxLines = 2, overflow = TextOverflow.Ellipsis)
             HubButton("Undo", vm::performUndo, icon = HubIcons.Undo, compact = true)
+        }
+    }
+}
+
+// ---------------------------------------------------------------- Google Tasks
+@Composable private fun GoogleTasksCard(g: GoogleTasksControls) {
+    val state by g.state.collectAsStateWithLifecycle()
+    val connected by g.connected.collectAsStateWithLifecycle(false)
+    val (pill, color) = when {
+        !connected -> "Off" to Hub.colors.raised
+        state is GoogleSyncState.Syncing -> "Syncing" to Hub.colors.cyan
+        state is GoogleSyncState.Failed || state is GoogleSyncState.NeedsConsent -> "Attention" to Hub.colors.peach
+        else -> "On" to Hub.colors.mint
+    }
+    HubCard("Google Tasks", trailing = { Pill(pill, color) }) {
+        if (!connected) {
+            Text("Two-way sync with your Google Tasks: lists come in, one-off tasks go out, completions and deletes match. Repeating tasks stay on this phone.",
+                style = MaterialTheme.typography.bodyMedium, color = Hub.colors.inkSoft)
+            HubButton("Connect Google Tasks", g.connect, Modifier.fillMaxWidth(), icon = HubIcons.Sync)
+        } else {
+            val s = state
+            Text(when (s) {
+                is GoogleSyncState.Synced -> "Synced " + java.time.Duration.between(s.at, java.time.Instant.now()).toMinutes().let { if (it < 1) "just now" else "$it min ago" } + " · ${s.pulled} in · ${s.pushed} out"
+                is GoogleSyncState.Failed -> s.reason
+                GoogleSyncState.NeedsConsent -> "Google needs you to approve access again."
+                GoogleSyncState.Syncing -> "Syncing…"
+                GoogleSyncState.Off -> "Waiting for the first sync."
+            }, style = MaterialTheme.typography.bodyMedium, color = Hub.colors.ink)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                val consent = s is GoogleSyncState.NeedsConsent
+                HubButton(if (consent) "Approve" else "Sync now", if (consent) g.connect else g.syncNow, compact = true, icon = HubIcons.Sync)
+                HubButton("Disconnect", g.disconnect, tone = ButtonTone.Plain, compact = true)
+            }
         }
     }
 }
@@ -117,6 +154,7 @@ private val timeFmt = DateTimeFormatter.ofPattern("h:mm a")
                     if (t.priority == Priority.HIGH) Pill("High", Hub.colors.peach)
                     if (t.priority == Priority.LOW) Pill("Low", Hub.colors.raised)
                     t.dueTime?.let { Pill(it.format(timeFmt), Hub.colors.apricot) }
+                    if (t.google) Pill("Google", Hub.colors.cyan)
                     when (t.recurrence) { Recurrence.DAILY -> Pill("Daily", Hub.colors.mint); Recurrence.WEEKLY -> Pill("Weekly", Hub.colors.cyan); Recurrence.NONE -> Unit }
                     if (t.recurrence == Recurrence.NONE && t.carryForward) Pill("From ${item.occurrenceDay.format(dayFmt)}", Hub.colors.lavender)
                 }

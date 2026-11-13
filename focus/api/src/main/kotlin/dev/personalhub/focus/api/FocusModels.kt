@@ -7,7 +7,7 @@ import java.time.*
 enum class Recurrence { NONE, DAILY, WEEKLY }
 enum class Priority { LOW, NORMAL, HIGH }
 data class Task(val id: String, val title: String, val firstDay: LocalDate, val priority: Priority,
-    val dueTime: LocalTime?, val recurrence: Recurrence, val carryForward: Boolean, val createdAt: Instant, val updatedAt: Instant) {
+    val dueTime: LocalTime?, val recurrence: Recurrence, val carryForward: Boolean, val createdAt: Instant, val updatedAt: Instant, val google: Boolean = false) {
     fun occurs(day: LocalDate): Boolean = day >= firstDay && when (recurrence) {
         Recurrence.NONE -> day == firstDay || carryForward
         Recurrence.DAILY -> true

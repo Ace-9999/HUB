@@ -53,6 +53,8 @@ dependencies {
     implementation(project(":integration:vtop"))
     implementation(project(":integration:monitoring"))
     implementation(project(":usage:data"))
+    implementation(project(":integration:googletasks"))
+    implementation(libs.work)
     debugImplementation(libs.compose.tooling)
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.compose.bom))

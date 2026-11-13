@@ -16,7 +16,7 @@ internal data class FocusRevision(@PrimaryKey val id: Int = 1, val revision: Lon
     @Query("SELECT revision FROM focus_revision WHERE id = 1") fun observe(): Flow<Long?>
     @Transaction suspend fun committedChange() { seed(FocusRevision()); bump() }
 }
-@Database(entities = [FocusRevision::class, TaskRow::class, OccurrenceRow::class, HabitRow::class, HabitEntryRow::class, MoodRow::class], version = 2, exportSchema = true)
+@Database(entities = [FocusRevision::class, TaskRow::class, OccurrenceRow::class, HabitRow::class, HabitEntryRow::class, MoodRow::class, SyncStateRow::class], version = 3, exportSchema = true)
 internal abstract class FocusDatabase : RoomDatabase() {
     abstract fun revision(): RevisionDao
     abstract fun records(): FocusDao
@@ -30,6 +30,15 @@ internal abstract class FocusDatabase : RoomDatabase() {
                 db.execSQL("CREATE TABLE IF NOT EXISTS moods (id TEXT NOT NULL PRIMARY KEY, code TEXT NOT NULL, occurredAt INTEGER NOT NULL, originalZone TEXT NOT NULL, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL, note TEXT, revision INTEGER NOT NULL, deleted INTEGER NOT NULL)")
             }
         }
-        fun open(context: Context, name: String = "focus.db") = Room.databaseBuilder(context, FocusDatabase::class.java, name).addMigrations(MIGRATION_1_2).build()
+        /** Additive: Google Tasks link columns + dirty flag on tasks, and a key/value sync-state table. */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE tasks ADD COLUMN googleId TEXT")
+                db.execSQL("ALTER TABLE tasks ADD COLUMN googleList TEXT")
+                db.execSQL("ALTER TABLE tasks ADD COLUMN dirty INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("CREATE TABLE IF NOT EXISTS `sync_state` (`key` TEXT NOT NULL, `value` TEXT NOT NULL, PRIMARY KEY(`key`))")
+            }
+        }
+        fun open(context: Context, name: String = "focus.db") = Room.databaseBuilder(context, FocusDatabase::class.java, name).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
     }
 }

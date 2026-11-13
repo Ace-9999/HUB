@@ -17,6 +17,7 @@ Purpose comments in source and the progress log describe responsibilities.
 | `app/src/main/kotlin/dev/personalhub/app/BlockedActivity.kt` | Source/config/schema |
 | `app/src/main/kotlin/dev/personalhub/app/CollegeConnectActivity.kt` | Source/config/schema |
 | `app/src/main/kotlin/dev/personalhub/app/DemoData.kt` | Source/config/schema |
+| `app/src/main/kotlin/dev/personalhub/app/GoogleTasksHost.kt` | Source/config/schema |
 | `app/src/main/kotlin/dev/personalhub/app/MainActivity.kt` | Source/config/schema |
 | `app/src/main/kotlin/dev/personalhub/app/PersonalHubApplication.kt` | Source/config/schema |
 | `app/src/main/res/drawable/ic_launcher_background.xml` | Source/config/schema |
@@ -46,9 +47,11 @@ Purpose comments in source and the progress log describe responsibilities.
 | `focus/api/src/main/kotlin/dev/personalhub/focus/api/FocusModels.kt` | Source/config/schema |
 | `focus/api/src/main/kotlin/dev/personalhub/focus/api/FocusRepository.kt` | Source/config/schema |
 | `focus/api/src/test/kotlin/dev/personalhub/focus/api/FocusRulesTest.kt` | Test |
+| `focus/api/src/test/kotlin/dev/personalhub/focus/api/TaskSyncRulesTest.kt` | Test |
 | `focus/data/build.gradle.kts` | Source/config/schema |
 | `focus/data/schemas/dev.personalhub.focus.data.FocusDatabase/1.json` | Source/config/schema |
 | `focus/data/schemas/dev.personalhub.focus.data.FocusDatabase/2.json` | Source/config/schema |
+| `focus/data/schemas/dev.personalhub.focus.data.FocusDatabase/3.json` | Source/config/schema |
 | `focus/data/src/androidTest/kotlin/dev/personalhub/focus/data/FocusDatabaseTest.kt` | Test |
 | `focus/data/src/androidTest/kotlin/dev/personalhub/focus/data/FocusPersistenceTest.kt` | Test |
 | `focus/data/src/main/kotlin/dev/personalhub/focus/data/FocusDatabase.kt` | Source/config/schema |
@@ -70,6 +73,10 @@ Purpose comments in source and the progress log describe responsibilities.
 | `feature/focus/src/main/kotlin/dev/personalhub/feature/focus/FocusScreens.kt` | Source/config/schema |
 | `feature/focus/src/main/kotlin/dev/personalhub/feature/focus/FocusUsage.kt` | Source/config/schema |
 | `feature/focus/src/main/kotlin/dev/personalhub/feature/focus/FocusViewModel.kt` | Source/config/schema |
+| `integration/googletasks/build.gradle.kts` | Source/config/schema |
+| `integration/googletasks/src/main/AndroidManifest.xml` | Source/config/schema |
+| `integration/googletasks/src/main/kotlin/dev/personalhub/googletasks/GoogleTasks.kt` | Source/config/schema |
+| `integration/googletasks/src/test/kotlin/dev/personalhub/googletasks/GoogleTasksSyncTest.kt` | Test |
 | `integration/monitoring/build.gradle.kts` | Source/config/schema |
 | `integration/monitoring/src/main/kotlin/dev/personalhub/monitoring/ProbeAccessibilityService.kt` | Source/config/schema |
 | `integration/monitoring/src/main/kotlin/dev/personalhub/monitoring/ProbeSignals.kt` | Source/config/schema |

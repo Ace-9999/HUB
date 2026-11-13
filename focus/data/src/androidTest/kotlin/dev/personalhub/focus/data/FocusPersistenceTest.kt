@@ -29,6 +29,32 @@ class FocusPersistenceTest {
             }
         } finally { context.deleteDatabase(name) }
     }
+    @Test fun schemaTwoMigratesAndGoogleSyncAppliesLastWriterWins() = runBlocking<Unit> {
+        val name = "test-${UUID.randomUUID()}.db"
+        try {
+            migration.createDatabase(name, 2).apply {
+                execSQL("INSERT INTO tasks VALUES ('t1','Synthetic','2026-11-12','NORMAL',NULL,'NONE',0,1,1,0)"); close()
+            }
+            migration.runMigrationsAndValidate(name, 3, true, FocusDatabase.MIGRATION_1_2, FocusDatabase.MIGRATION_2_3).close()
+            val repo = RoomFocusRepository.open(context, time, name = name)
+            try {
+                assertEquals("Synthetic", repo.snapshots.first().tasks.single().title)
+                // remote import creates a linked task; completion maps to its occurrence
+                repo.applyRemote(RemoteTask("g1", "L", "From Google", LocalDate.parse("2026-11-12"), true, false, now))
+                val imported = repo.snapshots.first().tasks.single { it.google }
+                assertTrue(repo.snapshots.first().tasksOn(LocalDate.parse("2026-11-12")).single { it.task.id == imported.id }.completed)
+                // local edit newer than remote is kept; local candidates are dirty until pushed
+                repo.saveTask(TaskDraft(imported.id, "Edited locally", LocalDate.parse("2026-11-12")))
+                repo.applyRemote(RemoteTask("g1", "L", "Older remote", LocalDate.parse("2026-11-12"), true, false, now.minusSeconds(3600)))
+                assertEquals("Edited locally", repo.snapshots.first().tasks.single { it.id == imported.id }.title)
+                assertTrue(repo.syncCandidates().single { it.localId == imported.id }.dirty)
+                repo.linkPushed(imported.id, "g1", "L", now); assertFalse(repo.syncCandidates().single { it.localId == imported.id }.dirty)
+                repo.applyRemote(RemoteTask("g1", "L", "Deleted remotely", null, false, true, now.plusSeconds(60)))
+                assertTrue(repo.snapshots.first().tasks.none { it.id == imported.id })
+                repo.setLastSync(now); assertEquals(now, repo.lastSync())
+            } finally { repo.close() }
+        } finally { context.deleteDatabase(name) }
+    }
     @Test fun taskHabitAndTenSameMillisecondMoodsSurviveReopenWithUndo() = runBlocking<Unit> {
         val name = "test-${UUID.randomUUID()}.db"
         try {

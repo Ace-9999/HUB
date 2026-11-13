@@ -5,7 +5,9 @@ import androidx.room.*
 // Domain-owned persistence rows; public API never exposes Room entities.
 @Entity(tableName = "tasks")
 internal data class TaskRow(@PrimaryKey val id: String, val title: String, val firstDay: String, val priority: String,
-    val dueTime: String?, val recurrence: String, val carryForward: Boolean, val createdAt: Long, val updatedAt: Long, val deleted: Boolean = false)
+    val dueTime: String?, val recurrence: String, val carryForward: Boolean, val createdAt: Long, val updatedAt: Long, val deleted: Boolean = false,
+    val googleId: String? = null, val googleList: String? = null, @ColumnInfo(defaultValue = "0") val dirty: Boolean = false)
+@Entity(tableName = "sync_state") internal data class SyncStateRow(@PrimaryKey val key: String, val value: String)
 @Entity(tableName = "task_occurrences", primaryKeys = ["taskId", "day"], foreignKeys = [ForeignKey(entity = TaskRow::class, parentColumns = ["id"], childColumns = ["taskId"], onDelete = ForeignKey.CASCADE)])
 internal data class OccurrenceRow(val taskId: String, val day: String, val completed: Boolean, val updatedAt: Long)
 @Entity(tableName = "habits")
@@ -20,6 +22,10 @@ internal data class MoodRow(@PrimaryKey val id: String, val code: String, val oc
 @Dao internal interface FocusDao {
     @Query("SELECT * FROM tasks WHERE deleted = 0") suspend fun tasks(): List<TaskRow>
     @Query("SELECT * FROM tasks WHERE id = :id") suspend fun task(id: String): TaskRow?
+    @Query("SELECT * FROM tasks WHERE recurrence = 'NONE'") suspend fun oneOffTasks(): List<TaskRow>
+    @Query("SELECT * FROM tasks WHERE googleId = :googleId LIMIT 1") suspend fun taskByGoogle(googleId: String): TaskRow?
+    @Query("SELECT value FROM sync_state WHERE `key` = :key") suspend fun syncValue(key: String): String?
+    @Upsert suspend fun syncValue(row: SyncStateRow)
     @Upsert suspend fun task(row: TaskRow)
     @Query("SELECT * FROM task_occurrences") suspend fun occurrences(): List<OccurrenceRow>
     @Upsert suspend fun occurrence(row: OccurrenceRow)

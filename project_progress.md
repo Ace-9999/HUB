@@ -420,3 +420,30 @@ tile removed, tiles regrouped. PASS: boundaries, JVM tests, lint, Compose 2/2 (A
 `assembleConnectedFast`; fast build installed on the phone in place, tracker still enabled,
 cold start 338 ms, no crash. Install: `python scripts/run_gradle.py installConnectedFast`.
 Debug-only probes/calibration are absent from the fast build by design. Owner smoothness check pending.
+
+### Google Tasks two-way sync (owner-requested) - 13 November 2026
+
+Owner chose the Google Tasks REST API over accessibility scraping. New online boundary,
+owner-approved: Google authorization on device (play-services-auth 21.2.0, scope `tasks`),
+access tokens in memory only for one pass, never stored or logged; only title, due date,
+completion and deletion are exchanged. Code map: `focus/api` sync contract + `remoteWins`
+(last-writer-wins) + `GoogleSyncState`; `focus/data` schema v3 (additive: googleId,
+googleList, dirty on tasks; `sync_state` table) and `TaskSyncStore` implementation (local
+one-off edits mark dirty; imports are carry-forward one-off tasks); `integration/googletasks`
+(`TasksApi`, REST client, JSON mapping, `GoogleTasksSync`: pull all lists incrementally,
+then push inserts/patches/deletes, 404-on-patch re-creates); app `GoogleTasksHost`
+(mutex, silent auth, consent via IntentSender, WorkManager periodic 15 min + debounced 5 s
+after edits/app start, network constraint) and Tasks-page card with Google pill on linked tasks.
+Repeating tasks stay local (API has no recurrence). PASS: focus api sync rules 4/4, Google
+Tasks JVM 3/3 (real sync loop against a fake API), focus data 5/5 incl. v2->v3 migration,
+full test/assemble (debug + R8 fast)/lint, Compose 2/2.
+
+## PARKED FOR OWNER (needs you; nothing else blocked)
+
+1. Google Cloud setup for Tasks (one time): create project -> enable "Google Tasks API" ->
+   OAuth consent screen (External, Testing) and add your Google account as a test user ->
+   Credentials -> Create OAuth client ID -> Android, package `dev.personalhub`,
+   SHA-1 `51:64:C1:CA:C0:4C:0D:29:87:64:C3:68:52:2C:91:4A:7D:73:B6:62`. No key or secret is
+   copied into the app. Then Focus -> Tasks -> Connect Google Tasks and approve.
+   Live sync is UNVERIFIED until this is done.
+2. Phone checks of things built without you (listed per increment below as they land).
