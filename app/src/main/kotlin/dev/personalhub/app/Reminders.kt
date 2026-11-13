@@ -86,6 +86,10 @@ class TaskReminderWorker(context: Context, params: WorkerParameters) : Coroutine
     }
 }
 
+class RestAlertWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+    override suspend fun doWork(): Result { Reminders.notify(applicationContext, 7101, "Rest over", "Time for your next set."); return Result.success() }
+}
+
 class HabitNudgeWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         val app = applicationContext as PersonalHubApplication

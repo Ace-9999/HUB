@@ -28,9 +28,9 @@ Implementation is being handed off at the owner's request. Read
 | I02 | Verification pending | Debug probes built/tested; live validated read and monitoring/redirect evidence pending |
 | I03 | Verification pending | Tasks/habits/moods/trends UI wired and journey-tested on emulator; Focus lock, reminders and phone acceptance pending |
 | I04-I06 | Implemented, live gate pending | Owner-requested connector: sign-in WebView, sync, parsers, Room cache, College screens; first authenticated owner sync + portal comparison pending |
-| I07 | Not started | Catalog and routines; owner moved Train after Focus (13 Nov) |
-| I08 | Not started | Workout engine and timers |
-| I09 | Not started | Training history/analytics/body map |
+| I07 | Implemented, phone check pending | Original 44-movement catalog, custom exercises, routines |
+| I08 | Implemented, phone check pending | Live workout, autosave, idempotent finish, deadline rest timer |
+| I09 | Implemented (GYM-12 deferred) | History, stats, records, original body map |
 | I10-I12 | Blocked | I02 physical monitoring gate needed |
 | I13 | Not started | Backups/hardening and release gates |
 | I14 | Blocked | Final module, after I13 |
@@ -462,3 +462,31 @@ Reminders: WorkManager one-time work per task at its next not-completed due occu
 check-in (count only, never names). POST_NOTIFICATIONS requested on enabling; USE_BIOMETRIC
 declared (lint caught it). PASS: reminder rules 3/3 JVM, full test, R8 build, lint (0 errors after
 fresh rerun), Compose 2/2. PENDING (owner): prompt/notification behaviour on the phone.
+
+### Train I07-I09 - 13 November 2026 (built while owner away)
+
+Owner order: Focus before Train; Focus items needing the owner are parked, so Train proceeded
+(offline, no owner input). Requirements GYM-01..GYM-11 and §6.1 rules; GYM-12 (folders,
+supersets, measurements) deferred as remaining SHOULD work.
+Code map: `training/api` (models, 44-movement original seed catalog with stable ids, volume,
+working sets, reps, Epley e1RM 1-12 reps only, muscle map v1 contributions + heat bins,
+records from finished workouts only, previous-set suggestions, deadline `RestTimer`);
+`training/data` Room `training.db` v1 (custom exercises, routines/items, normalised workouts/
+exercises/sets, single active session enforced, idempotent finish, snapshot isolation);
+`feature/training` (overview with this-week stats, resume bar, routines with start/edit/
+duplicate/archive/delete; catalog search + category/equipment filters + custom exercise;
+exercise detail with muscles, original cues, records/history; routine editor with picker and
+reorder; live workout SET/PREVIOUS/KG/REPS/done grid, warm-up toggle, add/remove/reorder,
+per-exercise rest, deadline rest banner +15s/pause/skip, confirm finish/discard, autosave on
+every edit; history with delete confirm; stats ranges with workouts/time/sets/reps/volume,
+original front/back body map, legend, numeric list, unmapped count, e1RM leaders); app wiring
+(Train page, back handling, swipe disabled in sub-pages, Today card, rest-over notification via
+WorkManager); demo-only labelled sample week. `docs/asset_manifest.md` added.
+PASS: training api 7/7 (hand-calculated dataset), training data 1/1 device (process-death
+restore, single active, repeated Finish no-op, routine edit isolation, custom exercise),
+Compose 3/3 incl. new workout journey (start, add exercise, complete set -> rest starts,
+finish, history, delete), full test, R8 fast build, lint, boundaries. Visual review of
+overview, stats/body map, live workout on API 29 with sample data.
+PENDING (owner): real workout on the phone incl. rest-over notification timing (WorkManager,
+may be late), keyboard-open set rows. Not done: exercise media (none cleared), GYM-12, Focus
+workout-metric trends (I09-T5).

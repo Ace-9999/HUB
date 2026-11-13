@@ -26,6 +26,16 @@ class PersonalHubApplication : Application(), dev.personalhub.monitoring.UsageHo
     val college by lazy { RoomCollegeRepository.open(this) }
     val usage by lazy { dev.personalhub.usage.data.RoomUsageRepository.open(this) }
     val googleTasks by lazy { GoogleTasksHost(this) }
+    val training by lazy { dev.personalhub.training.data.RoomTrainingRepository.open(this) }
+    /** Rest-over alert at the countdown deadline (WorkManager; may be a few seconds late, disclosed in UI). */
+    val restAlerts = object : dev.personalhub.feature.training.RestAlerts {
+        override fun schedule(at: java.time.Instant) {
+            val delay = java.time.Duration.between(java.time.Instant.now(), at).toMillis().coerceAtLeast(0)
+            androidx.work.WorkManager.getInstance(this@PersonalHubApplication).enqueueUniqueWork("rest-alert", androidx.work.ExistingWorkPolicy.REPLACE,
+                androidx.work.OneTimeWorkRequestBuilder<RestAlertWorker>().setInitialDelay(delay, java.util.concurrent.TimeUnit.MILLISECONDS).build())
+        }
+        override fun cancel() { androidx.work.WorkManager.getInstance(this@PersonalHubApplication).cancelUniqueWork("rest-alert") }
+    }
     private val mainScope = CoroutineScope(SupervisorJob() + kotlinx.coroutines.Dispatchers.Main.immediate)
     override val usageEngine by lazy { dev.personalhub.monitoring.UsageEngine(usage, time.zone, mainScope) }
     override fun showBlock(reason: dev.personalhub.usage.api.BlockReason, ctx: dev.personalhub.usage.api.UsageContext) {

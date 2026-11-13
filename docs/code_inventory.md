@@ -59,6 +59,14 @@ Purpose comments in source and the progress log describe responsibilities.
 | `focus/data/src/main/kotlin/dev/personalhub/focus/data/FocusDatabase.kt` | Source/config/schema |
 | `focus/data/src/main/kotlin/dev/personalhub/focus/data/FocusEntities.kt` | Source/config/schema |
 | `focus/data/src/main/kotlin/dev/personalhub/focus/data/RoomFocusRepository.kt` | Source/config/schema |
+| `training/api/build.gradle.kts` | Source/config/schema |
+| `training/api/src/main/kotlin/dev/personalhub/training/api/Catalog.kt` | Source/config/schema |
+| `training/api/src/main/kotlin/dev/personalhub/training/api/TrainingModels.kt` | Source/config/schema |
+| `training/api/src/test/kotlin/dev/personalhub/training/api/TrainingRulesTest.kt` | Test |
+| `training/data/build.gradle.kts` | Source/config/schema |
+| `training/data/schemas/dev.personalhub.training.data.TrainingDatabase/1.json` | Source/config/schema |
+| `training/data/src/androidTest/kotlin/dev/personalhub/training/data/TrainingPersistenceTest.kt` | Test |
+| `training/data/src/main/kotlin/dev/personalhub/training/data/TrainingDatabase.kt` | Source/config/schema |
 | `college/api/build.gradle.kts` | Source/config/schema |
 | `college/api/src/main/kotlin/dev/personalhub/college/api/CollegeModels.kt` | Source/config/schema |
 | `college/api/src/test/kotlin/dev/personalhub/college/api/CollegeRulesTest.kt` | Test |
@@ -75,6 +83,10 @@ Purpose comments in source and the progress log describe responsibilities.
 | `feature/focus/src/main/kotlin/dev/personalhub/feature/focus/FocusScreens.kt` | Source/config/schema |
 | `feature/focus/src/main/kotlin/dev/personalhub/feature/focus/FocusUsage.kt` | Source/config/schema |
 | `feature/focus/src/main/kotlin/dev/personalhub/feature/focus/FocusViewModel.kt` | Source/config/schema |
+| `feature/training/build.gradle.kts` | Source/config/schema |
+| `feature/training/src/main/kotlin/dev/personalhub/feature/training/BodyMap.kt` | Source/config/schema |
+| `feature/training/src/main/kotlin/dev/personalhub/feature/training/TrainingScreens.kt` | Source/config/schema |
+| `feature/training/src/main/kotlin/dev/personalhub/feature/training/TrainingViewModel.kt` | Source/config/schema |
 | `integration/googletasks/build.gradle.kts` | Source/config/schema |
 | `integration/googletasks/src/main/AndroidManifest.xml` | Source/config/schema |
 | `integration/googletasks/src/main/kotlin/dev/personalhub/googletasks/GoogleTasks.kt` | Source/config/schema |

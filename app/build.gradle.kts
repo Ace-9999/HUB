@@ -54,6 +54,8 @@ dependencies {
     implementation(project(":integration:monitoring"))
     implementation(project(":usage:data"))
     implementation(project(":integration:googletasks"))
+    implementation(project(":feature:training"))
+    implementation(project(":training:data"))
     implementation(libs.work)
     debugImplementation(libs.compose.tooling)
     testImplementation(libs.junit)

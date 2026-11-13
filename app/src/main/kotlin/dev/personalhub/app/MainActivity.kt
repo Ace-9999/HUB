@@ -105,6 +105,8 @@ private val tabs = listOf("today", "college", "training", "focus")
     val focus: FocusViewModel = viewModel(factory = viewModelFactory { initializer { FocusViewModel(app.focus, app.time) } })
     val usage: UsageViewModel = viewModel(factory = viewModelFactory { initializer { UsageViewModel(app.usage, app.usageEngine, app.time.zone) } })
     val openAccessibility = { context.startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+    val training: dev.personalhub.feature.training.TrainingViewModel = viewModel(factory = viewModelFactory { initializer { dev.personalhub.feature.training.TrainingViewModel(app.training, app.time, app.restAlerts) } })
+    var trainNav by rememberSaveable(stateSaver = TrainNavSaver) { mutableStateOf(dev.personalhub.feature.training.TrainNav()) }
     val college: CollegeViewModel = viewModel(factory = viewModelFactory { initializer { CollegeViewModel(app.college, app.time) } })
     val connect: (String?) -> Unit = { semester -> context.startActivity(Intent(context, CollegeConnectActivity::class.java).apply { semester?.let { putExtra(CollegeConnectActivity.SEMESTER, it) } }) }
     val selected = tabs[pager.currentPage]
@@ -116,10 +118,14 @@ private val tabs = listOf("today", "college", "training", "focus")
     }
     val go: (String) -> Unit = { tab -> settings = false; scope.launch { pager.animateScrollToPage(tabs.indexOf(tab)) } }
 
-    BackHandler(enabled = settings || collegePage != CollegePage.OVERVIEW || pager.currentPage != 0) {
+    BackHandler(enabled = settings || collegePage != CollegePage.OVERVIEW || trainNav.page != dev.personalhub.feature.training.TrainPage.OVERVIEW || pager.currentPage != 0) {
         when {
             settings -> settings = false
             selected == "college" && collegePage != CollegePage.OVERVIEW -> collegePage = CollegePage.OVERVIEW
+            selected == "training" && trainNav.page != dev.personalhub.feature.training.TrainPage.OVERVIEW ->
+                trainNav = trainNav.pickFor?.let { dev.personalhub.feature.training.TrainNav(it, trainNav.arg) }
+                    ?: if (trainNav.page == dev.personalhub.feature.training.TrainPage.EXERCISE) dev.personalhub.feature.training.TrainNav(dev.personalhub.feature.training.TrainPage.CATALOG)
+                    else dev.personalhub.feature.training.TrainNav()
             else -> go("today")
         }
     }
@@ -127,18 +133,22 @@ private val tabs = listOf("today", "college", "training", "focus")
     HubCanvas {
         Column(Modifier.fillMaxSize()) {
             Box(Modifier.weight(1f)) {
-                HorizontalPager(pager, Modifier.fillMaxSize(), userScrollEnabled = !settings && !(selected == "college" && collegePage != CollegePage.OVERVIEW),
+                HorizontalPager(pager, Modifier.fillMaxSize(), userScrollEnabled = !settings && !(selected == "college" && collegePage != CollegePage.OVERVIEW) && !(selected == "training" && trainNav.page != dev.personalhub.feature.training.TrainPage.OVERVIEW),
                     beyondViewportPageCount = 0, key = { tabs[it] }) { index ->
                     PageColumn {
                         when (tabs[index]) {
-                            "today" -> TodayScreen(focus, college, onSettings = { settings = true }, openCollege = { collegePage = it; go("college") }, openFocus = { focusTab = it; go("focus") })
+                            "today" -> TodayScreen(focus, college, training, onSettings = { settings = true }, openCollege = { collegePage = it; go("college") }, openFocus = { focusTab = it; go("focus") },
+                                openTrain = { trainNav = it; go("training") })
                             "college" -> AnimatedContent(collegePage, transitionSpec = { subPageTransition(initialState == CollegePage.OVERVIEW) }, label = "college") { page ->
                                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                                     if (page == CollegePage.OVERVIEW) Header("College", college.state.collectAsStateWithLifecycle().value.snapshot.semester?.name ?: "VTOP · Chennai") { settings = true }
                                     CollegeContent(college, page, { collegePage = it }, connect)
                                 }
                             }
-                            "training" -> { Header("Train", "Routines & workouts") { settings = true }; TrainingPlaceholder() }
+                            "training" -> {
+                                if (trainNav.page == dev.personalhub.feature.training.TrainPage.OVERVIEW) Header("Train", "Routines & workouts") { settings = true }
+                                dev.personalhub.feature.training.TrainingContent(training, trainNav) { trainNav = it }
+                            }
                             else -> {
                                 Header("Focus", "Tasks, habits & mood") { settings = true }
                                 val locked by app.settings.focusLock.collectAsStateWithLifecycle(false)
@@ -183,7 +193,12 @@ private fun subPageTransition(forward: Boolean): ContentTransform {
     }
 }
 
-@Composable private fun TodayScreen(focus: FocusViewModel, college: CollegeViewModel, onSettings: () -> Unit, openCollege: (CollegePage) -> Unit, openFocus: (Int) -> Unit) {
+private val TrainNavSaver = androidx.compose.runtime.saveable.listSaver<dev.personalhub.feature.training.TrainNav, String?>(
+    save = { listOf(it.page.name, it.arg, it.pickFor?.name) },
+    restore = { dev.personalhub.feature.training.TrainNav(dev.personalhub.feature.training.TrainPage.valueOf(it[0]!!), it[1], it[2]?.let(dev.personalhub.feature.training.TrainPage::valueOf)) })
+
+@Composable private fun TodayScreen(focus: FocusViewModel, college: CollegeViewModel, training: dev.personalhub.feature.training.TrainingViewModel, onSettings: () -> Unit,
+    openCollege: (CollegePage) -> Unit, openFocus: (Int) -> Unit, openTrain: (dev.personalhub.feature.training.TrainNav) -> Unit) {
     val now = LocalTime.now()
     val greeting = when (now.hour) { in 5..11 -> "Good morning"; in 12..16 -> "Good afternoon"; else -> "Good evening" }
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -196,14 +211,17 @@ private fun subPageTransition(forward: Boolean): ContentTransform {
     CollegeTodayCards(college, openCollege)
     FocusTodayCard(focus) { openFocus(0) }
     MoodQuickCard(focus) { openFocus(2) }
-    HubCard("Training", trailing = { Pill("Soon", Hub.colors.apricot) }) {
-        Text("Routines and workout logging arrive in the training update.", style = MaterialTheme.typography.bodyLarge, color = Hub.colors.inkSoft)
+    val t by training.state.collectAsStateWithLifecycle()
+    val active = t.active
+    val week = t.finished.count { dev.personalhub.training.api.inRange(it, java.time.LocalDate.now().minusDays(6), java.time.LocalDate.now(), java.time.ZoneId.systemDefault()) }
+    HubCard(if (active != null) "Workout in progress" else "Training", color = if (active != null) Hub.colors.lime else Hub.colors.surface,
+        trailing = { Pill("$week this week", Hub.colors.mint) },
+        onClick = { openTrain(dev.personalhub.feature.training.TrainNav(if (active != null) dev.personalhub.feature.training.TrainPage.WORKOUT else dev.personalhub.feature.training.TrainPage.OVERVIEW)) }) {
+        Text(active?.let { "${it.name} — tap to resume." } ?: t.finished.firstOrNull()?.let { "Last: ${it.name}, ${it.startedAt.atZone(java.time.ZoneId.systemDefault()).toLocalDate().format(DateTimeFormatter.ofPattern("EEE d MMM"))}." }
+            ?: "No workouts yet. Build a routine in Train.", style = MaterialTheme.typography.bodyLarge, color = if (active != null) Hub.colors.onAccent else Hub.colors.inkSoft)
     }
 }
 
-@Composable private fun TrainingPlaceholder() {
-    EmptyState("Make room for progress", "The offline exercise catalog, routines and live workout logging are the next training increments (I07–I09). Nothing here is tracked yet.")
-}
 
 /** Session unlock state for the Focus lock; observable so the page re-composes on unlock. */
 object FocusLock {
@@ -259,6 +277,7 @@ object FocusLock {
     }
     StatusCard(DataStatus.CONTENT, "Screen-time tracking", "Managed in Focus → Usage: opt-in accessibility tracking, limits and night cut-off.")
     if (BuildConfig.DEMO) HubButton("Load sample college data (demo)", { app.scope.launch { app.college.save(DemoData.college(java.time.Instant.now())) } }, tone = ButtonTone.Mint)
+    if (BuildConfig.DEMO) HubButton("Load sample workouts (demo)", { app.scope.launch { DemoData.training(java.time.Instant.now()).let { (r, ws) -> app.training.saveRoutine(r); ws.forEach { app.training.saveFinished(it) } } } }, tone = ButtonTone.Mint)
     if (BuildConfig.DEBUG) {
         var calib by remember { mutableStateOf(dev.personalhub.monitoring.Calibration.enabled) }
         HubButton(if (calib) "Layout calibration log: ON (debug)" else "Layout calibration log: off (debug)", {

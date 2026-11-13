@@ -45,6 +45,27 @@ class ShellTest {
         rule.waitUntil(5_000) { rule.onAllNodesWithText(title).fetchSemanticsNodes().isEmpty() }
     }
 
+    @Test fun workoutCanBeLoggedFinishedOnceAndDeleted() {
+        rule.onAllNodesWithText("Train").onLast().performClick()
+        rule.waitUntil(10_000) { rule.onAllNodesWithText("START EMPTY WORKOUT").fetchSemanticsNodes().isNotEmpty() }
+        rule.onNodeWithText("START EMPTY WORKOUT").performClick()
+        rule.waitUntil(5_000) { rule.onAllNodesWithText("Add exercise").fetchSemanticsNodes().isNotEmpty() }
+        rule.onNodeWithText("Add exercise").performScrollTo().performClick()
+        rule.waitUntil(5_000) { rule.onAllNodesWithText("Bench Press").fetchSemanticsNodes().isNotEmpty() }
+        rule.onNodeWithText("Bench Press").performScrollTo().performClick()
+        rule.waitUntil(5_000) { rule.onAllNodes(hasClickLabel("Complete set 1"), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+        rule.onNode(hasClickLabel("Complete set 1"), useUnmergedTree = true).performScrollTo().performClick()
+        rule.waitUntil(5_000) { rule.onAllNodesWithText("REST").fetchSemanticsNodes().isNotEmpty() } // rest countdown started
+        rule.onNodeWithText("FINISH").performScrollTo().performClick()
+        rule.onNodeWithText("TAP AGAIN TO FINISH").performClick()
+        rule.waitUntil(5_000) { rule.onAllNodesWithText("History").fetchSemanticsNodes().isNotEmpty() }
+        rule.onNodeWithText("History").performClick()
+        rule.waitUntil(5_000) { rule.onAllNodesWithText("Workout").fetchSemanticsNodes().isNotEmpty() }
+        rule.onAllNodesWithText("Delete").onFirst().performScrollTo().performClick()
+        rule.onNodeWithText("Tap again to delete").performClick()
+        rule.waitUntil(5_000) { rule.onAllNodesWithText("No workouts yet").fetchSemanticsNodes().isNotEmpty() }
+    }
+
     private fun hasClickLabel(label: String) = SemanticsMatcher("click label $label") {
         it.config.getOrElseNullable(androidx.compose.ui.semantics.SemanticsActions.OnClick) { null }?.label == label
     }

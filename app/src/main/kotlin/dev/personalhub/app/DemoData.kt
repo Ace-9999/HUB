@@ -57,4 +57,23 @@ object DemoData {
         val withResults = all + DatasetStatus(Dataset.RESULTS, ImportState.OK, 1, "1 semester (sample)")
         return CollegeImport(sem, listOf(sem), now, courses, meetings, attendance, marks, grades, CgpaSummary(48.0, 48.0, 8.64), withResults, exams, calendar, results)
     }
+
+    /** One labelled sample week: a Push routine and four finished workouts (demo flavor only). */
+    fun training(now: Instant): Pair<dev.personalhub.training.api.Routine, List<dev.personalhub.training.api.Workout>> {
+        fun s(w: Double?, r: Int) = dev.personalhub.training.api.WorkoutSet(dev.personalhub.training.api.SetType.NORMAL, w, r, null, null, null, true)
+        fun ex(id: String, vararg sets: dev.personalhub.training.api.WorkoutSet) = dev.personalhub.training.api.WorkoutExercise("seed:$id", sets.toList(), 90)
+        val push = dev.personalhub.training.api.Routine("demo-push", "Push (sample)", listOf(
+            dev.personalhub.training.api.RoutineItem("seed:bench_bb", 3, 6, 70.0, 120), dev.personalhub.training.api.RoutineItem("seed:incline_db", 3, 10, 22.5, 90),
+            dev.personalhub.training.api.RoutineItem("seed:lateral_raise", 3, 15, 8.0, 60), dev.personalhub.training.api.RoutineItem("seed:tricep_pushdown", 3, 12, 25.0, 60)), null, false, now)
+        fun w(id: String, name: String, daysAgo: Long, vararg e: dev.personalhub.training.api.WorkoutExercise): dev.personalhub.training.api.Workout {
+            val start = now.minus(java.time.Duration.ofDays(daysAgo)).minusSeconds(3600)
+            return dev.personalhub.training.api.Workout(id, name, null, start, start.plusSeconds(3300), e.toList())
+        }
+        return push to listOf(
+            w("demo-w1", "Push (sample)", 6, ex("bench_bb", s(70.0, 6), s(70.0, 6), s(70.0, 5)), ex("incline_db", s(22.5, 10), s(22.5, 9)), ex("tricep_pushdown", s(25.0, 12), s(25.0, 12))),
+            w("demo-w2", "Pull (sample)", 4, ex("lat_pulldown", s(55.0, 10), s(55.0, 9)), ex("bb_row", s(60.0, 8), s(60.0, 8)), ex("db_curl", s(12.0, 12), s(12.0, 10))),
+            w("demo-w3", "Legs (sample)", 2, ex("squat_bb", s(90.0, 5), s(90.0, 5), s(90.0, 5)), ex("rdl", s(80.0, 8), s(80.0, 8)), ex("calf_raise", s(60.0, 15), s(60.0, 15))),
+            w("demo-w4", "Push (sample)", 0, ex("bench_bb", s(72.5, 6), s(72.5, 5), s(72.5, 5)), ex("lateral_raise", s(8.0, 15), s(8.0, 14)), ex("pushup", s(null, 20))),
+        )
+    }
 }
