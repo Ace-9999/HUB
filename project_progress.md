@@ -383,3 +383,13 @@ fixed grid rule ids, inactive-mode rules kept not deleted, legacy free-form limi
 into the grid or listed under "Other limits". Usage DB v2 additive migration (perApp
 column, default global). PASS: usage api 8/8, usage data 2/2 (incl. 1->2 migration),
 full test/assemble/lint, Compose 2/2. Installed on the phone.
+
+### Usage owner feedback round 2 - 13 November 2026
+
+Owner: Instagram home was counted as reels. Cause (inferred; no calibration log captured):
+the bottom-bar `clips_tab` button exists on every screen and v1 matched any `clips_` id.
+Classifier v2: reels only for the full-screen reel viewer or the *selected* Reels tab
+(selected state now collected as "selected:<id>"); selected Home tab/feed rows = feed, inline
+feed reels stay feed; other selected tabs = other. +1 JVM test (classifier 4/4). Limit fields
+now drop focus, hide the keyboard and grey out after Set (HubField `committed`), re-activating
+on tap. Installed on the phone; owner re-check with calibration log ON pending.

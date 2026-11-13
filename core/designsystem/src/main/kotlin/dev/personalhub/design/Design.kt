@@ -8,6 +8,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -267,17 +268,21 @@ enum class ButtonTone { Primary, Plain, Danger, Mint }
 
 @Composable fun HubDivider(modifier: Modifier = Modifier) { Box(modifier.fillMaxWidth().height(Hub.Stroke).background(Hub.colors.outline)) }
 
+/** [committed]: a saved value shows greyed out until the field is tapped again. */
 @Composable fun HubField(value: String, onValue: (String) -> Unit, label: String, modifier: Modifier = Modifier, placeholder: String = "",
-    singleLine: Boolean = true, number: Boolean = false, trailing: (@Composable () -> Unit)? = null) {
+    singleLine: Boolean = true, number: Boolean = false, committed: Boolean = false, trailing: (@Composable () -> Unit)? = null) {
     val c = Hub.colors
+    var focused by remember { mutableStateOf(false) }
+    val dim = committed && !focused
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(label.uppercase(), style = MaterialTheme.typography.labelLarge, color = c.ink)
-        HubSurface(Modifier.fillMaxWidth(), radius = 12.dp, shadow = 3.dp) {
+        HubSurface(Modifier.fillMaxWidth(), radius = 12.dp, shadow = if (dim) 0.dp else 3.dp, color = if (dim) c.raised else c.surface) {
             Row(Modifier.fillMaxWidth().defaultMinSize(minHeight = 52.dp).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.weight(1f).padding(vertical = 14.dp)) {
                     if (value.isEmpty()) Text(placeholder, style = MaterialTheme.typography.bodyLarge, color = c.inkSoft)
-                    BasicTextField(value, onValue, singleLine = singleLine, textStyle = MaterialTheme.typography.bodyLarge.copy(color = c.ink), cursorBrush = SolidColor(c.ink),
-                        keyboardOptions = if (number) KeyboardOptions(keyboardType = KeyboardType.Decimal) else KeyboardOptions.Default, modifier = Modifier.fillMaxWidth())
+                    BasicTextField(value, onValue, singleLine = singleLine, textStyle = MaterialTheme.typography.bodyLarge.copy(color = if (dim) c.inkSoft else c.ink), cursorBrush = SolidColor(c.ink),
+                        keyboardOptions = if (number) KeyboardOptions(keyboardType = KeyboardType.Decimal) else KeyboardOptions.Default,
+                        modifier = Modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused })
                 }
                 trailing?.invoke()
             }

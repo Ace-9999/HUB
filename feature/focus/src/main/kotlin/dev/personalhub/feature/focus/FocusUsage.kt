@@ -185,16 +185,18 @@ private fun mins(d: Duration) = formatDuration(d)
 }
 
 @Composable private fun LimitRow(ui: UsageUi, vm: UsageViewModel, target: Target?, surface: Surface) {
+    val focus = androidx.compose.ui.platform.LocalFocusManager.current
+    val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
     val rule = ui.rules.firstOrNull { it.id == ruleId(target, surface) }
     var text by remember(rule?.dailyMinutes, rule?.id) { mutableStateOf(rule?.dailyMinutes?.toString() ?: "") }
     val used = vm.used(rule ?: LimitRule("preview", target, surface, 0))
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             HubField(text, { text = it.filter(Char::isDigit).take(4) }, if (surface == Surface.VIDEO) "Reels & video · min/day" else "Feeds · min/day",
-                Modifier.weight(1f), placeholder = "No limit", number = true)
+                Modifier.weight(1f), placeholder = "No limit", number = true, committed = rule != null && text == rule.dailyMinutes.toString())
             val value = text.toIntOrNull()
             val changed = value != rule?.dailyMinutes
-            HubButton(if (value == null && rule != null) "Clear" else "Set", { vm.setLimit(target, surface, value) }, enabled = changed && (value == null || value <= 1440), compact = true)
+            HubButton(if (value == null && rule != null) "Clear" else "Set", { vm.setLimit(target, surface, value); focus.clearFocus(); keyboard?.hide() }, enabled = changed && (value == null || value <= 1440), compact = true)
         }
         if (rule != null) {
             val over = used.seconds >= rule.dailyMinutes * 60L

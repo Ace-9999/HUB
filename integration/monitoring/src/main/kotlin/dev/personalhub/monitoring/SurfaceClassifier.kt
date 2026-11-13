@@ -9,9 +9,12 @@ import dev.personalhub.usage.api.Target
  * Rules are initial heuristics; on-device calibration (owner opens each surface) updates them and bumps VERSION.
  */
 object SurfaceClassifier {
-    const val VERSION = 1
+    const val VERSION = 2
 
-    /** [ids] are resource-entry names without the package prefix. [url] is the browser address-bar value, if any. */
+    /**
+     * [ids] are resource-entry names without the package prefix; selected views are also present as "selected:<name>"
+     * (bottom-navigation state). [url] is the browser address-bar value, if any.
+     */
     fun classify(pkg: String, ids: Set<String>, url: String?): UsageContext? {
         if (pkg in BROWSERS) {
             val (target, surface) = classifyUrl(url) ?: return null
@@ -19,10 +22,13 @@ object SurfaceClassifier {
         }
         val target = Target.forPackage(pkg) ?: return null
         val surface = when (target) {
+            // v2: the bottom bar's "clips_tab" button exists on every screen, so only the reel viewer itself or the
+            // *selected* Reels tab means reels. Home feed = selected feed tab or feed rows.
             Target.INSTAGRAM -> when {
-                ids.any { it.startsWith("clips_") || it.contains("clips_viewer") } -> Surface.VIDEO
+                ids.any { it.contains("clips_viewer") || it == "selected:clips_tab" } -> Surface.VIDEO
                 ids.any { it.startsWith("reel_viewer") } -> Surface.VIDEO // stories
-                ids.any { it.startsWith("row_feed") || it == "feed_tab" || it.contains("main_feed") } -> Surface.TEXT_FEED
+                ids.any { it == "selected:feed_tab" || it.startsWith("row_feed") || it.contains("main_feed") } -> Surface.TEXT_FEED
+                ids.any { it.startsWith("selected:") && it.endsWith("_tab") } -> Surface.OTHER // search, profile, etc.
                 else -> Surface.UNKNOWN
             }
             Target.YOUTUBE -> when {

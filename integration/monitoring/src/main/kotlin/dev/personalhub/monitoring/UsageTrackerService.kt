@@ -78,6 +78,7 @@ class UsageTrackerService : AccessibilityService() {
             n.viewIdResourceName?.let { full ->
                 val name = full.substringAfter(":id/", full)
                 ids += name
+                if (n.isSelected) ids += "selected:$name"
                 if (pkg in BROWSERS && name == "url_bar") url = n.text?.toString()
             }
         }
