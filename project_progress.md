@@ -266,3 +266,5 @@ history rows, so nested tables are now skipped when a top-level history exists (
 vtop parser 12/12). Debug log now also reports meeting count and whether CGPA was found.
 Fix installed on the phone. PENDING: owner comparison of timetable/attendance/CGPA with
 the portal (P02), weekly meeting count, marks endpoint investigation.
+Second owner sync with the fix: GRADES 46 rows (2 nested duplicates removed), 23 weekly
+timetable meetings parsed, CGPA found; timetable/attendance unchanged (11/11); marks still EMPTY.
