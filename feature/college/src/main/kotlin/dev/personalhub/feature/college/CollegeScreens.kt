@@ -32,7 +32,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle as NameStyle
 import java.util.Locale
 
-enum class CollegePage(val title: String) { OVERVIEW("College"), TIMETABLE("Schedule"), ATTENDANCE("Attendance"), CALENDAR("Calendar"), MARKS("Marks"), CGPA("CGPA") }
+enum class CollegePage(val title: String) { OVERVIEW("College"), TIMETABLE("Schedule"), ATTENDANCE("Attendance"), CALENDAR("Calendar"), MARKS("Marks"), CGPA("CGPA"), EXAMS("Exams") }
 
 private val timeFmt = DateTimeFormatter.ofPattern("h:mm a")
 private val syncFmt = DateTimeFormatter.ofPattern("d MMM, h:mm a")
@@ -56,6 +56,7 @@ private val palette @Composable get() = listOf(Hub.colors.lime, Hub.colors.mint,
             CollegePage.ATTENDANCE -> Attendance(vm, ui)
             CollegePage.CALENDAR -> AcademicCalendar(ui.snapshot, vm)
             CollegePage.MARKS -> Marks(ui.snapshot)
+            CollegePage.EXAMS -> Exams(ui.snapshot, vm)
             CollegePage.CGPA -> Cgpa(vm, ui)
         }
     }
@@ -92,7 +93,10 @@ private val palette @Composable get() = listOf(Hub.colors.lime, Hub.colors.mint,
         Tile("Calendar", HubIcons.Calendar, Hub.colors.lavender, Modifier.weight(1f)) { onPage(CollegePage.CALENDAR) }
         Tile("Marks", HubIcons.Chart, Hub.colors.apricot, Modifier.weight(1f)) { onPage(CollegePage.MARKS) }
     }
-    Tile("CGPA calculator", HubIcons.Sparkle, Hub.colors.lime, Modifier.fillMaxWidth()) { onPage(CollegePage.CGPA) }
+    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Tile("Exams", HubIcons.Edit, Hub.colors.peach, Modifier.weight(1f)) { onPage(CollegePage.EXAMS) }
+        Tile("CGPA", HubIcons.Sparkle, Hub.colors.lime, Modifier.weight(1f)) { onPage(CollegePage.CGPA) }
+    }
     SyncCard(vm, s, onConnect)
 }
 
@@ -303,8 +307,19 @@ private val weekDays = listOf(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WED
                     val date = rowStart.plusDays(i.toLong())
                     val inMonth = date.month == ym.month
                     val weekend = date.dayOfWeek == DayOfWeek.SATURDAY || date.dayOfWeek == DayOfWeek.SUNDAY
-                    val hasClass = s.meetingsOn(date.dayOfWeek).isNotEmpty()
-                    val fill = when { !inMonth -> Hub.colors.surface; weekend -> Hub.colors.apricot; hasClass -> Hub.colors.cyan; else -> Hub.colors.surface }
+                    val portal = s.calendarOn(date)
+                    val kinds = portal.map { it.kind }.toSet()
+                    val hasExam = s.examsOn(date).isNotEmpty()
+                    val fill = when {
+                        !inMonth -> Hub.colors.surface
+                        hasExam || CalendarKind.EXAM in kinds -> Hub.colors.lime
+                        CalendarKind.HOLIDAY in kinds -> Hub.colors.peach
+                        CalendarKind.INSTRUCTIONAL in kinds -> Hub.colors.cyan
+                        portal.isNotEmpty() -> Hub.colors.lavender
+                        s.calendar.isEmpty() && !weekend && s.meetingsOn(date.dayOfWeek).isNotEmpty() -> Hub.colors.cyan
+                        weekend -> Hub.colors.apricot
+                        else -> Hub.colors.surface
+                    }
                     Box(Modifier.weight(1f).fillMaxHeight().background(fill).clickable(role = Role.Button, onClickLabel = date.toString()) { selected = date.toString() }, contentAlignment = Alignment.Center) {
                         val mark = when { date == sel -> Hub.colors.ink; date == today -> Hub.colors.danger; else -> null }
                         Box(Modifier.size(36.dp).then(if (mark != null) Modifier.border(2.dp, mark, CircleShape) else Modifier), contentAlignment = Alignment.Center) {
@@ -316,15 +331,68 @@ private val weekDays = listOf(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WED
             }
         }
     }
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-        Dot(Hub.colors.cyan, 12.dp); Text("Class day", style = MaterialTheme.typography.bodySmall, color = Hub.colors.ink)
-        Dot(Hub.colors.apricot, 12.dp); Text("Weekend", style = MaterialTheme.typography.bodySmall, color = Hub.colors.ink)
-        Dot(Hub.colors.danger, 12.dp); Text("Today", style = MaterialTheme.typography.bodySmall, color = Hub.colors.ink)
+    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+        listOf(Hub.colors.cyan to "Instructional", Hub.colors.peach to "Holiday", Hub.colors.lime to "Exam", Hub.colors.lavender to "Other", Hub.colors.apricot to "Weekend").forEach { (c, l) ->
+            Dot(c, 12.dp); Text(l, style = MaterialTheme.typography.bodySmall, color = Hub.colors.ink)
+        }
     }
-    val classes = s.meetingsOn(sel.dayOfWeek)
-    HubCard(sel.format(DateTimeFormatter.ofPattern("EEEE, MMMM d")), trailing = { Pill(if (classes.isEmpty()) "No classes" else "${classes.size} classes", if (classes.isEmpty()) Hub.colors.raised else Hub.colors.cyan) }) {
+    val labels = s.calendarOn(sel)
+    val exams = s.examsOn(sel)
+    val holiday = labels.any { it.kind == CalendarKind.HOLIDAY }
+    val classes = if (holiday) emptyList() else s.meetingsOn(sel.dayOfWeek)
+    HubCard(sel.format(DateTimeFormatter.ofPattern("EEEE, MMMM d")), trailing = {
+        val first = labels.firstOrNull()
+        if (first != null) Pill(kindLabel(first.kind), kindColor(first.kind))
+        else Pill(if (classes.isEmpty()) "No classes" else "${classes.size} classes", if (classes.isEmpty()) Hub.colors.raised else Hub.colors.cyan)
+    }) {
+        labels.forEach { Text(it.label, style = MaterialTheme.typography.titleMedium, color = Hub.colors.ink) }
+        exams.forEach { e -> Text("${e.examType} · ${s.course(e.courseCode)?.title ?: e.courseTitle ?: e.courseCode}${e.examTime?.let { " · $it" } ?: ""}", style = MaterialTheme.typography.bodyMedium, color = Hub.colors.ink) }
         classes.forEach { m -> Text("${m.start.format(timeFmt)}  ${s.course(m.courseCode, m.component)?.title ?: m.courseCode} · ${componentLabel(m.component)}", style = MaterialTheme.typography.bodyMedium, color = Hub.colors.ink) }
-        Text("From the weekly timetable. Holidays and instructional-day status are not imported from the portal yet.", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
+        Text(when {
+            s.calendar.isEmpty() -> "Academic calendar not synced yet; classes come from the weekly timetable."
+            holiday -> "Holiday per the academic calendar - weekly classes hidden."
+            else -> "Labels: VTOP academic calendar. Classes: weekly timetable."
+        }, style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
+    }
+}
+
+@Composable private fun kindColor(k: CalendarKind) = when (k) { CalendarKind.HOLIDAY -> Hub.colors.peach; CalendarKind.EXAM -> Hub.colors.lime; CalendarKind.INSTRUCTIONAL -> Hub.colors.cyan; CalendarKind.OTHER -> Hub.colors.lavender }
+private fun kindLabel(k: CalendarKind) = when (k) { CalendarKind.HOLIDAY -> "Holiday"; CalendarKind.EXAM -> "Exam"; CalendarKind.INSTRUCTIONAL -> "Instructional"; CalendarKind.OTHER -> "Event" }
+
+// ---------------------------------------------------------------- Exams
+private val examDateFmt = DateTimeFormatter.ofPattern("EEE d MMM")
+@Composable private fun Exams(s: CollegeSnapshot, vm: CollegeViewModel) {
+    staleNote(s, Dataset.EXAMS)
+    if (s.exams.isEmpty()) { EmptyState("No exams scheduled", "The portal hasn't published an exam schedule for this semester yet."); return }
+    val today = vm.time.today()
+    s.exams.groupBy { it.examType.ifBlank { "Exams" } }.forEach { (type, rows) ->
+        SectionHeader(type)
+        rows.sortedWith(compareBy(nullsLast()) { it.date }).forEach { e -> ExamCard(s, e, today) }
+    }
+}
+
+@Composable private fun ExamCard(s: CollegeSnapshot, e: ExamSlot, today: LocalDate) {
+    val date = e.date
+    val past = date != null && date.isBefore(today)
+    HubPanel(color = if (past) Hub.colors.raised else Hub.colors.surface) {
+        Row(verticalAlignment = Alignment.Top) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(s.course(e.courseCode)?.title ?: e.courseTitle ?: e.courseCode, style = MaterialTheme.typography.titleLarge, color = Hub.colors.ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { Pill(e.courseCode, Hub.colors.cyan); e.session?.let { Pill(it, Hub.colors.mint) } }
+            }
+            HubSurface(color = if (past) Hub.colors.surface else Hub.colors.lime, radius = 12.dp, shadow = 3.dp) {
+                Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(date?.dayOfMonth?.toString() ?: "?", style = MaterialTheme.typography.headlineMedium, color = Hub.colors.onAccent)
+                    Text(date?.format(DateTimeFormatter.ofPattern("MMM")) ?: "TBA", style = MaterialTheme.typography.labelMedium, color = Hub.colors.onAccent)
+                }
+            }
+        }
+        listOfNotNull(date?.format(examDateFmt), e.examTime, e.reportingTime?.let { "report $it" }).takeIf { it.isNotEmpty() }?.let {
+            Text(it.joinToString(" · "), style = MaterialTheme.typography.bodyMedium, color = Hub.colors.ink)
+        }
+        listOfNotNull(e.venue, e.seatLocation, e.seatNumber?.let { "seat $it" }).takeIf { it.isNotEmpty() }?.let {
+            Text(it.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
+        }
     }
 }
 
@@ -413,6 +481,16 @@ internal fun trim(v: Double) = if (v % 1.0 == 0.0) v.toLong().toString() else "%
         return
     }
     vm.nextClass(s)?.let { NextClassCard(it, s, onClick = { onOpen(CollegePage.TIMETABLE) }) }
+    val today = vm.time.today()
+    s.exams.filter { val d = it.date; d != null && !d.isBefore(today) && !d.isAfter(today.plusDays(14)) }.minByOrNull { it.date!! }?.let { e ->
+        HubCard("Next exam · ${e.date!!.format(examDateFmt)}", color = Hub.colors.lime, onClick = { onOpen(CollegePage.EXAMS) }) {
+            Text("${e.examType} · ${s.course(e.courseCode)?.title ?: e.courseTitle ?: e.courseCode}", style = MaterialTheme.typography.titleMedium, color = Hub.colors.onAccent)
+            listOfNotNull(e.examTime, e.venue, e.seatNumber?.let { "seat $it" }).takeIf { it.isNotEmpty() }?.let { Text(it.joinToString(" · "), style = MaterialTheme.typography.bodyMedium, color = Hub.colors.onAccent) }
+        }
+    }
+    s.calendarOn(today).firstOrNull { it.kind == CalendarKind.HOLIDAY }?.let { h ->
+        HubCard("Holiday today", color = Hub.colors.peach, onClick = { onOpen(CollegePage.CALENDAR) }) { Text(h.label, style = MaterialTheme.typography.bodyLarge, color = Hub.colors.onAccent) }
+    }
     val low = s.attendance.filter { (it.percent ?: 100.0) < ui.target }.minByOrNull { it.percent ?: 100.0 }
     if (low != null) HubCard("Attendance warning", color = Hub.colors.peach, onClick = { onOpen(CollegePage.ATTENDANCE) }) {
         val plan = attendancePlan(low.attended, low.total, ui.target)

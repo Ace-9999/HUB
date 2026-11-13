@@ -39,7 +39,7 @@ object VtopImport {
         }
         val statuses = mutableListOf<DatasetStatus>()
         val clean = { o: JSONObject? -> o?.toString()?.filter { it.isLetterOrDigit() || it in "_/:.,={}\" -" || it == '[' || it == ']' }?.take(12000) }
-        VtopDiagnostics.last = "chosen=${clean(JSONObject().put("c", root.optString("chosen")).put("tt", root.optJSONArray("ttOptions")))} sems=${clean(root.optJSONObject("sems"))} shapes=${clean(root.optJSONObject("shapes"))} semesters=${semesters.size} " + listOf("timetable", "attendance", "marks", "exams", "calendar", "grades").joinToString(" | ") { VtopDiagnostics.describe(it, tables(it).first) }
+        VtopDiagnostics.last = "shapes=${clean(root.optJSONObject("shapes"))} semesters=${semesters.size} " + listOf("timetable", "attendance", "marks", "exams", "calendar", "grades").joinToString(" | ") { VtopDiagnostics.describe(it, tables(it).first) }
         val (ttTables, ttErr) = tables("timetable")
         val courses = ttTables?.let { VtopParser.courses(it) }
         val meetings = ttTables?.let { VtopParser.meetings(it) }
@@ -57,10 +57,16 @@ object VtopImport {
         val (grTables, grErr) = tables("grades")
         val grades = grTables?.let { VtopParser.grades(it) }
         statuses += grades?.first?.status ?: DatasetStatus(Dataset.GRADES, ImportState.FAILED, 0, grErr ?: "failed")
+        val (exTables, exErr) = tables("exams")
+        val exams = exTables?.let { VtopParser.exams(it) }
+        statuses += exams?.status ?: DatasetStatus(Dataset.EXAMS, ImportState.FAILED, 0, exErr ?: "failed")
+        val (calTables, calErr) = tables("calendar")
+        val calendar = calTables?.let { VtopParser.calendar(it) }
+        statuses += calendar?.status ?: DatasetStatus(Dataset.CALENDAR, ImportState.FAILED, 0, calErr ?: "failed")
         if (statuses.all { it.state == ImportState.FAILED }) return SyncOutcome.Failure("Every dataset failed: ${statuses.joinToString { "${it.dataset.label} ${it.detail}" }}.")
         return SyncOutcome.Success(CollegeImport(semester, semesters.ifEmpty { listOf(semester) }, now,
             courses?.rows.orEmpty(), meetings?.rows.orEmpty(), attendance?.rows.orEmpty(), marks?.rows.orEmpty(),
-            grades?.first?.rows.orEmpty(), grades?.second, statuses))
+            grades?.first?.rows.orEmpty(), grades?.second, statuses, exams?.rows.orEmpty(), calendar?.rows.orEmpty()))
     }
 }
 

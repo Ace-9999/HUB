@@ -14,6 +14,29 @@ import java.util.UUID
 
 // Real SQLite: a failed dataset keeps its last good rows; semester switch scopes rows; reopen and clear.
 class CollegePersistenceTest {
+    @get:org.junit.Rule val helper = androidx.room.testing.MigrationTestHelper(androidx.test.platform.app.InstrumentationRegistry.getInstrumentation(), CollegeDatabase::class.java)
+
+    @Test fun schemaOneRowsSurviveAdditiveMigrationAndNewDatasetsPersist() = runBlocking<Unit> {
+        val name = "test-${UUID.randomUUID()}.db"
+        try {
+            helper.createDatabase(name, 1).apply {
+                execSQL("INSERT INTO college_meta VALUES (1, 'S1', 'Synthetic', 1000, 1)")
+                execSQL("INSERT INTO attendance VALUES ('S1', 0, 'ZZZ1001L', 'Synthetic', 'TH', 'A1', 20, 30, NULL)"); close()
+            }
+            helper.runMigrationsAndValidate(name, 2, true, CollegeDatabase.MIGRATION_1_2).close()
+            val repo = RoomCollegeRepository.open(context, name)
+            try {
+                assertEquals(20, repo.snapshots.first().attendance.single().attended)
+                repo.save(import(s1, 2000, null, listOf(ok(Dataset.EXAMS), ok(Dataset.CALENDAR))).copy(
+                    exams = listOf(ExamSlot("FAT", "ZZZ1001L", null, null, java.time.LocalDate.of(2026, 11, 24), "FN", null, null, "XB1-101", null, "12")),
+                    calendar = listOf(CalendarDay(java.time.LocalDate.of(2026, 11, 3), "Holiday - Synthetic", CalendarKind.HOLIDAY))))
+                val snap = repo.snapshots.first()
+                assertEquals("12", snap.examsOn(java.time.LocalDate.of(2026, 11, 24)).single().seatNumber)
+                assertEquals(CalendarKind.HOLIDAY, snap.calendarOn(java.time.LocalDate.of(2026, 11, 3)).single().kind)
+                assertEquals(20, snap.attendance.single().attended) // attendance not re-imported: cache kept
+            } finally { repo.close() }
+        } finally { context.deleteDatabase(name) }
+    }
     private val context = ApplicationProvider.getApplicationContext<Context>()
     private val s1 = Semester("S1", "Synthetic Fall"); private val s2 = Semester("S2", "Synthetic Winter")
     private fun import(sem: Semester, at: Long, attendance: Int?, statuses: List<DatasetStatus>) = CollegeImport(sem, listOf(s1, s2), Instant.ofEpochMilli(at),

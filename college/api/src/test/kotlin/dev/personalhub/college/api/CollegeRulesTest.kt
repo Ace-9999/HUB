@@ -36,4 +36,10 @@ class CollegeRulesTest {
         val rows = listOf(GradeRecord("C1", "T", null, 3.0, "F", "Nov"), GradeRecord("C2", "T", null, 3.0, "A", "Nov"), GradeRecord("C1", "T", null, 3.0, "B", "May"))
         assertEquals(listOf("B", "A"), latestAttempts(rows).map { it.grade })
     }
+    @Test fun calendarLabelsClassifyWithoutGuessing() {
+        assertEquals(CalendarKind.HOLIDAY, calendarKind("Holiday - Festival"))
+        assertEquals(CalendarKind.INSTRUCTIONAL, calendarKind("Instructional Day"))
+        assertEquals(CalendarKind.EXAM, calendarKind("CAT - II"))
+        assertEquals(CalendarKind.OTHER, calendarKind("Registration"))
+    }
 }

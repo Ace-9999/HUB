@@ -99,6 +99,29 @@ class VtopParserTest {
         val nested = table(listOf("Course Code", "Grade", "Exam Month"), listOf("ZZZ0101L", "A", "Nov"), context = listOf("1", "ZZZ0101L"))
         assertEquals(1, VtopParser.grades(listOf(main, nested)).first.rows.size)
     }
+    @Test fun examScheduleUsesGroupRowsForExamType() {
+        val head = listOf("S.No.", "Course Code", "Course Title", "Course Type", "Class ID", "Slot", "Exam Date", "Exam Session", "Reporting Time", "Exam Time", "Venue", "Seat Location", "Seat No.")
+        val t = table(head, List(13) { "FAT" },
+            listOf("1", "ZZZ1001L", "Synthetic Systems", "Embedded Theory", "C1", "A1+TA1", "24-Nov-2026", "FN", "09:15 AM", "09:30 AM - 12:30 PM", "XB1-101", "Hall", "12"),
+            listOf("2", "ZZZ2002L", "Other", "Theory Only", "C2", "B1", "", "", "", "", "", "", ""))
+        val rows = VtopParser.exams(listOf(t)).rows
+        assertEquals(2, rows.size); assertEquals("FAT", rows[0].examType)
+        assertEquals(java.time.LocalDate.of(2026, 11, 24), rows[0].date); assertEquals("12", rows[0].seatNumber)
+        assertNull(rows[1].date); assertNull(rows[1].venue)
+    }
+    @Test fun calendarCellsBecomeLabelledDaysAndBlankDaysAreSkipped() {
+        val t = table(listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"),
+            listOf("", "", "1", "2 Instructional Day", "3 Holiday - Synthetic Festival", "4 CAT - II", "5"), context = listOf("01-NOV-2026"))
+        val days = VtopParser.calendar(listOf(t)).rows
+        assertEquals(3, days.size)
+        assertEquals(CalendarKind.HOLIDAY, days.single { it.date.dayOfMonth == 3 }.kind)
+        assertEquals(CalendarKind.EXAM, days.single { it.date.dayOfMonth == 4 }.kind)
+        assertEquals(java.time.Month.NOVEMBER, days[0].date.month)
+    }
+    @Test fun portalDateFormatsParse() {
+        assertEquals(java.time.LocalDate.of(2026, 7, 1), VtopParser.date("01-JUL-2026"))
+        assertEquals(java.time.LocalDate.of(2026, 11, 4), VtopParser.date("4-Nov-2026")); assertNull(VtopParser.date("soon"))
+    }
     @Test fun semesterPlaceholdersAreDropped() {
         val s = VtopParser.semesters(listOf("" to "-- Choose Semester --", "S1" to "Fall  Semester 2026-27", "S1" to "dup"))
         assertEquals(listOf(Semester("S1", "Fall Semester 2026-27")), s)

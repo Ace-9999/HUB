@@ -42,6 +42,12 @@ object DemoData {
         val statuses = listOf(DatasetStatus(Dataset.TIMETABLE, ImportState.OK, 5, "5 courses · 10 weekly classes (sample)"),
             DatasetStatus(Dataset.ATTENDANCE, ImportState.OK, 4, "4 course components (sample)"), DatasetStatus(Dataset.MARKS, ImportState.OK, 4, "4 assessment rows (sample)"),
             DatasetStatus(Dataset.GRADES, ImportState.OK, 3, "3 graded attempts (sample)"))
-        return CollegeImport(sem, listOf(sem), now, courses, meetings, attendance, marks, grades, CgpaSummary(48.0, 48.0, 8.64), statuses)
+        val today = java.time.LocalDate.now()
+        val exams = listOf(ExamSlot("FAT", "DEM101L", "Signals Made Simple", "Embedded Theory", today.plusDays(5), "FN", "09:15 AM", "09:30 AM - 12:30 PM", "AB1-101", "Hall A", "12"),
+            ExamSlot("FAT", "DEM202L", "Practical Databases", "Theory Only", today.plusDays(8), "AN", "01:45 PM", "02:00 PM - 05:00 PM", "AB2-204", "Hall B", "31"))
+        val calendar = listOf(CalendarDay(today.plusDays(2), "Holiday - Sample Festival", CalendarKind.HOLIDAY),
+            CalendarDay(today.plusDays(1), "Instructional Day", CalendarKind.INSTRUCTIONAL), CalendarDay(today.plusDays(3), "Instructional Day", CalendarKind.INSTRUCTIONAL))
+        val all = statuses + listOf(DatasetStatus(Dataset.EXAMS, ImportState.OK, 2, "2 exams (sample)"), DatasetStatus(Dataset.CALENDAR, ImportState.OK, 3, "3 labelled days (sample)"))
+        return CollegeImport(sem, listOf(sem), now, courses, meetings, attendance, marks, grades, CgpaSummary(48.0, 48.0, 8.64), all, exams, calendar)
     }
 }

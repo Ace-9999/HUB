@@ -184,6 +184,57 @@ object VtopParser {
         return Parsed(out, DatasetStatus(Dataset.MARKS, if (out.isEmpty()) ImportState.EMPTY else ImportState.OK, out.size, "${out.size} assessment rows"))
     }
 
+    private val DATE_FORMATS = listOf("d-MMM-yyyy", "dd-MMM-yyyy", "d/M/yyyy", "dd/MM/yyyy", "d MMM yyyy", "yyyy-MM-dd")
+    internal fun date(s: String?): java.time.LocalDate? {
+        val text = s?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        val norm = text.lowercase().replaceFirstChar { it }.let { t -> Regex("""[a-z]{3}""").replace(t) { m -> m.value.replaceFirstChar(Char::uppercase) } }
+        return DATE_FORMATS.firstNotNullOfOrNull { f ->
+            runCatching { java.time.LocalDate.parse(norm, java.time.format.DateTimeFormatter.ofPattern(f, java.util.Locale.ENGLISH)) }.getOrNull()
+        }
+    }
+
+    /** Exam schedule: header-mapped rows; full-width rows (all cells equal) name the exam type (e.g. CAT1, FAT). */
+    fun exams(tables: List<PortalTable>): Parsed<ExamSlot> {
+        for (t in tables) {
+            val h = Header.find(t, "course", "exam date") ?: Header.find(t, "course", "date") ?: continue
+            val code = h.col("course code", "course") ?: continue
+            val title = h.col("course title"); val type = h.col("course type"); val dateCol = h.col("exam date", "date")
+            val session = h.col("session"); val reporting = h.col("reporting"); val time = h.col("exam time")
+            val venue = h.col("venue"); val seatLoc = h.col("seat location"); val seatNo = h.col("seat no", "seat number")
+            var examType = ""
+            val out = mutableListOf<ExamSlot>()
+            for (r in t.rows.drop(h.row + 1)) {
+                val c = Header.expand(r).map { it.trim() }
+                val distinct = c.filter { it.isNotEmpty() }.distinct()
+                if (distinct.size == 1 && CODE.find(distinct[0]) == null) { examType = distinct[0]; continue }
+                val cc = CODE.find(c.getOrNull(code).orEmpty())?.value ?: continue
+                out += ExamSlot(examType, cc, title?.let { blank(c.getOrNull(it)) }, type?.let { blank(c.getOrNull(it)) }, date(dateCol?.let { c.getOrNull(it) }),
+                    session?.let { blank(c.getOrNull(it)) }, reporting?.let { blank(c.getOrNull(it)) }, time?.let { blank(c.getOrNull(it)) },
+                    venue?.let { blank(c.getOrNull(it)) }, seatLoc?.let { blank(c.getOrNull(it)) }, seatNo?.let { blank(c.getOrNull(it)) })
+            }
+            if (out.isNotEmpty() || t.rows.size <= h.row + 1) return Parsed(out, DatasetStatus(Dataset.EXAMS, if (out.isEmpty()) ImportState.EMPTY else ImportState.OK, out.size, "${out.size} exams"))
+        }
+        return Parsed(emptyList(), DatasetStatus(Dataset.EXAMS, ImportState.EMPTY, 0, "No exam schedule published"))
+    }
+
+    /** Academic calendar month grids; context carries the month (e.g. 01-NOV-2026). Cells: "<day> <label…>". */
+    fun calendar(tables: List<PortalTable>): Parsed<CalendarDay> {
+        val out = mutableListOf<CalendarDay>()
+        for (t in tables) {
+            val month = date(t.context.firstOrNull()) ?: continue
+            for (row in t.rows) for (cell in row) {
+                val m = Regex("""^\s*(\d{1,2})\b\s*(.*)$""").find(cell.text) ?: continue
+                val day = m.groupValues[1].toInt()
+                val label = m.groupValues[2].trim().trim('-', ':', ' ')
+                if (label.isEmpty() || day !in 1..month.lengthOfMonth()) continue
+                out += CalendarDay(month.withDayOfMonth(day), label.take(120), calendarKind(label))
+            }
+        }
+        val dedup = out.distinctBy { it.date to it.label }.sortedBy { it.date }
+        return Parsed(dedup, DatasetStatus(Dataset.CALENDAR, if (dedup.isEmpty()) ImportState.EMPTY else ImportState.OK, dedup.size,
+            "${dedup.size} labelled days · ${dedup.count { it.kind == CalendarKind.HOLIDAY }} holidays"))
+    }
+
     fun grades(tables: List<PortalTable>): Pair<Parsed<GradeRecord>, CgpaSummary?> {
         val out = mutableListOf<GradeRecord>(); var summary: CgpaSummary? = null
         // Nested per-course attempt tables (with a context row) repeat rows of the main history table.

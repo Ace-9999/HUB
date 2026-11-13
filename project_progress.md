@@ -28,7 +28,7 @@ Implementation is being handed off at the owner's request. Read
 | I02 | Verification pending | Debug probes built/tested; live validated read and monitoring/redirect evidence pending |
 | I03 | Verification pending | Tasks/habits/moods/trends UI wired and journey-tested on emulator; Focus lock, reminders and phone acceptance pending |
 | I04-I06 | Implemented, live gate pending | Owner-requested connector: sign-in WebView, sync, parsers, Room cache, College screens; first authenticated owner sync + portal comparison pending |
-| I07 | Not started | Catalog and routines; independent of VTOP |
+| I07 | Not started | Catalog and routines; owner moved Train after Focus (13 Nov) |
 | I08 | Not started | Workout engine and timers |
 | I09 | Not started | Training history/analytics/body map |
 | I10-I12 | Blocked | I02 physical monitoring gate needed |
@@ -281,3 +281,21 @@ component tables), GRADES 46, CGPA found. Exam schedule and academic calendar
 (`processViewCalendar`, status 233 with first parameter guess) are still in discovery;
 debug-only structural probes remain in `VtopScripts` until they're implemented.
 Owner portal comparison (P02) still pending.
+
+### Exam schedule + academic calendar import - 13 November 2026
+
+Owner asked for Examination -> Exam Schedule and Academics -> Academic Calendar (holidays).
+Discovery (structure only) found: exam schedule = multipart `examinations/doSearchExamScheduleForStudent`
+(17x13 table, full-width rows name the exam type); calendar = `academics/common/CalendarPreview`
+(class group, e.g. COMB) -> `getDateForSemesterPreview` (month list) -> `processViewCalendar`
+per month (6x7 grid). Implemented `ExamSlot`/`CalendarDay` models, `VtopParser.exams/calendar`
+(+3 JVM tests, vtop 15/15, college api 9/9), college Room v2 with additive 1->2 migration
+(+1 device test; college data 3/3), Exams page, Today next-exam/holiday cards, calendar
+cells coloured by portal label (holiday/instructional/exam/other); weekly classes hidden on
+portal holidays. Discovery probes removed; only counts/shapes remain in the debug log.
+PASS: boundaries; test/assemble/lint; Compose 2/2, focus 4/4, college 3/3 on API 29.
+PENDING: owner sync of exams/calendar and comparison with the portal.
+
+Priority change (owner, 13 Nov): after VTOP, do Focus before Train. Order now
+I04-I06 finish -> Focus (I03 lock/reminders, then I10-I12 monitoring under its device gates)
+-> I07-I09 Train -> I13 -> I14 Music.

@@ -112,64 +112,37 @@ internal object VtopScripts {
           };
           const store = (name, r) => { result.datasets[name] = r.login ? { status: r.status, error: 'session_expired' } : { status: r.status, tables: tables(r.doc) }; };
           const step = async (name, fn) => { window.__phSync = { phase: 'running', step: name }; try { await fn(); } catch (e) { result.datasets[name] = { error: 'request_failed' }; } };
-          result.shapes = {}; result.sems = {};
+          result.shapes = {};
           await step('timetable', async () => store('timetable', await post('processViewTimeTable', params)));
           await step('attendance', async () => store('attendance', await post('processViewStudentAttendance', params)));
-          // Discovery round 3: try each page's own top semesters; record only counts per semester code.
-          const optionsOf = r => { const sel = r.doc.getElementById('semesterSubId') || r.doc.querySelector('select[name=semesterSubId]');
-            return sel ? Array.from(sel.options).map(o => o.value).filter(v => safe(v)) : []; };
-          result.chosen = chosen; result.ttOptions = result.semesters.map(o => o[0]).filter(safe).slice(0, 8);
-          const tryAll = async (name, menuPath, dataPath) => {
-            const menu = await menuOpen(menuPath);
-            const opts = optionsOf(menu); result.sems[name] = opts.slice(0, 6);
-            const order = [chosen].concat(opts.filter(o => o !== chosen)).filter(o => opts.includes(o)).concat(opts).slice(0, 4);
-            const tries = [];
-            let best = null;
-            for (const s of Array.from(new Set(order))) {
-              const r = await postMultipart(dataPath, { authorizedID: id, semesterSubId: s, _csrf: token });
-              const n = r.doc.querySelectorAll('table').length;
-              tries.push({ s, len: r.raw.length, tables: n, sel: !!r.doc.getElementById('semesterSubId') });
-              if (n > 0 && !best) best = r;
-            }
-            result.shapes[name] = tries;
-            store(name, best || menu);
-          };
-          await step('marks', () => tryAll('marks', 'examinations/StudentMarkView', 'examinations/doStudentMarkView'));
-          await step('exams', async () => {
-            const tries = []; let best = null;
-            for (const s of Array.from(new Set([chosen, result.semesters.map(o => o[0]).find(v => v && v !== chosen)])).filter(v => v)) {
-              const r = await postMultipart('examinations/doSearchExamScheduleForStudent', { authorizedID: id, semesterSubId: s, _csrf: token });
-              const n = r.doc.querySelectorAll('table').length;
-              tries.push({ s, status: r.status, len: r.raw.length, tables: n });
-              if (n > 0 && !best) best = r;
-            }
-            result.shapes.exams = tries; if (best) store('exams', best);
+          // Marks page has its own semester list and submits multipart FormData (verified on the owner's portal).
+          await step('marks', async () => {
+            const menu = await menuOpen('examinations/StudentMarkView');
+            const s = semFrom(menu);
+            const r = await postMultipart('examinations/doStudentMarkView', { authorizedID: id, semesterSubId: s, _csrf: token });
+            store('marks', r); result.shapes.marks = { sameSemester: s === chosen, tables: r.doc.querySelectorAll('table').length };
           });
+          await step('exams', async () => {
+            const r = await postMultipart('examinations/doSearchExamScheduleForStudent', { authorizedID: id, semesterSubId: chosen, _csrf: token });
+            store('exams', r); result.shapes.exams = { status: r.status, tables: r.doc.querySelectorAll('table').length };
+          });
+          // Academic calendar: class group from the page (e.g. COMB), months from getDateForSemesterPreview, one grid per month.
           await step('calendar', async () => {
             const menu = await menuOpen('academics/common/CalendarPreview');
-            const callArgs = raw => Array.from(new Set(Array.from(raw.matchAll(/processViewCalendar/g)).flatMap(m =>
-              raw.slice(m.index, m.index + 600).match(/[A-Za-z_]{3,20}(?=\s*[=:])/g) || []))).slice(0, 30);
-            const cgMenu = Array.from((menu.doc.getElementById('classGroupId') || { options: [] }).options).map(o => o.value).filter(safe);
-            result.shapes.calendar = { menuArgs: callArgs(menu.raw), cgMenu, tries: [] };
-            const d = await post('getDateForSemesterPreview', { semSubId: chosen, classGroupId: cgMenu[0] || 'ALL', authorizedID: id, _csrf: token, x: new Date().toUTCString() });
-            const dSel = Array.from(d.doc.querySelectorAll('select')).map(sel => ({ id: sel.id || sel.name, vals: Array.from(sel.options).map(o => o.value).filter(v => safe(v)).slice(0, 4) })).filter(x => safe(x.id));
-            const dates = Array.from(new Set(d.raw.match(/\d{2}-[A-Z]{3}-\d{4}/g) || [])).slice(0, 12);
-            Object.assign(result.shapes.calendar, { dStatus: d.status, dArgs: callArgs(d.raw), dSel, months: dates.length,
-              onclick: Array.from(new Set((d.raw.match(/on[a-z]+="[A-Za-z]+\(/g) || []))).slice(0, 5) });
-            const groups = Array.from(new Set(cgMenu.concat(dSel.flatMap(x => x.vals)).concat(['ALL']))).slice(0, 5);
-            const month = dates.find(x => x.includes('NOV')) || dates[0];
-            for (const g of groups) {
-              if (!month) break;
-              const c = await post('processViewCalendar', { _csrf: token, calDate: month, semSubId: chosen, classGroupId: g, authorizedID: id, x: new Date().toUTCString() });
-              const n = c.doc.querySelectorAll('table').length;
-              result.shapes.calendar.tries.push({ g, status: c.status, len: c.raw.length, tables: n });
-              if (n > 0 && c.status === 200) { store('calendar', c); result.shapes.calendar.cShape = shape(c, chosen); break; }
+            const cg = Array.from((menu.doc.getElementById('classGroupId') || { options: [] }).options).map(o => o.value).filter(v => v);
+            const group = cg[0] || 'ALL';
+            const d = await post('getDateForSemesterPreview', { semSubId: chosen, classGroupId: group, authorizedID: id, _csrf: token, x: new Date().toUTCString() });
+            const months = Array.from(new Set(d.raw.match(/\d{2}-[A-Z]{3}-\d{4}/g) || [])).slice(0, 8);
+            const all = []; const statuses = [];
+            for (const m of months) {
+              const c = await post('processViewCalendar', { _csrf: token, calDate: m, semSubId: chosen, classGroupId: group, authorizedID: id, x: new Date().toUTCString() });
+              statuses.push(c.status);
+              if (c.status === 200) tables(c.doc).forEach(tb => { tb.context = [m]; all.push(tb); });
             }
+            result.datasets.calendar = { status: months.length && statuses.every(x => x === 200) ? 200 : (statuses.find(x => x !== 200) || 204), tables: all };
+            result.shapes.calendar = { months: months.length, statuses, tables: all.length };
           });
           await step('grades', async () => store('grades', await menuOpen('examinations/examGradeView/StudentGradeHistory')));
-          // Discovery: portal addresses for calendar/exam/marks present anywhere in the signed-in page markup.
-          result.menuUrls = Array.from(new Set((document.documentElement.outerHTML.match(/(?:academics|examinations)\/[A-Za-z\/]+/g) || [])))
-            .filter(u => safe(u) && /calendar|exam|mark|schedule/i.test(u)).slice(0, 25);
           window.__phSync = result;
         } catch (e) { window.__phSync = { phase: 'error', reason: 'script_failed' }; }
       })();

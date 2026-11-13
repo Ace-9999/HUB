@@ -33,9 +33,27 @@ data class MarkComponent(val courseCode: String, val courseType: String?, val ti
 
 data class GradeRecord(val courseCode: String, val title: String, val type: String?, val credits: Double?, val grade: String, val examMonth: String?)
 
+/** One exam sitting from Examination → Exam Schedule. Unknown fields stay null. */
+data class ExamSlot(val examType: String, val courseCode: String, val courseTitle: String?, val courseType: String?, val date: java.time.LocalDate?,
+    val session: String?, val reportingTime: String?, val examTime: String?, val venue: String?, val seatLocation: String?, val seatNumber: String?)
+
+enum class CalendarKind { INSTRUCTIONAL, HOLIDAY, EXAM, OTHER }
+/** One labelled day from Academics → Academic Calendar (portal source; never inferred). */
+data class CalendarDay(val date: java.time.LocalDate, val label: String, val kind: CalendarKind)
+
+fun calendarKind(label: String): CalendarKind {
+    val l = label.lowercase()
+    return when {
+        Regex("""holiday|vacation|break|leave""").containsMatchIn(l) -> CalendarKind.HOLIDAY
+        Regex("""\b(cat|fat|exam|assessment|test)""").containsMatchIn(l) -> CalendarKind.EXAM
+        l.contains("instructional") -> CalendarKind.INSTRUCTIONAL
+        else -> CalendarKind.OTHER
+    }
+}
+
 data class CgpaSummary(val creditsRegistered: Double?, val creditsEarned: Double?, val cgpa: Double?)
 
-enum class Dataset(val label: String) { TIMETABLE("Timetable"), ATTENDANCE("Attendance"), MARKS("Marks"), GRADES("Grade history") }
+enum class Dataset(val label: String) { TIMETABLE("Timetable"), ATTENDANCE("Attendance"), MARKS("Marks"), GRADES("Grade history"), EXAMS("Exam schedule"), CALENDAR("Academic calendar") }
 enum class ImportState { OK, EMPTY, FAILED, SKIPPED }
 data class DatasetStatus(val dataset: Dataset, val state: ImportState, val rows: Int, val detail: String)
 
@@ -46,6 +64,7 @@ data class CollegeImport(
     val attendance: List<AttendanceRecord> = emptyList(), val marks: List<MarkComponent> = emptyList(),
     val grades: List<GradeRecord> = emptyList(), val summary: CgpaSummary? = null,
     val statuses: List<DatasetStatus> = emptyList(),
+    val exams: List<ExamSlot> = emptyList(), val calendar: List<CalendarDay> = emptyList(),
 ) {
     fun ok(dataset: Dataset) = statuses.any { it.dataset == dataset && it.state in setOf(ImportState.OK, ImportState.EMPTY) }
 }
@@ -55,7 +74,10 @@ data class CollegeSnapshot(
     val courses: List<Course> = emptyList(), val meetings: List<ClassMeeting> = emptyList(),
     val attendance: List<AttendanceRecord> = emptyList(), val marks: List<MarkComponent> = emptyList(),
     val grades: List<GradeRecord> = emptyList(), val summary: CgpaSummary? = null, val statuses: List<DatasetStatus> = emptyList(),
+    val exams: List<ExamSlot> = emptyList(), val calendar: List<CalendarDay> = emptyList(),
 ) {
+    fun calendarOn(day: java.time.LocalDate) = calendar.filter { it.date == day }
+    fun examsOn(day: java.time.LocalDate) = exams.filter { it.date == day }
     val connected: Boolean get() = syncedAt != null
     fun meetingsOn(day: DayOfWeek) = meetings.filter { it.day == day }.sortedBy { it.start }
     fun course(code: String, component: String? = null): Course? =
