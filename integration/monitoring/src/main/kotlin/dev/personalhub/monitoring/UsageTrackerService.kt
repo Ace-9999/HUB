@@ -40,6 +40,7 @@ class UsageTrackerService : AccessibilityService() {
 
     override fun onServiceConnected() {
         host = application as UsageHost
+        Calibration.file = java.io.File(filesDir, "calibration.log")
         engine = host.usageEngine
         engine.connected(true)
         registerReceiver(screenOff, IntentFilter(Intent.ACTION_SCREEN_OFF))
@@ -74,15 +75,17 @@ class UsageTrackerService : AccessibilityService() {
         val root = rootInActiveWindow ?: return
         if (root.packageName?.toString() != pkg) return
         val ids = HashSet<String>(); var url: String? = null
+        val classes = if (Calibration.enabled && pkg in BROWSERS) HashMap<String, Int>() else null
         walk(root, 0) { n ->
-            n.viewIdResourceName?.let { full ->
+            classes?.let { m -> n.className?.toString()?.substringAfterLast('.')?.let { c -> m[c] = (m[c] ?: 0) + 1 } }
+            if (n.isVisibleToUser) n.viewIdResourceName?.let { full ->
                 val name = full.substringAfter(":id/", full)
                 ids += name
                 if (n.isSelected) ids += "selected:$name"
                 if (pkg in BROWSERS && name == "url_bar") url = n.text?.toString()
             }
         }
-        if (Calibration.enabled) Calibration.log(pkg, ids)
+        if (Calibration.enabled) Calibration.log(pkg, ids, url, classes)
         engine.onContext(SurfaceClassifier.classify(pkg, ids, url))?.let { redirect(it) }
     }
 
@@ -121,11 +124,21 @@ class UsageTrackerService : AccessibilityService() {
 /** Debug-only layout calibration: logs resource-id NAMES (no text) of target windows so surface rules can be tuned. */
 object Calibration {
     @Volatile var enabled = false
+    /** Private app file (debug builds only read it over USB via run-as). Holds id names and masked URLs only. */
+    @Volatile var file: java.io.File? = null
     private var last = ""
-    fun log(pkg: String, ids: Set<String>) {
-        val sig = ids.filter { it.length < 60 }.sorted().take(120).joinToString(",")
+    private val KEYWORDS = setOf("i", "status", "video", "videos", "photo", "reel", "reels", "stories", "home", "explore", "search", "comments", "r", "shorts", "watch", "notifications", "messages")
+    /** Host plus path; every non-keyword segment is replaced by a star (account names and ids never logged). */
+    fun maskUrl(url: String?): String? = url?.substringBefore('?')?.split('/')?.mapIndexed { i, s ->
+        if (i == 0 || s.lowercase() in KEYWORDS || s.isEmpty()) s.lowercase() else if (s.all(Char::isDigit) && s.length <= 2) s else "*"
+    }?.joinToString("/")
+    fun log(pkg: String, ids: Set<String>, url: String? = null, classes: Map<String, Int>? = null) {
+        val sig = ids.filter { it.length < 60 }.sorted().take(120).joinToString(",") +
+            (if (url != null || classes != null) " url=${maskUrl(url?.removePrefix("https://")?.removePrefix("http://"))} classes=${classes?.entries?.sortedByDescending { it.value }?.take(15)?.joinToString(",") { "${it.key}:${it.value}" }}" else "")
         if (sig == last) return
         last = sig
-        Log.i("PersonalHubCalib", "$pkg ids=$sig")
+        val line = "${java.time.LocalTime.now().withNano(0)} $pkg ids=$sig"
+        Log.i("PersonalHubCalib", line)
+        file?.let { f -> runCatching { if (f.length() > 300_000) f.writeText(""); f.appendText(line + "\n") } }
     }
 }

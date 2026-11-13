@@ -52,6 +52,8 @@ class UsageRulesTest {
         assertNull(Target.forHost("reddit.com.example.org")); assertNull(Target.forHost("notinstagram.com"))
         assertEquals(Target.INSTAGRAM to Surface.VIDEO, classifyUrl("instagram.com/reels/abc"))
         assertEquals(Surface.TEXT_FEED, classifyUrl("https://x.com/home")!!.second)
+        assertEquals(Surface.VIDEO, classifyUrl("x.com/someone/status/123")!!.second)
+        assertEquals(Surface.TEXT_FEED, classifyUrl("x.com")!!.second)
         assertNull(classifyUrl("search for reddit"))
     }
     @Test fun curfewCrossesMidnightAndBudgetsBlockMostRestrictive() {

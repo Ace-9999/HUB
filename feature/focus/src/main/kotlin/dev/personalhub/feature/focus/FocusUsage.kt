@@ -73,11 +73,8 @@ private fun mins(d: Duration) = formatDuration(d)
     HealthCard(ui, vm, openAccessibilitySettings)
     val day = ui.today
     if (day != null) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            BigStat("Reels", mins(day.time(Surface.VIDEO)), caption = "& video")
-            BigStat("Feeds", mins(day.time(Surface.TEXT_FEED)), caption = "scrolling")
-            BigStat("Scrolls", day.bursts.toString(), caption = day.screens?.let { "≈ %.0f screens".format(it) } ?: "bursts")
-        }
+        StatRow(Triple("REELS & VIDEO", mins(day.time(Surface.VIDEO)), null), Triple("FEEDS", mins(day.time(Surface.TEXT_FEED)), null),
+            Triple("SCROLLS", day.bursts.toString(), day.screens?.let { "≈ %.0f screens".format(it) }))
         Text("Scrolls are grouped swipes (bursts), not posts or reels watched. Screens are estimated where the app reports distance.",
             style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
         HubCard("Today by app") {

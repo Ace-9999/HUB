@@ -393,3 +393,13 @@ Classifier v2: reels only for the full-screen reel viewer or the *selected* Reel
 feed reels stay feed; other selected tabs = other. +1 JVM test (classifier 4/4). Limit fields
 now drop focus, hide the keyboard and grey out after Set (HubField `committed`), re-activating
 on tap. Installed on the phone; owner re-check with calibration log ON pending.
+
+### Usage owner feedback round 3 - 13 November 2026
+
+Owner: stats overflowed; X video counted as feed; Instagram home still counted as reels
+under v2. Changes: equal-width `StatRow` tiles; X web routes from owner observation
+(`/status/` and `/i/videos` = video, `/home` and others = feed, +2 JVM asserts); classifier v3
+collects only `isVisibleToUser` node ids (hypothesis: Instagram keeps the reels viewer loaded
+behind Home); debug calibration now writes id names/masked URL shapes to a private capped file
+(this OnePlus rotates logcat within minutes) and is on by default in debug builds. Instagram
+fix NOT yet confirmed on the phone.

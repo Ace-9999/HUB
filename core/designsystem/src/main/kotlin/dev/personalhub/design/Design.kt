@@ -266,6 +266,21 @@ enum class ButtonTone { Primary, Plain, Danger, Mint }
     }
 }
 
+/** Equal-width stat tiles for long values ("2m 41s"): one line each, never overlapping neighbours. */
+@Composable fun StatRow(vararg stats: Triple<String, String, String?>, modifier: Modifier = Modifier) {
+    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        stats.forEach { (label, value, caption) ->
+            HubSurface(Modifier.weight(1f), radius = 14.dp, shadow = 3.dp) {
+                Column(Modifier.fillMaxWidth().padding(vertical = 12.dp, horizontal = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(label, style = MaterialTheme.typography.labelMedium, color = Hub.colors.inkSoft, maxLines = 1)
+                    Text(value, style = MaterialTheme.typography.headlineSmall, color = Hub.colors.ink, maxLines = 1, softWrap = false)
+                    caption?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = Hub.colors.inkSoft, maxLines = 1, textAlign = TextAlign.Center) }
+                }
+            }
+        }
+    }
+}
+
 @Composable fun HubDivider(modifier: Modifier = Modifier) { Box(modifier.fillMaxWidth().height(Hub.Stroke).background(Hub.colors.outline)) }
 
 /** [committed]: a saved value shows greyed out until the field is tapped again. */

@@ -9,7 +9,7 @@ import dev.personalhub.usage.api.Target
  * Rules are initial heuristics; on-device calibration (owner opens each surface) updates them and bumps VERSION.
  */
 object SurfaceClassifier {
-    const val VERSION = 2
+    const val VERSION = 3
 
     /**
      * [ids] are resource-entry names without the package prefix; selected views are also present as "selected:<name>"

@@ -34,6 +34,8 @@ class PersonalHubApplication : Application(), dev.personalhub.monitoring.UsageHo
     override fun onCreate() {
         super.onCreate()
         SessionHooks.clear = { VtopSyncView.clearSession() }
+        // Debug builds record layout id names (no text) for on-device classifier calibration.
+        if (BuildConfig.DEBUG) dev.personalhub.monitoring.Calibration.enabled = true
     }
 }
 class SettingsStore(private val context: Context) {

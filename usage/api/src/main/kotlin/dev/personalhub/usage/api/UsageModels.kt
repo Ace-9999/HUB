@@ -53,6 +53,8 @@ fun classifyUrl(text: String?): Pair<Target, Surface>? {
     val surface = when {
         target == Target.INSTAGRAM && (path.startsWith("/reel") || path.startsWith("/reels")) -> Surface.VIDEO
         target == Target.INSTAGRAM && path.startsWith("/stories") -> Surface.VIDEO
+        // Owner-verified X web routes: /<author>/status/<id> opens the video/post viewer; /home is the timeline.
+        target == Target.X && (path.contains("/status/") || path.startsWith("/i/videos")) -> Surface.VIDEO
         target == Target.X || target == Target.REDDIT -> Surface.TEXT_FEED
         target == Target.INSTAGRAM && (path.isEmpty() || path == "/") -> Surface.TEXT_FEED
         else -> Surface.UNKNOWN
