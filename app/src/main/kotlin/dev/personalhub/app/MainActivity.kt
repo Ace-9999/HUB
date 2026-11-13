@@ -32,6 +32,7 @@ import dev.personalhub.design.*
 import dev.personalhub.feature.college.*
 import dev.personalhub.feature.focus.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.map
 import androidx.lifecycle.lifecycleScope
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -106,6 +107,13 @@ private val tabs = listOf("today", "college", "training", "focus")
     val usage: UsageViewModel = viewModel(factory = viewModelFactory { initializer { UsageViewModel(app.usage, app.usageEngine, app.time.zone) } })
     val openAccessibility = { context.startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
     val training: dev.personalhub.feature.training.TrainingViewModel = viewModel(factory = viewModelFactory { initializer { dev.personalhub.feature.training.TrainingViewModel(app.training, app.time, app.restAlerts) } })
+    val workoutDays = remember {
+        training.state.map { ui ->
+            ui.finished.groupBy { it.startedAt.atZone(app.time.zone).toLocalDate() }.map { (d, ws) ->
+                dev.personalhub.core.WorkoutDay(d, ws.size, ws.sumOf { java.time.Duration.between(it.startedAt, it.finishedAt).toMinutes() }, ws.sumOf { dev.personalhub.training.api.workingSets(it) })
+            }
+        }
+    }
     var trainNav by rememberSaveable(stateSaver = TrainNavSaver) { mutableStateOf(dev.personalhub.feature.training.TrainNav()) }
     val college: CollegeViewModel = viewModel(factory = viewModelFactory { initializer { CollegeViewModel(app.college, app.time) } })
     val connect: (String?) -> Unit = { semester -> context.startActivity(Intent(context, CollegeConnectActivity::class.java).apply { semester?.let { putExtra(CollegeConnectActivity.SEMESTER, it) } }) }
@@ -153,7 +161,7 @@ private val tabs = listOf("today", "college", "training", "focus")
                                 Header("Focus", "Tasks, habits & mood") { settings = true }
                                 val locked by app.settings.focusLock.collectAsStateWithLifecycle(false)
                                 if (locked && !FocusLock.unlocked) FocusLockedCard { (context as? MainActivity)?.unlockFocus() }
-                                else FocusContent(focus, usage, focusTab, { focusTab = it }, openAccessibility, googleControls)
+                                else FocusContent(focus, usage, focusTab, { focusTab = it }, openAccessibility, googleControls, workoutDays)
                             }
                         }
                     }

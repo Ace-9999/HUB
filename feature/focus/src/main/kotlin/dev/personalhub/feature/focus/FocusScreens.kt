@@ -44,7 +44,9 @@ private val timeFmt = DateTimeFormatter.ofPattern("h:mm a")
 class GoogleTasksControls(val state: kotlinx.coroutines.flow.StateFlow<GoogleSyncState>, val connected: kotlinx.coroutines.flow.Flow<Boolean>,
     val connect: () -> Unit, val syncNow: () -> Unit, val disconnect: () -> Unit)
 
-@Composable fun FocusContent(vm: FocusViewModel, usage: UsageViewModel, tab: Int, onTab: (Int) -> Unit, openAccessibilitySettings: () -> Unit, google: GoogleTasksControls? = null) {
+@Composable fun FocusContent(vm: FocusViewModel, usage: UsageViewModel, tab: Int, onTab: (Int) -> Unit, openAccessibilitySettings: () -> Unit, google: GoogleTasksControls? = null,
+    /** Optional read-only workout summaries for trends, supplied by the app from Training's public state. */
+    workouts: kotlinx.coroutines.flow.Flow<List<dev.personalhub.core.WorkoutDay>>? = null) {
     val ui by vm.state.collectAsStateWithLifecycle()
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         PillTabs(listOf("Tasks", "Habits", "Mood", "Trends", "Usage"), tab, onTab)
@@ -59,7 +61,7 @@ class GoogleTasksControls(val state: kotlinx.coroutines.flow.StateFlow<GoogleSyn
                     0 -> { google?.let { GoogleTasksCard(it) }; TasksPane(vm, ui) }
                     1 -> HabitsPane(vm, ui)
                     2 -> MoodPane(vm, ui)
-                    3 -> TrendsPane(ui)
+                    3 -> TrendsPane(ui, workouts)
                     else -> UsagePane(usage, openAccessibilitySettings)
                 }
             }
@@ -371,7 +373,7 @@ private val backdates = listOf("Now" to 0L, "15 min ago" to 15L, "1 hr ago" to 6
 }
 
 // ---------------------------------------------------------------- Trends
-@Composable private fun TrendsPane(ui: FocusUi) {
+@Composable private fun TrendsPane(ui: FocusUi, workouts: kotlinx.coroutines.flow.Flow<List<dev.personalhub.core.WorkoutDay>>? = null) {
     var rangeIndex by rememberSaveable { mutableIntStateOf(1) }
     val range = TrendRange.entries[rangeIndex].range(ui.today, ui.zone)
     PillTabs(TrendRange.entries.map { it.label }, rangeIndex, { rangeIndex = it }, color = Hub.colors.cyan)
@@ -401,6 +403,7 @@ private val backdates = listOf("Now" to 0L, "15 min ago" to 15L, "1 hr ago" to 6
             } }
         }
     } else MoodDailyStack(ui, range)
+    workouts?.let { WorkoutTrend(it, range) }
     ui.snapshot.habits.forEach { habit -> HabitTrend(habit, ui, range) }
 }
 
@@ -419,6 +422,26 @@ private val backdates = listOf("Now" to 0L, "15 min ago" to 15L, "1 hr ago" to 6
             }
         }
         Text("Each block is one entry; empty days were not logged.", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
+    }
+}
+
+@Composable private fun WorkoutTrend(source: kotlinx.coroutines.flow.Flow<List<dev.personalhub.core.WorkoutDay>>, range: dev.personalhub.core.DateRange) {
+    val all by source.collectAsStateWithLifecycle(emptyList())
+    val days = range.start.datesUntil(range.endInclusive.plusDays(1)).toList()
+    val byDay = all.associateBy { it.day }
+    val max = (days.maxOfOrNull { byDay[it]?.minutes ?: 0 } ?: 0).coerceAtLeast(1)
+    val total = days.sumOf { byDay[it]?.workouts ?: 0 }
+    HubCard("Workouts", trailing = { Pill("$total in range", Hub.colors.lime) }) {
+        Row(Modifier.fillMaxWidth().height(90.dp), horizontalArrangement = Arrangement.spacedBy(if (days.size > 10) 2.dp else 6.dp), verticalAlignment = Alignment.Bottom) {
+            days.forEach { d ->
+                val m = byDay[d]
+                Box(Modifier.weight(1f).fillMaxHeight().semantics { contentDescription = "$d: ${m?.workouts ?: 0} workouts, ${m?.minutes ?: 0} min" }, contentAlignment = Alignment.BottomCenter) {
+                    if (m != null && m.workouts > 0) Box(Modifier.fillMaxWidth().fillMaxHeight((m.minutes / max.toFloat()).coerceAtLeast(0.05f)).background(Hub.colors.lime).border(1.dp, Hub.colors.outline))
+                }
+            }
+        }
+        Text("Bar height = training minutes. ${days.sumOf { byDay[it]?.minutes ?: 0 }} min · ${days.sumOf { byDay[it]?.workingSets ?: 0 }} working sets. Rest days are simply empty.",
+            style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
     }
 }
 

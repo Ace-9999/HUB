@@ -490,3 +490,9 @@ overview, stats/body map, live workout on API 29 with sample data.
 PENDING (owner): real workout on the phone incl. rest-over notification timing (WorkManager,
 may be late), keyboard-open set rows. Not done: exercise media (none cleared), GYM-12, Focus
 workout-metric trends (I09-T5).
+
+### Workout trends in Focus (I09-T5 / HAB-08) - 13 November 2026
+
+Training's finished workouts are mapped by the app into read-only `WorkoutDay` summaries
+(core model) and passed explicitly into Focus -> Trends (per-day minutes bars, count, sets);
+Focus never reads Training's database. PASS: full test, lint, Compose 3/3.
