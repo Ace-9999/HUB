@@ -327,5 +327,6 @@ tabs slide by bar order, fade throughout), Focus tab crossfade/slide, springy pr
 shadow on every surface, animated fills for pills/grade cells/checkboxes/bottom-bar capsule
 (with bounce), animated progress bars and card size changes.
 PASS: boundaries, JVM tests, connected APK, lint, Compose 2/2 on API 29. Owner feel check pending.
-Owner also confirmed Grade History data (4 semesters) is correct: VTOP increment complete
-pending only the manual accessibility review. Next: Focus (lock, reminders).
+Grade History: owner sync imported 4 semesters (11/14/10/11 courses); detail tables match the
+parser's expected layout. Owner check of components/ranges against the portal still PENDING.
+Next: Focus (lock, reminders) once Grade History is confirmed.
