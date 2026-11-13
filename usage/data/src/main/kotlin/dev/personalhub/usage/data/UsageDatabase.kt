@@ -15,7 +15,7 @@ internal data class IntervalRow(@PrimaryKey(autoGenerate = true) val id: Long = 
     val pkg: String, val startMs: Long, val endMs: Long, val bursts: Int, val screens: Double?, val classifier: Int)
 @Entity(tableName = "rules") internal data class RuleRow(@PrimaryKey val id: String, val target: String?, val surface: String?, val minutes: Int, val enabled: Boolean)
 @Entity(tableName = "settings") internal data class SettingsRow(@PrimaryKey val id: Int = 1, val tracking: Boolean, val strict: Boolean,
-    val curfewOn: Boolean, val curfewStart: String, val curfewEnd: String)
+    val curfewOn: Boolean, val curfewStart: String, val curfewEnd: String, @ColumnInfo(defaultValue = "0") val perApp: Boolean = false)
 @Entity(tableName = "overrides") internal data class OverrideRow(@PrimaryKey(autoGenerate = true) val id: Long = 0, val untilMs: Long, val createdMs: Long, val reason: String)
 @Entity(tableName = "gaps") internal data class GapRow(@PrimaryKey(autoGenerate = true) val id: Long = 0, val startMs: Long, val endMs: Long?, val reason: String)
 
@@ -35,8 +35,16 @@ internal data class IntervalRow(@PrimaryKey(autoGenerate = true) val id: Long = 
     @Query("SELECT * FROM gaps ORDER BY startMs DESC LIMIT 50") fun gaps(): Flow<List<GapRow>>
 }
 
-@Database(entities = [IntervalRow::class, RuleRow::class, SettingsRow::class, OverrideRow::class, GapRow::class], version = 1, exportSchema = true)
-internal abstract class UsageDatabase : RoomDatabase() { abstract fun dao(): UsageDao }
+@Database(entities = [IntervalRow::class, RuleRow::class, SettingsRow::class, OverrideRow::class, GapRow::class], version = 2, exportSchema = true)
+internal abstract class UsageDatabase : RoomDatabase() {
+    abstract fun dao(): UsageDao
+    companion object {
+        /** Additive: limit mode flag; existing installs keep global limits (0). */
+        val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) { db.execSQL("ALTER TABLE `settings` ADD COLUMN `perApp` INTEGER NOT NULL DEFAULT 0") }
+        }
+    }
+}
 
 class RoomUsageRepository private constructor(private val db: UsageDatabase) : UsageRepository, java.io.Closeable {
     private val dao get() = db.dao()
@@ -44,7 +52,7 @@ class RoomUsageRepository private constructor(private val db: UsageDatabase) : U
         Instant.ofEpochMilli(startMs), Instant.ofEpochMilli(endMs), bursts, screens, classifier)
 
     override val settings: Flow<FocusSettings> = dao.settings().map { r ->
-        if (r == null) FocusSettings() else FocusSettings(r.tracking, r.strict, Curfew(r.curfewOn, LocalTime.parse(r.curfewStart), LocalTime.parse(r.curfewEnd)))
+        if (r == null) FocusSettings() else FocusSettings(r.tracking, r.strict, Curfew(r.curfewOn, LocalTime.parse(r.curfewStart), LocalTime.parse(r.curfewEnd)), r.perApp)
     }
     override val rules: Flow<List<LimitRule>> = dao.rules().map { rows ->
         rows.map { LimitRule(it.id, it.target?.let(Target::valueOf), it.surface?.let(Surface::valueOf), it.minutes, it.enabled) }
@@ -64,7 +72,7 @@ class RoomUsageRepository private constructor(private val db: UsageDatabase) : U
     override suspend fun add(interval: UsageInterval) = dao.insert(IntervalRow(0, interval.target.name, interval.surface.name, interval.source.name, interval.pkg,
         interval.start.toEpochMilli(), interval.end.toEpochMilli(), interval.scrollBursts, interval.screens, interval.classifierVersion))
     override suspend fun saveSettings(settings: FocusSettings) = dao.settings(SettingsRow(1, settings.tracking, settings.strict, settings.curfew.enabled,
-        settings.curfew.start.toString(), settings.curfew.end.toString()))
+        settings.curfew.start.toString(), settings.curfew.end.toString(), settings.perApp))
     override suspend fun saveRule(rule: LimitRule) = dao.rule(RuleRow(rule.id, rule.target?.name, rule.surface?.name, rule.dailyMinutes, rule.enabled))
     override suspend fun deleteRule(id: String) = dao.deleteRule(id)
     override suspend fun addOverride(o: Override) = dao.override(OverrideRow(0, o.until.toEpochMilli(), o.createdAt.toEpochMilli(), o.reason.take(200)))
@@ -74,6 +82,6 @@ class RoomUsageRepository private constructor(private val db: UsageDatabase) : U
     override fun close() = db.close()
 
     companion object {
-        fun open(context: Context, name: String = "usage.db") = RoomUsageRepository(Room.databaseBuilder(context, UsageDatabase::class.java, name).build())
+        fun open(context: Context, name: String = "usage.db") = RoomUsageRepository(Room.databaseBuilder(context, UsageDatabase::class.java, name).addMigrations(UsageDatabase.MIGRATION_1_2).build())
     }
 }

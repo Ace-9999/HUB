@@ -76,7 +76,7 @@ class BlockedActivity : ComponentActivity() {
             val (title, body, curfew) = when (reason) {
                 is BlockReason.CurfewWindow -> Triple("It's past your cut-off", "Scrolling is paused until ${reason.until.toLocalTime().format(clock)}. Get some rest.", true)
                 is BlockReason.Budget -> {
-                    val used = engine.usedToday(reason.rule).toMinutes()
+                    val used = formatDuration(engine.usedToday(reason.rule))
                     Triple("You've used today's time", "${reason.rule.scopeLabel}: $used of ${reason.rule.dailyMinutes} min. Resets at midnight.", false)
                 }
             }

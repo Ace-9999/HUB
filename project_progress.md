@@ -372,3 +372,14 @@ stopwatch, surface classification per app, redirect on reopen, curfew, override 
 battery. Classification rules v1 are unvalidated heuristics until calibration.
 Rollback: pause tracking (Focus -> Usage) or disable the accessibility service; usage.db is
 separate from all other data.
+
+### Usage owner feedback round 1 - 13 November 2026
+
+Owner reports tracking works on the phone (owner observation; stopwatch comparison and
+classification accuracy still not formally measured). Changes: second-precise durations
+everywhere (`formatDuration`: 20s / 3m 28s / 1h 28m); limit modes - per-app switch (off:
+global reels/video + global feed limits; on: each app's own reels/video + feed limits),
+fixed grid rule ids, inactive-mode rules kept not deleted, legacy free-form limits folded
+into the grid or listed under "Other limits". Usage DB v2 additive migration (perApp
+column, default global). PASS: usage api 8/8, usage data 2/2 (incl. 1->2 migration),
+full test/assemble/lint, Compose 2/2. Installed on the phone.

@@ -20,6 +20,7 @@ class UsageEngine(private val repo: UsageRepository, private val zone: ZoneId, p
 
     @Volatile var settings: FocusSettings = FocusSettings(); private set
     @Volatile var rules: List<LimitRule> = emptyList(); private set
+    val active: List<LimitRule> get() = activeRules(rules, settings)
     private var todayDate: LocalDate? = null
     private val today = mutableListOf<UsageInterval>()
     private var override: Override? = null

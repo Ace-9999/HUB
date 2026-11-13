@@ -13,6 +13,20 @@ import java.util.UUID
 
 // Real SQLite: intervals by reporting day, rules/settings/overrides survive reopen, gaps open/close.
 class UsagePersistenceTest {
+    @get:org.junit.Rule val helper = androidx.room.testing.MigrationTestHelper(androidx.test.platform.app.InstrumentationRegistry.getInstrumentation(), UsageDatabase::class.java)
+
+    @Test fun versionOneSettingsMigrateToGlobalMode() = runBlocking<Unit> {
+        val name = "test-${UUID.randomUUID()}.db"
+        try {
+            helper.createDatabase(name, 1).apply { execSQL("INSERT INTO settings VALUES (1, 1, 0, 1, '23:00', '06:00')"); close() }
+            helper.runMigrationsAndValidate(name, 2, true, UsageDatabase.MIGRATION_1_2).close()
+            val repo = RoomUsageRepository.open(context, name)
+            try {
+                val s = repo.settings.first(); assertTrue(s.tracking && s.curfew.enabled); assertFalse(s.perApp)
+                repo.saveSettings(s.copy(perApp = true)); assertTrue(repo.settings.first().perApp)
+            } finally { repo.close() }
+        } finally { context.deleteDatabase(name) }
+    }
     private val context = ApplicationProvider.getApplicationContext<Context>()
     private val zone = ZoneId.of("Asia/Kolkata")
 

@@ -39,6 +39,14 @@ class UsageViewModel(private val repo: UsageRepository, status: TrackerStatus, p
     val state: StateFlow<UsageUi> = combine(repo.settings, repo.rules, date.flatMapLatest { d -> repo.days(d.minusDays(6), d, zone) }, status.health) { s, r, w, h -> UsageUi(s, r, w, h) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UsageUi())
     fun refreshDate() { date.value = LocalDate.now(zone) }
+    init {
+        // Earlier builds stored free-form limits; fold those that fit the reels/feed grid into it (no silent loss).
+        viewModelScope.launch {
+            repo.rules.first().filter { r -> r.surface.let { s -> s != null && r.id != ruleId(r.target, s) } }.forEach { r ->
+                repo.saveRule(r.copy(id = ruleId(r.target, r.surface!!))); repo.deleteRule(r.id)
+            }
+        }
+    }
     fun setTracking(on: Boolean) = viewModelScope.launch {
         repo.saveSettings(state.value.settings.copy(tracking = on))
         if (on) repo.closeGap(Instant.now()) else repo.openGap(Instant.now(), GapReason.PAUSED)
@@ -46,12 +54,18 @@ class UsageViewModel(private val repo: UsageRepository, status: TrackerStatus, p
     fun setStrict(on: Boolean) = viewModelScope.launch { repo.saveSettings(state.value.settings.copy(strict = on)) }
     fun setCurfew(c: Curfew) = viewModelScope.launch { repo.saveSettings(state.value.settings.copy(curfew = c)) }
     fun saveRule(target: Target?, surface: Surface?, minutes: Int) = viewModelScope.launch { repo.saveRule(LimitRule(UUID.randomUUID().toString(), target, surface, minutes)) }
+    fun setPerApp(on: Boolean) = viewModelScope.launch { repo.saveSettings(state.value.settings.copy(perApp = on)) }
+    /** Sets or clears (null) the limit for one scope in the fixed global/per-app grid. */
+    fun setLimit(target: Target?, surface: Surface, minutes: Int?) = viewModelScope.launch {
+        val id = ruleId(target, surface)
+        if (minutes == null) repo.deleteRule(id) else repo.saveRule(LimitRule(id, target, surface, minutes.coerceIn(0, 1440)))
+    }
     fun toggleRule(rule: LimitRule) = viewModelScope.launch { repo.saveRule(rule.copy(enabled = !rule.enabled)) }
     fun deleteRule(rule: LimitRule) = viewModelScope.launch { repo.deleteRule(rule.id) }
     fun used(rule: LimitRule): Duration = usedFor(rule, state.value.today?.intervals.orEmpty())
 }
 
-private fun mins(d: Duration) = d.toMinutes().let { if (it >= 60) "${it / 60}h ${it % 60}m" else "${it}m" }
+private fun mins(d: Duration) = formatDuration(d)
 
 @Composable fun UsagePane(vm: UsageViewModel, openAccessibilitySettings: () -> Unit) {
     val ui by vm.state.collectAsStateWithLifecycle()
@@ -105,7 +119,7 @@ private fun mins(d: Duration) = d.toMinutes().let { if (it >= 60) "${it / 60}h $
                     style = MaterialTheme.typography.bodyMedium, color = Hub.colors.ink)
                 HubButton("Open accessibility settings", openSettings, Modifier.fillMaxWidth(), trailingIcon = HubIcons.Arrow)
             } else {
-                Text(h.current?.let { "Now: ${it.target.label} · ${it.surface.label}${if (it.source == Source.BROWSER) " (browser)" else ""} · ${h.openSeconds / 60} min" } ?: "Not on a tracked app right now.",
+                Text(h.current?.let { "Now: ${it.target.label} · ${it.surface.label}${if (it.source == Source.BROWSER) " (browser)" else ""} · ${formatDuration(Duration.ofSeconds(h.openSeconds))}" } ?: "Not on a tracked app right now.",
                     style = MaterialTheme.typography.bodyLarge, color = Hub.colors.ink)
                 Text("Classifier v${h.classifierVersion}. Unrecognised screens count as unclassified, never guessed.", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
             }
@@ -138,41 +152,55 @@ private fun mins(d: Duration) = d.toMinutes().let { if (it >= 60) "${it / 60}h $
 }
 
 @Composable private fun LimitsCard(ui: UsageUi, vm: UsageViewModel) {
-    var adding by rememberSaveable { mutableStateOf(false) }
-    SectionHeader("Daily limits", action = { HubButton("Add", { adding = !adding }, icon = HubIcons.Plus, compact = true) })
-    if (adding) {
-        var target by rememberSaveable { mutableIntStateOf(0) }
-        var surface by rememberSaveable { mutableIntStateOf(1) }
-        var minutes by rememberSaveable { mutableStateOf("30") }
-        HubCard("New limit") {
-            Text("APP", style = MaterialTheme.typography.labelLarge, color = Hub.colors.ink)
-            ChoiceCells(listOf("All") + Target.entries.map { it.label.take(5) }, target, { target = it }, description = "App")
-            Text("WHAT", style = MaterialTheme.typography.labelLarge, color = Hub.colors.ink)
-            ChoiceCells(listOf("Everything", "Reels/video", "Feeds"), surface, { surface = it }, description = "Surface")
-            HubField(minutes, { minutes = it.filter(Char::isDigit).take(4) }, "Minutes per day", number = true)
-            val m = minutes.toIntOrNull()
-            val t = if (target == 0) null else Target.entries[target - 1]
-            val s = when (surface) { 1 -> Surface.VIDEO; 2 -> Surface.TEXT_FEED; else -> null }
-            Text(if (m == null) "Enter minutes." else "${t?.label ?: "All apps & sites"} · ${s?.label ?: "everything"} · $m min/day · resets at midnight · " +
-                if (s == null) "unclassified time counts" else "unclassified time does not count", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
-            HubButton("Save limit", { if (m != null && m <= 1440) { vm.saveRule(t, s, m); adding = false } }, Modifier.fillMaxWidth(), enabled = m != null && m <= 1440, icon = HubIcons.Check)
+    SectionHeader("Daily limits")
+    HubPanel {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Per-app time limits", style = MaterialTheme.typography.titleMedium, color = Hub.colors.ink)
+                Text(if (ui.settings.perApp) "Each app has its own reels/video and feed limits." else "Off: one reels/video limit and one feed limit shared by all apps and sites.",
+                    style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
+            }
+            HubCheck(ui.settings.perApp, { vm.setPerApp(it) }, "Per-app time limits", check = HubIcons.Check)
         }
     }
-    if (ui.rules.isEmpty() && !adding) EmptyState("No limits yet", "Add one, e.g. 30 minutes of reels a day. When it runs out you're sent home whenever you open it again.")
-    ui.rules.forEach { r ->
-        val used = vm.used(r)
-        HubPanel(color = if (r.enabled) Hub.colors.surface else Hub.colors.raised) {
+    if (!ui.settings.perApp) {
+        HubCard("All apps & sites") {
+            LimitRow(ui, vm, null, Surface.VIDEO); HubDivider(); LimitRow(ui, vm, null, Surface.TEXT_FEED)
+        }
+    } else Target.entries.forEach { t ->
+        HubCard(t.label) { LimitRow(ui, vm, t, Surface.VIDEO); HubDivider(); LimitRow(ui, vm, t, Surface.TEXT_FEED) }
+    }
+    val others = ui.rules.filter { r -> r.surface.let { s -> s == null || r.id != ruleId(r.target, s) } }
+    if (others.isNotEmpty()) HubCard("Other limits") {
+        others.forEach { r ->
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("${r.dailyMinutes} min / day", style = MaterialTheme.typography.titleLarge, color = Hub.colors.ink)
-                    Text(r.scopeLabel, style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
-                }
-                HubCheck(r.enabled, { vm.toggleRule(r) }, "Enable limit", check = HubIcons.Check)
+                Text("${r.scopeLabel} · ${r.dailyMinutes} min/day${if ((r.target != null) != ui.settings.perApp) " (inactive in this mode)" else ""}",
+                    style = MaterialTheme.typography.bodyMedium, color = Hub.colors.ink, modifier = Modifier.weight(1f))
                 HubIconButton(HubIcons.Trash, "Delete limit", { vm.deleteRule(r) }, color = Hub.colors.peach)
             }
-            HubBar(if (r.dailyMinutes == 0) 1f else used.toMinutes() / r.dailyMinutes.toFloat(), color = if (used.toMinutes() >= r.dailyMinutes) Hub.colors.peach else Hub.colors.mint)
-            Text("${mins(used)} used today", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
         }
+    }
+    Text("Leave a field empty for no limit. 0 blocks immediately. When a limit runs out, opening it again sends you home until midnight. Unclassified time doesn't count toward these.",
+        style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
+}
+
+@Composable private fun LimitRow(ui: UsageUi, vm: UsageViewModel, target: Target?, surface: Surface) {
+    val rule = ui.rules.firstOrNull { it.id == ruleId(target, surface) }
+    var text by remember(rule?.dailyMinutes, rule?.id) { mutableStateOf(rule?.dailyMinutes?.toString() ?: "") }
+    val used = vm.used(rule ?: LimitRule("preview", target, surface, 0))
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            HubField(text, { text = it.filter(Char::isDigit).take(4) }, if (surface == Surface.VIDEO) "Reels & video · min/day" else "Feeds · min/day",
+                Modifier.weight(1f), placeholder = "No limit", number = true)
+            val value = text.toIntOrNull()
+            val changed = value != rule?.dailyMinutes
+            HubButton(if (value == null && rule != null) "Clear" else "Set", { vm.setLimit(target, surface, value) }, enabled = changed && (value == null || value <= 1440), compact = true)
+        }
+        if (rule != null) {
+            val over = used.seconds >= rule.dailyMinutes * 60L
+            HubBar(if (rule.dailyMinutes == 0) 1f else used.seconds / (rule.dailyMinutes * 60f), color = if (over) Hub.colors.peach else Hub.colors.mint)
+            Text("${formatDuration(used)} of ${rule.dailyMinutes}m used today${if (over) " · limit reached" else ""}", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
+        } else Text("${formatDuration(used)} today · no limit", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
     }
 }
 

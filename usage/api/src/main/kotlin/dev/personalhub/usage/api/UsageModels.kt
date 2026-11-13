@@ -82,7 +82,19 @@ data class Curfew(val enabled: Boolean, val start: LocalTime, val end: LocalTime
 data class FocusSettings(
     val tracking: Boolean = false, val strict: Boolean = false,
     val curfew: Curfew = Curfew(false, LocalTime.of(23, 0), LocalTime.of(6, 0)),
+    /** Off: global reels/video and feed limits across all apps. On: each app's own limits. Inactive rules are kept, not deleted. */
+    val perApp: Boolean = false,
 )
+
+/** Rules in force for the selected mode. */
+fun activeRules(rules: List<LimitRule>, settings: FocusSettings) = rules.filter { if (settings.perApp) it.target != null else it.target == null }
+fun ruleId(target: Target?, surface: Surface) = "${target?.name ?: "ALL"}:${surface.name}"
+
+/** 20s · 3m 28s · 1h 28m */
+fun formatDuration(d: Duration): String {
+    val s = d.seconds.coerceAtLeast(0)
+    return when { s < 60 -> "${s}s"; s < 3600 -> "${s / 60}m ${s % 60}s"; else -> "${s / 3600}h ${(s % 3600) / 60}m" }
+}
 
 data class Override(val until: Instant, val createdAt: Instant, val reason: String)
 
@@ -100,7 +112,7 @@ fun evaluate(ctx: UsageContext, settings: FocusSettings, rules: List<LimitRule>,
     if (!settings.tracking) return null
     if (override != null && override.until.isAfter(now.toInstant())) return null
     if (settings.curfew.active(now.toLocalTime())) return BlockReason.CurfewWindow(settings.curfew.endsAt(now.toLocalDateTime()))
-    return rules.filter { it.applies(ctx) }.map { it to used(it) }
+    return activeRules(rules, settings).filter { it.applies(ctx) }.map { it to used(it) }
         .filter { (r, u) -> u >= Duration.ofMinutes(r.dailyMinutes.toLong()) }
         .maxByOrNull { (r, u) -> u.toMinutes() - r.dailyMinutes }?.let { (r, u) -> BlockReason.Budget(r, u) }
 }

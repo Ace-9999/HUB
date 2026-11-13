@@ -70,8 +70,18 @@ class UsageRulesTest {
         assertNull(evaluate(reels, settings, listOf(video), { used.getValue(it.id) }, day, Override(day.toInstant().plusSeconds(60), day.toInstant(), "x")))
         assertNull(evaluate(reels, settings.copy(tracking = false), listOf(video), { used.getValue(it.id) }, day, null))
     }
+    @Test fun modeSelectsGlobalOrPerAppRulesAndDurationsFormat() {
+        val now = ZonedDateTime.of(2026, 11, 13, 15, 0, 0, 0, zone)
+        val global = LimitRule(ruleId(null, Surface.VIDEO), null, Surface.VIDEO, 10)
+        val perApp = LimitRule(ruleId(Target.INSTAGRAM, Surface.VIDEO), Target.INSTAGRAM, Surface.VIDEO, 60)
+        val used = { _: LimitRule -> Duration.ofMinutes(20) }
+        assertNotNull(evaluate(reels, FocusSettings(tracking = true), listOf(global, perApp), used, now, null))
+        assertNull(evaluate(reels, FocusSettings(tracking = true, perApp = true), listOf(global, perApp), used, now, null))
+        assertEquals("20s", formatDuration(Duration.ofSeconds(20))); assertEquals("3m 28s", formatDuration(Duration.ofSeconds(208)))
+        assertEquals("1h 28m", formatDuration(Duration.ofSeconds(5280 + 59)))
+    }
     @Test fun zeroBudgetBlocksImmediatelyAndUnknownCountsOnlyServiceWide() {
-        val s = FocusSettings(tracking = true)
+        val s = FocusSettings(tracking = true, perApp = true)
         val now = ZonedDateTime.of(2026, 11, 13, 15, 0, 0, 0, zone)
         assertNotNull(evaluate(reels, s, listOf(LimitRule("z", Target.INSTAGRAM, null, 0)), { Duration.ZERO }, now, null))
         val unknown = UsageInterval(Target.INSTAGRAM, Surface.UNKNOWN, Source.BROWSER, "com.android.chrome", t0, t0.plusSeconds(600), 0, null)
