@@ -136,6 +136,13 @@ class VtopParserTest {
         val vertical = table(listOf("Grade", "Range"), listOf("S", "86 - 100"), listOf("A", "78 - 85"), listOf("B", "70 - 77"))
         assertEquals("78 - 85", VtopParser.gradeDetail("X", listOf(vertical)).second.single { it.grade == "A" }.range)
     }
+    @Test fun lightSyncMarksHeavyDatasetsSkippedNotFailed() {
+        val payload = JSONObject().put("phase", "done").put("semester", "S1").put("skipped", JSONArray().put("calendar").put("grades").put("results"))
+            .put("datasets", JSONObject().put("timetable", JSONObject().put("status", 200).put("tables", JSONArray())))
+        val out = VtopImport.build(payload.toString(), Instant.EPOCH) as SyncOutcome.Success
+        listOf(Dataset.CALENDAR, Dataset.GRADES, Dataset.RESULTS).forEach { d -> assertEquals(ImportState.SKIPPED, out.import.statuses.single { it.dataset == d }.state) }
+        assertFalse(out.import.ok(Dataset.GRADES)) // repository keeps the cached rows
+    }
     @Test fun semesterPlaceholdersAreDropped() {
         val s = VtopParser.semesters(listOf("" to "-- Choose Semester --", "S1" to "Fall  Semester 2026-27", "S1" to "dup"))
         assertEquals(listOf(Semester("S1", "Fall Semester 2026-27")), s)

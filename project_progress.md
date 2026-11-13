@@ -527,3 +527,12 @@ Session-end next action for the next agent: run `git status` (should be clean), 
 I13 (plain JSON backup/export + restore preview, scheduled best-effort daily backup with 7-snapshot
 retention, SYS-11/NFR rules in SRS §4/data_export.md), unless the owner returns with parked-item
 results to act on first.
+
+### College light vs full sync - 14 November 2026 (overnight, owner asleep)
+
+Owner: grade history and calendar change rarely; only fetch them on semester change. Normal
+"Sync now" is now light (timetable, attendance, marks, exams); calendar, grade history and
+semester results are fetched only on semester switch, first sync, missing cached data, or the
+new "Full refresh" button. Skipped datasets report SKIPPED ("kept from last full sync") and
+never overwrite cached rows or their last real status. +1 parser test (vtop 17/17).
+PENDING (owner): one light + one full sync on the phone.

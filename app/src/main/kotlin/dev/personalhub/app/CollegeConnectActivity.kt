@@ -52,7 +52,7 @@ class CollegeConnectActivity : ComponentActivity() {
     private fun startSync(app: PersonalHubApplication, semester: String?) {
         if (phase.value == Phase.SYNCING) return
         phase.value = Phase.SYNCING
-        portal.sync(semester) { outcome ->
+        portal.sync(semester, intent.getBooleanExtra(FULL, true)) { outcome ->
             when (outcome) {
                 is SyncOutcome.Success -> app.scope.launch {
                     runCatching { app.college.save(outcome.import) }.onSuccess {
@@ -109,5 +109,5 @@ class CollegeConnectActivity : ComponentActivity() {
         super.onDestroy()
     }
 
-    companion object { const val SEMESTER = "semester"; private const val TAG = "PersonalHubSync" }
+    companion object { const val SEMESTER = "semester"; const val FULL = "full"; private const val TAG = "PersonalHubSync" }
 }

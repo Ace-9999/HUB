@@ -80,7 +80,8 @@ internal object VtopScripts {
       });
     """
 
-    fun sync(semesterId: String?): String = """
+    /** [full] = also fetch the heavy, rarely-changing datasets (academic calendar, grade history, semester results). */
+    fun sync(semesterId: String?, full: Boolean = true): String = """
     (() => {
       window.__phSync = { phase: 'running' };
       $COMMON
@@ -127,7 +128,9 @@ internal object VtopScripts {
             store('exams', r); result.shapes.exams = { status: r.status, tables: r.doc.querySelectorAll('table').length };
           });
           // Academic calendar: class group from the page (e.g. COMB), months from getDateForSemesterPreview, one grid per month.
-          await step('calendar', async () => {
+          const full = ${if (full) "true" else "false"};
+          result.skipped = full ? [] : ['calendar', 'grades', 'results'];
+          if (full) await step('calendar', async () => {
             const menu = await menuOpen('academics/common/CalendarPreview');
             const cg = Array.from((menu.doc.getElementById('classGroupId') || { options: [] }).options).map(o => o.value).filter(v => v);
             const group = cg[0] || 'ALL';
@@ -142,9 +145,9 @@ internal object VtopScripts {
             result.datasets.calendar = { status: months.length && statuses.every(x => x === 200) ? 200 : (statuses.find(x => x !== 200) || 204), tables: all };
             result.shapes.calendar = { months: months.length, statuses, tables: all.length };
           });
-          await step('grades', async () => store('grades', await menuOpen('examinations/examGradeView/StudentGradeHistory')));
+          if (full) await step('grades', async () => store('grades', await menuOpen('examinations/examGradeView/StudentGradeHistory')));
           // Semester results: Grade View per semester with published grades, then each course's detail (marks + ranges).
-          await step('results', async () => {
+          if (full) await step('results', async () => {
             const menu = await menuOpen('examinations/examGradeView/StudentGradeView');
             const sel = menu.doc.getElementById('semesterSubId');
             const opts = sel ? Array.from(sel.options).map(o => o.value) : [];

@@ -180,7 +180,7 @@ class RoomCollegeRepository private constructor(private val db: CollegeDatabase)
             dao.resultComponents(res.courses.flatMapIndexed { i, c -> c.components.mapIndexed { j, m -> ResultComponentRow(sid, i, j, m.title, m.maxMark, m.weightage, m.scored, m.weighted, m.status) } })
             dao.resultRanges(res.courses.flatMapIndexed { i, c -> c.ranges.distinctBy { it.grade }.mapIndexed { j, g -> ResultRangeRow(sid, i, g.grade, g.range, j) } })
         }
-        import.statuses.forEach { st ->
+        import.statuses.filter { it.state != ImportState.SKIPPED || dao.status(it.dataset.name) == null }.forEach { st ->
             val previous = dao.status(st.dataset.name)
             val success = st.state == ImportState.OK || st.state == ImportState.EMPTY
             dao.status(StatusRow(st.dataset.name, st.state.name, st.rows, st.detail, now, if (success) now else previous?.lastSuccessAt))

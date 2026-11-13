@@ -43,7 +43,7 @@ private val palette @Composable get() = listOf(Hub.colors.lime, Hub.colors.mint,
 }
 
 /** College destination body. [onConnect] opens the owner-operated portal sync (optional semester). */
-@Composable fun CollegeContent(vm: CollegeViewModel, page: CollegePage, onPage: (CollegePage) -> Unit, onConnect: (String?) -> Unit) {
+@Composable fun CollegeContent(vm: CollegeViewModel, page: CollegePage, onPage: (CollegePage) -> Unit, onConnect: (String?, Boolean) -> Unit) {
     val ui by vm.state.collectAsStateWithLifecycle()
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         if (page != CollegePage.OVERVIEW) ScreenTitle(page.title, onBack = { onPage(CollegePage.OVERVIEW) }, back = HubIcons.Back,
@@ -63,20 +63,20 @@ private val palette @Composable get() = listOf(Hub.colors.lime, Hub.colors.mint,
     }
 }
 
-@Composable private fun ConnectCard(onConnect: (String?) -> Unit) {
+@Composable private fun ConnectCard(onConnect: (String?, Boolean) -> Unit) {
     HubPanel(padding = 22.dp) {
         Pill("VTOP · CHENNAI", Hub.colors.lime)
         Text("Connect your college account", style = MaterialTheme.typography.displaySmall, color = Hub.colors.ink)
         Text("You'll sign in on the official portal inside this app. Your password and captcha stay on the portal page — PersonalHub never reads or stores them.",
             style = MaterialTheme.typography.bodyLarge, color = Hub.colors.inkSoft)
-        HubButton("Connect VTOP", { onConnect(null) }, Modifier.fillMaxWidth(), trailingIcon = HubIcons.Arrow)
+        HubButton("Connect VTOP", { onConnect(null, true) }, Modifier.fillMaxWidth(), trailingIcon = HubIcons.Arrow)
         Text("Timetable, attendance, marks and grade history are saved on this device for offline use.", style = MaterialTheme.typography.bodySmall,
             color = Hub.colors.inkSoft, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
     }
 }
 
 // ---------------------------------------------------------------- Overview
-@Composable private fun Overview(vm: CollegeViewModel, ui: CollegeUi, onPage: (CollegePage) -> Unit, onConnect: (String?) -> Unit) {
+@Composable private fun Overview(vm: CollegeViewModel, ui: CollegeUi, onPage: (CollegePage) -> Unit, onConnect: (String?, Boolean) -> Unit) {
     val s = ui.snapshot
     val sum = s.summary
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
@@ -141,7 +141,7 @@ private val palette @Composable get() = listOf(Hub.colors.lime, Hub.colors.mint,
     }
 }
 
-@Composable private fun SyncCard(vm: CollegeViewModel, s: CollegeSnapshot, onConnect: (String?) -> Unit) {
+@Composable private fun SyncCard(vm: CollegeViewModel, s: CollegeSnapshot, onConnect: (String?, Boolean) -> Unit) {
     var confirm by remember { mutableStateOf(false) }
     HubCard("Portal sync", trailing = { Pill(s.syncedAt?.let { "Synced" } ?: "Never", Hub.colors.mint) }) {
         s.syncedAt?.let { Text("Last sync ${it.atZone(vm.time.zone).format(syncFmt)}", style = MaterialTheme.typography.bodyMedium, color = Hub.colors.inkSoft) }
@@ -154,12 +154,15 @@ private val palette @Composable get() = listOf(Hub.colors.lime, Hub.colors.mint,
         Text("Imported values are unverified until you compare them with the portal once.", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
         if (s.semesters.size > 1) {
             Text("SEMESTER", style = MaterialTheme.typography.labelLarge, color = Hub.colors.ink)
-            PillTabs(s.semesters.map { it.name }, s.semesters.indexOfFirst { it.id == s.semester?.id }, { onConnect(s.semesters[it].id) }, color = Hub.colors.cyan)
+            PillTabs(s.semesters.map { it.name }, s.semesters.indexOfFirst { it.id == s.semester?.id }, { onConnect(s.semesters[it].id, true) }, color = Hub.colors.cyan)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            HubButton("Sync now", { onConnect(s.semester?.id) }, Modifier.weight(1f), icon = HubIcons.Sync)
+            HubButton("Sync now", { onConnect(s.semester?.id, false) }, Modifier.weight(1f), icon = HubIcons.Sync)
             HubButton(if (confirm) "Confirm" else "Disconnect", { if (confirm) vm.disconnect { dev.personalhub.feature.college.SessionHooks.clear() } else confirm = true }, tone = ButtonTone.Danger)
         }
+        HubButton("Full refresh", { onConnect(s.semester?.id, true) }, tone = ButtonTone.Plain, compact = true, icon = HubIcons.Sync)
+        Text("Sync now refreshes timetable, attendance, marks and exams. Grade history and the academic calendar refresh on semester change or Full refresh.",
+            style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
         if (confirm) Text("Disconnect deletes saved academic data from this device and signs the portal session out.", style = MaterialTheme.typography.bodySmall, color = Hub.colors.danger)
     }
 }

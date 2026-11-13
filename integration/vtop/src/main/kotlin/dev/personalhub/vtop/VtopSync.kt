@@ -18,6 +18,9 @@ sealed interface SyncOutcome {
 /** Converts the bounded script payload into a validated import. Pure apart from org.json, JVM-testable. */
 object VtopImport {
     fun build(payload: String, now: Instant, preferredSemester: String? = null): SyncOutcome {
+        val skipped = runCatching { JSONObject(payload).optJSONArray("skipped") }.getOrNull()
+            ?.let { a -> (0 until a.length()).map { a.optString(it) }.toSet() }.orEmpty()
+        fun skippedStatus(d: Dataset, name: String) = if (name in skipped) DatasetStatus(d, ImportState.SKIPPED, 0, "Kept from last full sync (changes rarely)") else null
         val root = runCatching { JSONObject(payload) }.getOrElse { return SyncOutcome.Failure("Portal response could not be read.") }
         if (root.optString("phase") == "error") return SyncOutcome.Failure(when (root.optString("reason")) {
             "not_signed_in" -> "Sign in on the portal first."
@@ -56,13 +59,13 @@ object VtopImport {
         statuses += marks?.status ?: DatasetStatus(Dataset.MARKS, ImportState.FAILED, 0, mkErr ?: "failed")
         val (grTables, grErr) = tables("grades")
         val grades = grTables?.let { VtopParser.grades(it) }
-        statuses += grades?.first?.status ?: DatasetStatus(Dataset.GRADES, ImportState.FAILED, 0, grErr ?: "failed")
+        statuses += grades?.first?.status ?: skippedStatus(Dataset.GRADES, "grades") ?: DatasetStatus(Dataset.GRADES, ImportState.FAILED, 0, grErr ?: "failed")
         val (exTables, exErr) = tables("exams")
         val exams = exTables?.let { VtopParser.exams(it) }
         statuses += exams?.status ?: DatasetStatus(Dataset.EXAMS, ImportState.FAILED, 0, exErr ?: "failed")
         val (calTables, calErr) = tables("calendar")
         val calendar = calTables?.let { VtopParser.calendar(it) }
-        statuses += calendar?.status ?: DatasetStatus(Dataset.CALENDAR, ImportState.FAILED, 0, calErr ?: "failed")
+        statuses += calendar?.status ?: skippedStatus(Dataset.CALENDAR, "calendar") ?: DatasetStatus(Dataset.CALENDAR, ImportState.FAILED, 0, calErr ?: "failed")
         val results = data.optJSONObject("results")?.optJSONArray("semesters")?.let { arr ->
             (0 until arr.length()).mapNotNull { i ->
                 val o = arr.getJSONObject(i)
@@ -74,7 +77,7 @@ object VtopImport {
                     courses.map { c -> byCode[c.code]?.let { (comps, ranges) -> c.copy(components = comps, ranges = ranges) } ?: c })
             }
         }
-        statuses += if (results == null) DatasetStatus(Dataset.RESULTS, ImportState.FAILED, 0, "not fetched")
+        statuses += if (results == null) skippedStatus(Dataset.RESULTS, "results") ?: DatasetStatus(Dataset.RESULTS, ImportState.FAILED, 0, "not fetched")
             else DatasetStatus(Dataset.RESULTS, if (results.isEmpty()) ImportState.EMPTY else ImportState.OK, results.size,
                 "${results.size} semesters · ${results.sumOf { it.courses.size }} courses · ${results.sumOf { r -> r.courses.count { it.ranges.isNotEmpty() } }} with ranges")
         if (statuses.all { it.state == ImportState.FAILED }) return SyncOutcome.Failure("Every dataset failed: ${statuses.joinToString { "${it.dataset.label} ${it.detail}" }}.")
@@ -150,12 +153,12 @@ class VtopSyncView(context: Context, private val status: (String) -> Unit) : Web
         evaluateJavascript(VtopScripts.STATE) { if (VtopScripts.unquote(it) == "signed_in" && !signedInReported) { signedInReported = true; onSignedIn?.invoke() } }
     }
 
-    fun sync(semesterId: String?, done: (SyncOutcome) -> Unit) {
+    fun sync(semesterId: String?, full: Boolean = true, done: (SyncOutcome) -> Unit) {
         if (syncing) return
         if (!PortalPolicy.permits(url.orEmpty())) { done(SyncOutcome.Failure("Open the official portal first.")); return }
         syncing = true
         status("Signed in. Reading semesters…")
-        evaluateJavascript(VtopScripts.sync(semesterId), null)
+        evaluateJavascript(VtopScripts.sync(semesterId, full), null)
         val deadline = System.currentTimeMillis() + 300_000
         val poll = object : Runnable {
             override fun run() {

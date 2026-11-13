@@ -116,7 +116,12 @@ private val tabs = listOf("today", "college", "training", "focus")
     }
     var trainNav by rememberSaveable(stateSaver = TrainNavSaver) { mutableStateOf(dev.personalhub.feature.training.TrainNav()) }
     val college: CollegeViewModel = viewModel(factory = viewModelFactory { initializer { CollegeViewModel(app.college, app.time) } })
-    val connect: (String?) -> Unit = { semester -> context.startActivity(Intent(context, CollegeConnectActivity::class.java).apply { semester?.let { putExtra(CollegeConnectActivity.SEMESTER, it) } }) }
+    // Light sync unless the semester changes, heavy data was never fetched, or a full refresh is requested.
+    val connect: (String?, Boolean) -> Unit = { semester, force ->
+        val snap = college.state.value.snapshot
+        val full = force || semester == null || semester != snap.semester?.id || snap.calendar.isEmpty() || snap.results.isEmpty()
+        context.startActivity(Intent(context, CollegeConnectActivity::class.java).putExtra(CollegeConnectActivity.FULL, full).apply { semester?.let { putExtra(CollegeConnectActivity.SEMESTER, it) } })
+    }
     val selected = tabs[pager.currentPage]
     val googleControls = remember {
         GoogleTasksControls(app.googleTasks.state, app.settings.googleTasks,
