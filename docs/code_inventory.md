@@ -14,6 +14,7 @@ Purpose comments in source and the progress log describe responsibilities.
 | `app/src/debug/res/values/strings.xml` | Source/config/schema |
 | `app/src/debug/res/xml/probe_accessibility.xml` | Source/config/schema |
 | `app/src/main/AndroidManifest.xml` | Source/config/schema |
+| `app/src/main/kotlin/dev/personalhub/app/BlockedActivity.kt` | Source/config/schema |
 | `app/src/main/kotlin/dev/personalhub/app/CollegeConnectActivity.kt` | Source/config/schema |
 | `app/src/main/kotlin/dev/personalhub/app/DemoData.kt` | Source/config/schema |
 | `app/src/main/kotlin/dev/personalhub/app/MainActivity.kt` | Source/config/schema |
@@ -24,9 +25,11 @@ Purpose comments in source and the progress log describe responsibilities.
 | `app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml` | Source/config/schema |
 | `app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml` | Source/config/schema |
 | `app/src/main/res/raw/vtop_sectigo_r36.pem` | Source/config/schema |
+| `app/src/main/res/values/strings.xml` | Source/config/schema |
 | `app/src/main/res/values/styles.xml` | Source/config/schema |
 | `app/src/main/res/values-v31/styles.xml` | Source/config/schema |
 | `app/src/main/res/xml/data_extraction_rules.xml` | Source/config/schema |
+| `app/src/main/res/xml/usage_tracker.xml` | Source/config/schema |
 | `app/src/main/res/xml/vtop_network_security.xml` | Source/config/schema |
 | `app/src/portalProbe/kotlin/dev/personalhub/app/PublicPortalProbeTest.kt` | Source/config/schema |
 | `core/designsystem/build.gradle.kts` | Source/config/schema |
@@ -65,11 +68,16 @@ Purpose comments in source and the progress log describe responsibilities.
 | `feature/college/src/main/kotlin/dev/personalhub/feature/college/CollegeViewModel.kt` | Source/config/schema |
 | `feature/focus/build.gradle.kts` | Source/config/schema |
 | `feature/focus/src/main/kotlin/dev/personalhub/feature/focus/FocusScreens.kt` | Source/config/schema |
+| `feature/focus/src/main/kotlin/dev/personalhub/feature/focus/FocusUsage.kt` | Source/config/schema |
 | `feature/focus/src/main/kotlin/dev/personalhub/feature/focus/FocusViewModel.kt` | Source/config/schema |
 | `integration/monitoring/build.gradle.kts` | Source/config/schema |
 | `integration/monitoring/src/main/kotlin/dev/personalhub/monitoring/ProbeAccessibilityService.kt` | Source/config/schema |
 | `integration/monitoring/src/main/kotlin/dev/personalhub/monitoring/ProbeSignals.kt` | Source/config/schema |
+| `integration/monitoring/src/main/kotlin/dev/personalhub/monitoring/SurfaceClassifier.kt` | Source/config/schema |
+| `integration/monitoring/src/main/kotlin/dev/personalhub/monitoring/UsageEngine.kt` | Source/config/schema |
+| `integration/monitoring/src/main/kotlin/dev/personalhub/monitoring/UsageTrackerService.kt` | Source/config/schema |
 | `integration/monitoring/src/test/kotlin/dev/personalhub/monitoring/ProbeSignalsTest.kt` | Test |
+| `integration/monitoring/src/test/kotlin/dev/personalhub/monitoring/SurfaceClassifierTest.kt` | Test |
 | `integration/vtop/build.gradle.kts` | Source/config/schema |
 | `integration/vtop/src/main/AndroidManifest.xml` | Source/config/schema |
 | `integration/vtop/src/main/kotlin/dev/personalhub/vtop/PortalPolicy.kt` | Source/config/schema |

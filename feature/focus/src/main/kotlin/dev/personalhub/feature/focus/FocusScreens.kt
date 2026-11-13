@@ -40,10 +40,10 @@ private val timeFmt = DateTimeFormatter.ofPattern("h:mm a")
 }
 
 /** Focus destination body (FOC-05/06/08/09). The host supplies scrolling and the title row. */
-@Composable fun FocusContent(vm: FocusViewModel, tab: Int, onTab: (Int) -> Unit) {
+@Composable fun FocusContent(vm: FocusViewModel, usage: UsageViewModel, tab: Int, onTab: (Int) -> Unit, openAccessibilitySettings: () -> Unit) {
     val ui by vm.state.collectAsStateWithLifecycle()
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        PillTabs(listOf("Tasks", "Habits", "Mood", "Trends"), tab, onTab)
+        PillTabs(listOf("Tasks", "Habits", "Mood", "Trends", "Usage"), tab, onTab)
         vm.message.collectAsStateWithLifecycle().value?.let { MessageBar(it, vm::dismissMessage) }
         androidx.compose.animation.AnimatedContent(tab, transitionSpec = {
             val dir = if (targetState > initialState) 1 else -1
@@ -55,7 +55,8 @@ private val timeFmt = DateTimeFormatter.ofPattern("h:mm a")
                     0 -> TasksPane(vm, ui)
                     1 -> HabitsPane(vm, ui)
                     2 -> MoodPane(vm, ui)
-                    else -> TrendsPane(ui)
+                    3 -> TrendsPane(ui)
+                    else -> UsagePane(usage, openAccessibilitySettings)
                 }
             }
         }

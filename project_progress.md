@@ -341,3 +341,34 @@ lime/cyan/peach/mint with a hard ink shadow on the ivory dotted canvas = the fou
 themed monochrome layer, round icon, light window background and Android 12+ splash icon.
 No third-party/brand artwork. PASS: JVM tests, connected APK, lint, Compose 2/2; launcher
 rendering checked on API 29. VTOP work is complete; next is Focus (lock, reminders).
+
+### Focus usage tracking, limits and curfew (I10-I12 implementation) - 13 November 2026
+
+Owner: Focus before Train; requires reel tracking, text-scroll tracking, daily limits that
+redirect on every reopen, and a night cut-off (e.g. after 23:00). Targets chosen by owner:
+Instagram app (owner will install), Instagram/X/Reddit in Chrome or Brave, Reddit app,
+YouTube (Shorts + regular). Instagram/X native packages were absent on the phone at start.
+Requirements: FOC-01..08, FOC-10, FOC-11, HAB-03 (derived totals), SRS §7.2; the cut-off is
+an owner addition implemented as a scheduled block window under FOC-06/07.
+
+Code map additions:
+- `usage/api`: targets/hosts (exact host match), surfaces (VIDEO/TEXT_FEED/OTHER/UNKNOWN),
+  intervals, `SessionTracker` (monotonic timing, 300 ms/1 s scroll bursts, reliable-delta
+  screen estimates, midnight split), limit rules, curfew, overrides, `evaluate` (curfew
+  first, most-exhausted budget, override suspends, unknown counts service-wide only).
+- `usage/data`: Room `usage.db` v1 (intervals, rules, settings, overrides, coverage gaps).
+- `integration/monitoring`: `UsageTrackerService` (opt-in accessibility; window package,
+  resource-id names and browser address bar only; screen-off stop; 15 s ticks with 60 s
+  checkpoints; Home redirect + local explanation), `UsageEngine`, `SurfaceClassifier` v1
+  (initial heuristics, pending calibration), debug-only `Calibration` id-name log.
+- `app`: service registration/config, `BlockedActivity` (redirect explanation, 10 s friction,
+  logged 5-minute override unless strict, settings always reachable), engine composition.
+- `feature/focus/FocusUsage.kt`: Usage tab (disclosure/enable flow, health, today's reels/video
+  vs feed minutes, bursts/screens, per-app split, 7-day chart, limits editor with scope preview,
+  night cut-off, strict mode).
+Checks: usage api 7/7 JVM; classifier 3/3 JVM; usage data 1/1 device (API 29); full
+test/assemble/lint; Compose 2/2. NOT yet verified on the phone: service enable, timing vs
+stopwatch, surface classification per app, redirect on reopen, curfew, override expiry,
+battery. Classification rules v1 are unvalidated heuristics until calibration.
+Rollback: pause tracking (Focus -> Usage) or disable the accessibility service; usage.db is
+separate from all other data.

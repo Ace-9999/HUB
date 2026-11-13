@@ -34,6 +34,7 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 class MainActivity : ComponentActivity() {
+    companion object { const val OPEN_USAGE = "openUsage" }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -44,7 +45,7 @@ class MainActivity : ComponentActivity() {
                 val dark = Hub.colors.dark
                 val view = androidx.compose.ui.platform.LocalView.current
                 SideEffect { androidx.core.view.WindowCompat.getInsetsController(window, view).run { isAppearanceLightStatusBars = !dark; isAppearanceLightNavigationBars = !dark } }
-                HubApp(app, theme)
+                HubApp(app, theme, intent?.getBooleanExtra(OPEN_USAGE, false) == true)
             }
         }
     }
@@ -54,13 +55,15 @@ val sections = SectionRegistry(listOf(Section("today", "Today"), Section("colleg
 private val navItems = listOf(NavItem("today", "Today", HubIcons.Home), NavItem("college", "College", HubIcons.School),
     NavItem("training", "Train", HubIcons.Dumbbell), NavItem("focus", "Focus", HubIcons.Bolt))
 
-@Composable fun HubApp(app: PersonalHubApplication, theme: String) {
-    var selected by rememberSaveable { mutableStateOf("today") }
+@Composable fun HubApp(app: PersonalHubApplication, theme: String, openUsage: Boolean = false) {
+    var selected by rememberSaveable { mutableStateOf(if (openUsage) "focus" else "today") }
     var settings by rememberSaveable { mutableStateOf(false) }
     var collegePage by rememberSaveable { mutableStateOf(CollegePage.OVERVIEW) }
-    var focusTab by rememberSaveable { mutableIntStateOf(0) }
+    var focusTab by rememberSaveable { mutableIntStateOf(if (openUsage) 4 else 0) }
     val context = LocalContext.current
     val focus: FocusViewModel = viewModel(factory = viewModelFactory { initializer { FocusViewModel(app.focus, app.time) } })
+    val usage: UsageViewModel = viewModel(factory = viewModelFactory { initializer { UsageViewModel(app.usage, app.usageEngine, app.time.zone) } })
+    val openAccessibility = { context.startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
     val college: CollegeViewModel = viewModel(factory = viewModelFactory { initializer { CollegeViewModel(app.college, app.time) } })
     val connect: (String?) -> Unit = { semester -> context.startActivity(Intent(context, CollegeConnectActivity::class.java).apply { semester?.let { putExtra(CollegeConnectActivity.SEMESTER, it) } }) }
     val scroll = rememberScrollState()
@@ -90,7 +93,7 @@ private val navItems = listOf(NavItem("today", "Today", HubIcons.Home), NavItem(
                                     CollegeContent(college, s.page, { collegePage = it }, connect)
                                 }
                                 "training" -> { Header("Train", "Routines & workouts") { settings = true }; TrainingPlaceholder() }
-                                else -> { Header("Focus", "Tasks, habits & mood") { settings = true }; FocusContent(focus, focusTab) { focusTab = it } }
+                                else -> { Header("Focus", "Tasks, habits & mood") { settings = true }; FocusContent(focus, usage, focusTab, { focusTab = it }, openAccessibility) }
                             }
                         }
                     }
@@ -169,6 +172,11 @@ private fun pageTransition(from: Screen, to: Screen): ContentTransform {
     }
     StatusCard(DataStatus.UNAVAILABLE, "Screen-time tracking", "Optional monitoring stays off until device checks pass (I10–I12). Local features need no permissions.")
     if (BuildConfig.DEMO) HubButton("Load sample college data (demo)", { app.scope.launch { app.college.save(DemoData.college(java.time.Instant.now())) } }, tone = ButtonTone.Mint)
+    if (BuildConfig.DEBUG) {
+        var calib by remember { mutableStateOf(dev.personalhub.monitoring.Calibration.enabled) }
+        HubButton(if (calib) "Layout calibration log: ON (debug)" else "Layout calibration log: off (debug)", {
+            calib = !calib; dev.personalhub.monitoring.Calibration.enabled = calib }, tone = if (calib) ButtonTone.Mint else ButtonTone.Plain, compact = true)
+    }
     if (BuildConfig.DEBUG) HubButton("Device probes (debug)", { context.startActivity(Intent().setClassName(context, "dev.personalhub.app.ProbeActivity")) }, tone = ButtonTone.Plain)
     Text("PersonalHub ${BuildConfig.VERSION_NAME} · ${if (BuildConfig.DEMO) "Demo" else "Connected"} · Fonts: Archivo Black & Space Grotesk (SIL OFL 1.1)",
         style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)

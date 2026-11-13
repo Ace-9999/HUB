@@ -4,6 +4,7 @@ dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:designsystem"))
     api(project(":focus:api"))
+    api(project(":usage:api"))
     implementation(libs.compose.icons)
     implementation(libs.lifecycle.compose)
     implementation(libs.lifecycle.viewmodel)

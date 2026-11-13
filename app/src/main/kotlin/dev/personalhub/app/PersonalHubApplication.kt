@@ -18,11 +18,17 @@ import java.time.ZoneId
 private val Context.preferences by preferencesDataStore("settings")
 
 // Application composition owns repositories; feature modules consume public APIs only.
-class PersonalHubApplication : Application() {
+class PersonalHubApplication : Application(), dev.personalhub.monitoring.UsageHost {
     val settings by lazy { SettingsStore(this) }
     val time by lazy { AppTime(zone = ZoneId.systemDefault()) }
     val focus by lazy { RoomFocusRepository.open(this, time) }
     val college by lazy { RoomCollegeRepository.open(this) }
+    val usage by lazy { dev.personalhub.usage.data.RoomUsageRepository.open(this) }
+    private val mainScope = CoroutineScope(SupervisorJob() + kotlinx.coroutines.Dispatchers.Main.immediate)
+    override val usageEngine by lazy { dev.personalhub.monitoring.UsageEngine(usage, time.zone, mainScope) }
+    override fun showBlock(reason: dev.personalhub.usage.api.BlockReason, ctx: dev.personalhub.usage.api.UsageContext) {
+        startActivity(BlockedActivity.intent(this, reason, ctx, usageEngine))
+    }
     /** Outlives activities so an acknowledged sync save is not cancelled by closing the portal screen. */
     val scope = CoroutineScope(SupervisorJob())
     override fun onCreate() {
