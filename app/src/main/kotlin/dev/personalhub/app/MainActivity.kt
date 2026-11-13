@@ -6,6 +6,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.*
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -76,15 +79,20 @@ private val navItems = listOf(NavItem("today", "Today", HubIcons.Home), NavItem(
             Box(Modifier.weight(1f)) {
                 Column(Modifier.fillMaxSize().verticalScroll(scroll).statusBarsPadding().padding(horizontal = Hub.ScreenPadding).padding(top = 12.dp, bottom = 96.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    if (settings) SettingsScreen(app, theme) { settings = false }
-                    else when (selected) {
-                        "today" -> TodayScreen(focus, college, onSettings = { settings = true }, openCollege = { collegePage = it; selected = "college" }, openFocus = { focusTab = it; selected = "focus" })
-                        "college" -> {
-                            if (collegePage == CollegePage.OVERVIEW) Header("College", college.state.collectAsStateWithLifecycle().value.snapshot.semester?.name ?: "VTOP · Chennai") { settings = true }
-                            CollegeContent(college, collegePage, { collegePage = it }, connect)
+                    val screen = Screen(settings, selected, if (selected == "college") collegePage else CollegePage.OVERVIEW)
+                    AnimatedContent(screen, transitionSpec = { pageTransition(initialState, targetState) }, label = "page") { s ->
+                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            if (s.settings) SettingsScreen(app, theme) { settings = false }
+                            else when (s.tab) {
+                                "today" -> TodayScreen(focus, college, onSettings = { settings = true }, openCollege = { collegePage = it; selected = "college" }, openFocus = { focusTab = it; selected = "focus" })
+                                "college" -> {
+                                    if (s.page == CollegePage.OVERVIEW) Header("College", college.state.collectAsStateWithLifecycle().value.snapshot.semester?.name ?: "VTOP · Chennai") { settings = true }
+                                    CollegeContent(college, s.page, { collegePage = it }, connect)
+                                }
+                                "training" -> { Header("Train", "Routines & workouts") { settings = true }; TrainingPlaceholder() }
+                                else -> { Header("Focus", "Tasks, habits & mood") { settings = true }; FocusContent(focus, focusTab) { focusTab = it } }
+                            }
                         }
-                        "training" -> { Header("Train", "Routines & workouts") { settings = true }; TrainingPlaceholder() }
-                        else -> { Header("Focus", "Tasks, habits & mood") { settings = true }; FocusContent(focus, focusTab) { focusTab = it } }
                     }
                 }
                 // Canvas-coloured scrim keeps scrolled content out from under the status bar icons.
@@ -94,6 +102,25 @@ private val navItems = listOf(NavItem("today", "Today", HubIcons.Home), NavItem(
             HubBottomBar(navItems, if (settings) null else selected, { selected = it; settings = false; if (it == "college") collegePage = CollegePage.OVERVIEW })
         }
     }
+}
+
+/** Navigation position used to pick a transition direction. */
+private data class Screen(val settings: Boolean, val tab: String, val page: CollegePage) {
+    val order: Int get() = listOf("today", "college", "training", "focus").indexOf(tab)
+    val depth: Int get() = (if (settings) 2 else 0) + (if (page != CollegePage.OVERVIEW) 1 else 0)
+}
+
+/** Deeper pages push in from the right; sibling tabs slide by their bar order; everything fades. */
+private fun pageTransition(from: Screen, to: Screen): ContentTransform {
+    val dir = when {
+        to.depth != from.depth -> if (to.depth > from.depth) 1 else -1
+        to.order != from.order -> if (to.order > from.order) 1 else -1
+        else -> 0
+    }
+    val enter = fadeIn(tween(240, delayMillis = 40)) + slideInHorizontally(tween(320, easing = FastOutSlowInEasing)) { it / 5 * dir } +
+        scaleIn(tween(320), initialScale = if (dir == 0) 0.98f else 1f)
+    val exit = fadeOut(tween(140)) + slideOutHorizontally(tween(320, easing = FastOutSlowInEasing)) { -it / 8 * dir }
+    return (enter togetherWith exit).apply { targetContentZIndex = to.depth.toFloat() }
 }
 
 @Composable private fun Header(title: String, subtitle: String, onSettings: () -> Unit) {

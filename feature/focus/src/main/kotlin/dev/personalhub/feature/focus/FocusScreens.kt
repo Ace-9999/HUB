@@ -9,6 +9,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
@@ -44,11 +45,19 @@ private val timeFmt = DateTimeFormatter.ofPattern("h:mm a")
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         PillTabs(listOf("Tasks", "Habits", "Mood", "Trends"), tab, onTab)
         vm.message.collectAsStateWithLifecycle().value?.let { MessageBar(it, vm::dismissMessage) }
-        when (tab) {
-            0 -> TasksPane(vm, ui)
-            1 -> HabitsPane(vm, ui)
-            2 -> MoodPane(vm, ui)
-            else -> TrendsPane(ui)
+        androidx.compose.animation.AnimatedContent(tab, transitionSpec = {
+            val dir = if (targetState > initialState) 1 else -1
+            (androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(220, 60)) + androidx.compose.animation.slideInHorizontally(androidx.compose.animation.core.tween(280)) { it / 6 * dir }) togetherWith
+                (androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(120)) + androidx.compose.animation.slideOutHorizontally(androidx.compose.animation.core.tween(280)) { -it / 6 * dir })
+        }, label = "focusTab") { t ->
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                when (t) {
+                    0 -> TasksPane(vm, ui)
+                    1 -> HabitsPane(vm, ui)
+                    2 -> MoodPane(vm, ui)
+                    else -> TrendsPane(ui)
+                }
+            }
         }
     }
 }

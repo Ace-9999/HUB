@@ -1,6 +1,13 @@
 package dev.personalhub.design
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.draw.scale
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -137,12 +144,15 @@ fun Modifier.dottedCanvas(background: Color, dot: Color, spacing: Dp = 22.dp): M
     val c = Hub.colors
     val source = remember { MutableInteractionSource() }
     val pressed by source.collectIsPressedAsState()
-    val depth by animateDpAsState(if (pressed && onClick != null) 0.dp else shadow, label = "press")
+    val depth by animateDpAsState(if (pressed && onClick != null) 0.dp else shadow,
+        spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium), label = "press")
+    val fill by animateColorAsState(color, tween(220), label = "fill")
     val shape = RoundedCornerShape(radius)
     val travel = shadow - depth
     Box(modifier.padding(end = shadow, bottom = shadow)) {
         Box(
-            Modifier.offset(travel, travel).hardShadow(c.shadow, depth, radius).clip(shape).background(color).border(stroke, c.outline, shape)
+            Modifier.offset(travel, travel).hardShadow(c.shadow, depth, radius).clip(shape).background(fill).border(stroke, c.outline, shape)
+                .animateContentSize(spring(stiffness = Spring.StiffnessMediumLow))
                 .then(if (onClick != null) Modifier.clickable(source, LocalIndicationNone, enabled = enabled, onClickLabel = onClickLabel, role = Role.Button, onClick = onClick) else Modifier),
             content = content,
         )
@@ -194,12 +204,13 @@ enum class ButtonTone { Primary, Plain, Danger, Mint }
 
 @Composable fun Pill(text: String, color: Color = Hub.colors.lime, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null, selected: Boolean = true) {
     val c = Hub.colors
-    val fill = if (selected) color else c.surface
+    val target = if (selected) color else c.surface
+    val fill by animateColorAsState(target, tween(200), label = "pill")
     val shape = RoundedCornerShape(50)
     Box(modifier.clip(shape).background(fill).border(1.5.dp, c.outline, shape)
         .then(if (onClick != null) Modifier.clickable(role = Role.Tab, onClick = onClick).defaultMinSize(minHeight = 40.dp) else Modifier)
         .padding(horizontal = 12.dp, vertical = 5.dp), contentAlignment = Alignment.Center) {
-        Text(text, style = MaterialTheme.typography.labelMedium, color = if (fill == c.surface) c.ink else c.onAccent, maxLines = 1, softWrap = false)
+        Text(text, style = MaterialTheme.typography.labelMedium, color = if (target == c.surface) c.ink else c.onAccent, maxLines = 1, softWrap = false)
     }
 }
 
@@ -217,7 +228,9 @@ enum class ButtonTone { Primary, Plain, Danger, Mint }
         options.forEachIndexed { i, label ->
             val on = i == selected
             val shape = RoundedCornerShape(8.dp)
-            Box(Modifier.weight(1f).heightIn(min = 44.dp).clip(shape).background(if (on) c.lime else c.surface).border(1.5.dp, c.outline, shape)
+            val cell by animateColorAsState(if (on) c.lime else c.surface, tween(200), label = "cell")
+            val pop by animateFloatAsState(if (on) 1f else 0.96f, spring(dampingRatio = Spring.DampingRatioMediumBouncy), label = "cellScale")
+            Box(Modifier.weight(1f).heightIn(min = 44.dp).scale(pop).clip(shape).background(cell).border(1.5.dp, c.outline, shape)
                 .clickable(role = Role.RadioButton, onClickLabel = "$description $label") { onSelect(i) }, contentAlignment = Alignment.Center) {
                 Text(label, style = MaterialTheme.typography.titleSmall, color = if (on) c.onAccent else c.ink)
             }
@@ -275,8 +288,10 @@ enum class ButtonTone { Primary, Plain, Danger, Mint }
 @Composable fun HubCheck(checked: Boolean, onChange: (Boolean) -> Unit, contentDescription: String, color: Color = Hub.colors.mint, check: ImageVector? = null) {
     val c = Hub.colors
     val shape = RoundedCornerShape(7.dp)
+    val box by animateColorAsState(if (checked) color else c.surface, tween(180), label = "check")
+    val pop by animateFloatAsState(if (checked) 1f else 0.9f, spring(dampingRatio = Spring.DampingRatioHighBouncy, stiffness = Spring.StiffnessMedium), label = "checkScale")
     Box(Modifier.size(48.dp).clickable(role = Role.Checkbox, onClickLabel = contentDescription) { onChange(!checked) }, contentAlignment = Alignment.Center) {
-        Box(Modifier.size(26.dp).clip(shape).background(if (checked) color else c.surface).border(Hub.Stroke, c.outline, shape), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(26.dp).scale(pop).clip(shape).background(box).border(Hub.Stroke, c.outline, shape), contentAlignment = Alignment.Center) {
             if (checked && check != null) Icon(check, contentDescription, tint = c.onAccent, modifier = Modifier.size(18.dp))
         }
     }
@@ -286,8 +301,9 @@ enum class ButtonTone { Primary, Plain, Danger, Mint }
 @Composable fun HubBar(fraction: Float, modifier: Modifier = Modifier, color: Color = Hub.colors.lime) {
     val c = Hub.colors
     val shape = RoundedCornerShape(50)
+    val f by animateFloatAsState(fraction.coerceIn(0f, 1f), tween(450), label = "bar")
     Box(modifier.fillMaxWidth().height(14.dp).clip(shape).background(c.surface).border(1.5.dp, c.outline, shape)) {
-        Box(Modifier.fillMaxHeight().fillMaxWidth(fraction.coerceIn(0f, 1f)).clip(shape).background(color).border(1.5.dp, c.outline, shape))
+        Box(Modifier.fillMaxHeight().fillMaxWidth(f).clip(shape).background(color).border(1.5.dp, c.outline, shape))
     }
 }
 
@@ -303,9 +319,13 @@ data class NavItem(val id: String, val label: String, val icon: ImageVector)
                 Column(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).clickable(role = Role.Tab, onClickLabel = item.label) { onSelect(item.id) }.padding(vertical = 4.dp),
                     horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     val shape = RoundedCornerShape(50)
-                    Box(Modifier.clip(shape).background(if (on) c.lime else Color.Transparent).then(if (on) Modifier.border(1.5.dp, c.outline, shape) else Modifier)
-                        .padding(horizontal = 18.dp, vertical = 5.dp)) {
-                        Icon(item.icon, null, tint = if (on) c.onAccent else c.ink, modifier = Modifier.size(22.dp))
+                    val capsule by animateColorAsState(if (on) c.lime else c.surface, tween(220), label = "nav")
+                    val rim by animateColorAsState(if (on) c.outline else c.surface, tween(220), label = "navRim")
+                    val pad by animateDpAsState(if (on) 18.dp else 12.dp, spring(dampingRatio = Spring.DampingRatioMediumBouncy), label = "navPad")
+                    val iconScale by animateFloatAsState(if (on) 1.08f else 1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy), label = "navIcon")
+                    Box(Modifier.clip(shape).background(capsule).border(1.5.dp, rim, shape)
+                        .padding(horizontal = pad, vertical = 5.dp)) {
+                        Icon(item.icon, null, tint = if (on) c.onAccent else c.ink, modifier = Modifier.size(22.dp).scale(iconScale))
                     }
                     Text(item.label, style = MaterialTheme.typography.labelMedium, color = c.ink, fontWeight = if (on) FontWeight.Bold else FontWeight.Medium)
                 }

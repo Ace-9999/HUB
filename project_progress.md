@@ -318,3 +318,14 @@ all-attempts list moved here from CGPA). Schedule day view: room moved under the
 pills (owner report); pills never wrap. PASS: boundaries, test/assemble/lint, Compose 2/2,
 focus 4/4 on API 29. PENDING: owner sync of results and check of the detail layout
 (components/ranges are parsed generically; structural log reports the detail tables).
+
+### Motion pass - 13 November 2026
+
+Owner: the UI felt mechanical. Added shared motion in the design system and shell only (no
+data/ViewModel changes): directional page transitions (deeper pages push from the right,
+tabs slide by bar order, fade throughout), Focus tab crossfade/slide, springy press-into-
+shadow on every surface, animated fills for pills/grade cells/checkboxes/bottom-bar capsule
+(with bounce), animated progress bars and card size changes.
+PASS: boundaries, JVM tests, connected APK, lint, Compose 2/2 on API 29. Owner feel check pending.
+Owner also confirmed Grade History data (4 semesters) is correct: VTOP increment complete
+pending only the manual accessibility review. Next: Focus (lock, reminders).
