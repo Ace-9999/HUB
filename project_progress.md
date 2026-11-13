@@ -330,3 +330,14 @@ PASS: boundaries, JVM tests, connected APK, lint, Compose 2/2 on API 29. Owner f
 Grade History: owner sync imported 4 semesters (11/14/10/11 courses); detail tables match the
 parser's expected layout. Owner check of components/ranges against the portal still PENDING.
 Next: Focus (lock, reminders) once Grade History is confirmed.
+
+### Schedule grid labels + app icon - 13 November 2026
+
+Owner confirmed Grade History matches the portal: I04-I06 owner data gate PASSES (all
+datasets). Schedule grid now uses a fixed 72dp hour width (horizontal scroll, pinned day
+column, hour labels, faint hour guides) with the course code inside each block.
+Owner asked for an app logo: original adaptive icon (four outlined rounded tiles in the app's
+lime/cyan/peach/mint with a hard ink shadow on the ivory dotted canvas = the four sections),
+themed monochrome layer, round icon, light window background and Android 12+ splash icon.
+No third-party/brand artwork. PASS: JVM tests, connected APK, lint, Compose 2/2; launcher
+rendering checked on API 29. VTOP work is complete; next is Focus (lock, reminders).

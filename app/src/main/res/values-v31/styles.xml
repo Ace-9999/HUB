@@ -1,0 +1,10 @@
+<resources>
+    <style name="Theme.PersonalHub" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:colorAccent">#D5F53A</item>
+        <item name="android:windowBackground">#FBFAEE</item>
+        <item name="android:windowSplashScreenBackground">#FBFAEE</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+    </style>
+</resources>

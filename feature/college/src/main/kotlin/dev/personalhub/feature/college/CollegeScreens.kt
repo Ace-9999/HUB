@@ -166,32 +166,55 @@ private val weekDays = listOf(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WED
     val days = weekDays.filter { d -> d != DayOfWeek.SATURDAY || s.meetingsOn(d).isNotEmpty() }
     val first = s.meetings.minOf { it.start }.hour
     val last = (s.meetings.maxOf { it.end }.let { if (it.minute > 0) it.hour + 1 else it.hour }).coerceAtLeast(first + 1)
+    // Fixed hour width so every block is wide enough for its course code; the grid scrolls sideways.
+    val hourWidth = 72.dp
+    val rowHeight = 68.dp
+    val gridWidth = hourWidth * (last - first)
+    val scroll = rememberScrollState()
     HubPanel(padding = 0.dp) {
-        // Hour header
-        Row(Modifier.fillMaxWidth().padding(start = 30.dp, top = 8.dp, end = 6.dp)) {
-            (first until last).forEach { h -> Text("${if (h > 12) h - 12 else h}", style = MaterialTheme.typography.labelSmall, color = Hub.colors.inkSoft, modifier = Modifier.weight(1f)) }
-        }
-        days.forEach { d ->
-            HubDivider()
-            Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), verticalAlignment = Alignment.CenterVertically) {
-                Text(d.getDisplayName(NameStyle.NARROW, Locale.getDefault()), style = MaterialTheme.typography.titleSmall, color = Hub.colors.ink, modifier = Modifier.width(30.dp), textAlign = TextAlign.Center)
-                Box(Modifier.width(Hub.Stroke).fillMaxHeight().background(Hub.colors.outline))
-                BoxWithConstraints(Modifier.weight(1f).height(54.dp).padding(end = 6.dp)) {
-                    val span = (last - first) * 60f
-                    val meetings = s.meetingsOn(d)
-                    meetings.forEachIndexed { i, m ->
-                        val x = (m.start.toSecondOfDay() / 60f - first * 60) / span
-                        val w = (Duration.between(m.start, m.end).toMinutes()) / span
-                        val lab = componentOf(m.component) == "LAB"
-                        Box(Modifier.offset(x = maxWidth * x, y = if (lab) 30.dp else 8.dp).width(maxWidth * w - 2.dp).height(16.dp)
-                            .clip(RoundedCornerShape(5.dp)).background(courseColor(s, m.courseCode)).border(1.5.dp, Hub.colors.outline, RoundedCornerShape(5.dp))
-                            .semantics { contentDescription = "${m.courseCode} ${m.start.format(timeFmt)}" })
+        Row {
+            Column(Modifier.width(34.dp)) {
+                Spacer(Modifier.height(30.dp))
+                days.forEach { d ->
+                    HubDivider()
+                    Box(Modifier.fillMaxWidth().height(rowHeight), contentAlignment = Alignment.Center) {
+                        Text(d.getDisplayName(NameStyle.SHORT, Locale.getDefault()).take(2), style = MaterialTheme.typography.titleSmall, color = Hub.colors.ink)
+                    }
+                }
+            }
+            Box(Modifier.width(Hub.Stroke).height(30.dp + (rowHeight + Hub.Stroke) * days.size).background(Hub.colors.outline))
+            Column(Modifier.weight(1f).horizontalScroll(scroll)) {
+                Row(Modifier.width(gridWidth + 8.dp).height(30.dp), verticalAlignment = Alignment.CenterVertically) {
+                    (first until last).forEach { h ->
+                        Text(java.time.LocalTime.of(h, 0).format(DateTimeFormatter.ofPattern("h a")), style = MaterialTheme.typography.labelSmall,
+                            color = Hub.colors.inkSoft, modifier = Modifier.width(hourWidth).padding(start = 4.dp))
+                    }
+                }
+                days.forEach { d ->
+                    Box(Modifier.width(gridWidth + 8.dp).height(Hub.Stroke).background(Hub.colors.outline))
+                    Box(Modifier.width(gridWidth + 8.dp).height(rowHeight)) {
+                        // faint hour guides
+                        (1 until last - first).forEach { i -> Box(Modifier.offset(x = hourWidth * i).width(1.dp).fillMaxHeight().background(Hub.colors.dot)) }
+                        s.meetingsOn(d).forEach { m ->
+                            val startMin = m.start.toSecondOfDay() / 60f - first * 60
+                            val lenMin = Duration.between(m.start, m.end).toMinutes().toFloat()
+                            val lab = componentOf(m.component) == "LAB"
+                            val shape = RoundedCornerShape(7.dp)
+                            Box(Modifier.offset(x = hourWidth * (startMin / 60f) + 2.dp, y = if (lab) 36.dp else 6.dp)
+                                .width(hourWidth * (lenMin / 60f) - 4.dp).height(26.dp)
+                                .clip(shape).background(courseColor(s, m.courseCode)).border(1.5.dp, Hub.colors.outline, shape)
+                                .semantics { contentDescription = "${m.courseCode} ${componentLabel(m.component)} ${m.start.format(timeFmt)}" },
+                                contentAlignment = Alignment.Center) {
+                                Text(m.courseCode, style = MaterialTheme.typography.labelSmall, color = Hub.colors.onAccent, maxLines = 1, softWrap = false,
+                                    overflow = TextOverflow.Clip, modifier = Modifier.padding(horizontal = 3.dp))
+                            }
+                        }
                     }
                 }
             }
         }
     }
-    Text("Top row: theory · bottom row: lab. Colours match courses below.", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
+    Text("Upper row: theory · lower row: lab. Swipe the grid sideways for later hours.", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
     var dayIndex by rememberSaveable { mutableIntStateOf(days.indexOf(LocalDate.now().dayOfWeek).coerceAtLeast(0)) }
     SectionHeader("Day view")
     PillTabs(days.map { it.getDisplayName(NameStyle.SHORT, Locale.getDefault()) }, dayIndex, { dayIndex = it }, color = Hub.colors.lime)

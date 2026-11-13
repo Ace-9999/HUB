@@ -18,8 +18,14 @@ Purpose comments in source and the progress log describe responsibilities.
 | `app/src/main/kotlin/dev/personalhub/app/DemoData.kt` | Source/config/schema |
 | `app/src/main/kotlin/dev/personalhub/app/MainActivity.kt` | Source/config/schema |
 | `app/src/main/kotlin/dev/personalhub/app/PersonalHubApplication.kt` | Source/config/schema |
+| `app/src/main/res/drawable/ic_launcher_background.xml` | Source/config/schema |
+| `app/src/main/res/drawable/ic_launcher_foreground.xml` | Source/config/schema |
+| `app/src/main/res/drawable/ic_launcher_monochrome.xml` | Source/config/schema |
+| `app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml` | Source/config/schema |
+| `app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml` | Source/config/schema |
 | `app/src/main/res/raw/vtop_sectigo_r36.pem` | Source/config/schema |
 | `app/src/main/res/values/styles.xml` | Source/config/schema |
+| `app/src/main/res/values-v31/styles.xml` | Source/config/schema |
 | `app/src/main/res/xml/data_extraction_rules.xml` | Source/config/schema |
 | `app/src/main/res/xml/vtop_network_security.xml` | Source/config/schema |
 | `app/src/portalProbe/kotlin/dev/personalhub/app/PublicPortalProbeTest.kt` | Source/config/schema |
