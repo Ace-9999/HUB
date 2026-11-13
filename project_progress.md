@@ -536,3 +536,13 @@ semester results are fetched only on semester switch, first sync, missing cached
 new "Full refresh" button. Skipped datasets report SKIPPED ("kept from last full sync") and
 never overwrite cached rows or their last real status. +1 parser test (vtop 17/17).
 PENDING (owner): one light + one full sync on the phone.
+
+### Exercise artwork (GYM-02/03) - 14 November 2026 (overnight)
+
+Owner asked for Hevy-style artwork. Hevy's proprietary art was NOT used (owner then chose the
+open option). Source verified: free-exercise-db + upstream wrkout/exercises.json, both Unlicense
+(public domain) per GitHub licence API and READMEs. All 46 catalog entries matched by name; 92 JPEG
+frames bundled (5.8 MB) with per-file source/sha256 manifest. UI: REF-11-style large demo on the
+exercise page (start/end crossfade every 1.3 s, pause/play, static when system animations are off),
+REF-12-style round thumbnails in catalog, routine editor and live workout; off-main-thread
+downsampled decode with LRU cache; custom exercises fall back to an initial. Visual check on API 29.

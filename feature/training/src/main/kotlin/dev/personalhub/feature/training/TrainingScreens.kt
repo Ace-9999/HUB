@@ -113,7 +113,8 @@ private fun dur(d: Duration) = d.seconds.let { if (it >= 3600) "${it / 3600}h ${
     Text("${list.size} exercises", style = MaterialTheme.typography.labelMedium, color = Hub.colors.inkSoft)
     list.forEach { e ->
         HubSurface(Modifier.fillMaxWidth(), shadow = 3.dp, onClick = { if (nav.pickFor != null) go(TrainNav(nav.pickFor, nav.arg, null).also { pickedExercise = e.id }) else go(TrainNav(TrainPage.EXERCISE, e.id)) }) {
-            Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                ExerciseThumb(e, 52.dp)
                 Column(Modifier.weight(1f)) {
                     Text(e.name, style = MaterialTheme.typography.titleMedium, color = Hub.colors.ink)
                     Text("${e.equipment.label} · ${e.primary.joinToString { it.label }.ifEmpty { e.category.label }}${if (e.custom) " · custom" else ""}", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
@@ -159,6 +160,7 @@ private var pickedExercise: String? = null
 
 @Composable private fun ExerciseDetail(ui: TrainingUi, id: String?) {
     val e = ui.catalog[id] ?: return
+    ExerciseDemo(e)
     Text(e.name, style = MaterialTheme.typography.headlineMedium, color = Hub.colors.ink)
     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         Pill(e.equipment.label, Hub.colors.apricot); Pill(e.category.label, Hub.colors.cyan); if (e.custom) Pill("Custom", Hub.colors.lavender)
@@ -171,7 +173,7 @@ private var pickedExercise: String? = null
     HubCard("How to") {
         if (e.instructions.isEmpty()) Text("No instructions yet.", style = MaterialTheme.typography.bodyMedium, color = Hub.colors.inkSoft)
         e.instructions.forEachIndexed { i, s -> Text("${i + 1}. $s", style = MaterialTheme.typography.bodyLarge, color = Hub.colors.ink) }
-        Text("No demonstration media is bundled yet; instructions are original text.", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
+        if (!e.id.startsWith("seed:")) Text("Custom exercise — no demonstration photo.", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
     }
     val pr = personalRecords(ui.finished, ui.catalog)[e.id]
     val history = ui.finished.mapNotNull { w -> w.exercises.firstOrNull { it.exerciseId == e.id }?.let { w to it } }.take(10)
@@ -202,7 +204,8 @@ private var pickedExercise: String? = null
     HubField(draft.name, { draft = draft.copy(name = it.take(80)) }, "Routine name", placeholder = "e.g. Push")
     draft.items.forEachIndexed { i, item ->
         HubPanel(padding = 12.dp) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                ExerciseThumb(ui.catalog[item.exerciseId], 40.dp)
                 Text(ui.catalog[item.exerciseId]?.name ?: "Removed exercise", style = MaterialTheme.typography.titleMedium, color = Hub.colors.ink, modifier = Modifier.weight(1f))
                 HubIconButton(HubIcons.Up, "Move up", { draft = draft.move(i, -1) })
                 Spacer(Modifier.width(4.dp))
@@ -293,7 +296,8 @@ private data class RoutineDraft(val id: String, val name: String, val items: Lis
     val prev = previousSets(ui.finished, e.exerciseId)
     val metric = ex?.metric ?: Metric.WEIGHT_REPS
     HubPanel(padding = 12.dp) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            ExerciseThumb(ex, 46.dp)
             Text(ex?.name ?: "Removed exercise", style = MaterialTheme.typography.titleLarge, color = Hub.colors.ink, modifier = Modifier.weight(1f))
             HubIconButton(HubIcons.Up, "Move up", { vm.moveExercise(i, -1) })
             Spacer(Modifier.width(4.dp))

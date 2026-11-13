@@ -21,6 +21,8 @@ object HubIcons {
     val Chart by lazy { icon("chart", "M5,9.2h3V19H5V9.2zM10.6,5h2.8v14h-2.8V5zM16.2,13H19v6h-2.8V13z") }
     val Sync by lazy { icon("sync", "M12,4V1L8,5l4,4V6c3.31,0 6,2.69 6,6 0,1.01 -0.25,1.97 -0.7,2.8l1.46,1.46C19.54,15.03 20,13.57 20,12c0,-4.42 -3.58,-8 -8,-8zM12,18c-3.31,0 -6,-2.69 -6,-6 0,-1.01 0.25,-1.97 0.7,-2.8L5.24,7.74C4.46,8.97 4,10.43 4,12c0,4.42 3.58,8 8,8v3l4,-4 -4,-4v3z") }
     val Arrow by lazy { icon("arrow", "M12,4l-1.41,1.41L16.17,11H4v2h12.17l-5.58,5.59L12,20l8,-8z") }
+    val Play by lazy { icon("play", "M8,5v14l11,-7z") }
+    val Pause by lazy { icon("pause", "M6,19h4V5H6v14zM14,5v14h4V5h-4z") }
     val Up by lazy { icon("up", "M4,12l1.41,1.41L11,7.83V20h2V7.83l5.58,5.59L20,12l-8,-8 -8,8z") }
     val Back by lazy { icon("back", "M20,11H7.83l5.59,-5.59L12,4l-8,8 8,8 1.41,-1.41L7.83,13H20v-2z") }
     val Plus by lazy { icon("plus", "M19,13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z") }
