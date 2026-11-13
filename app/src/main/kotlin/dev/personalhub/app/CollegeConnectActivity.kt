@@ -65,7 +65,7 @@ class CollegeConnectActivity : ComponentActivity() {
                 }
                 is SyncOutcome.Failure -> { status.value = outcome.reason; phase.value = Phase.FAILED }
             }
-            if (BuildConfig.DEBUG) VtopDiagnostics.last?.let { Log.i(TAG, "structure: $it") }
+            if (BuildConfig.DEBUG) VtopDiagnostics.last?.chunked(900)?.forEachIndexed { i, part -> Log.i(TAG, "structure[$i]: $part") }
         }
     }
 

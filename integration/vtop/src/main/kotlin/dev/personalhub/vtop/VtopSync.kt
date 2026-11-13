@@ -38,7 +38,8 @@ object VtopImport {
             return VtopScripts.tables(d.optJSONArray("tables")) to null
         }
         val statuses = mutableListOf<DatasetStatus>()
-        VtopDiagnostics.last = "semesters=${semesters.size} " + listOf("timetable", "attendance", "marks", "grades").joinToString(" | ") { VtopDiagnostics.describe(it, tables(it).first) }
+        val clean = { o: JSONObject? -> o?.toString()?.filter { it.isLetterOrDigit() || it in "_/:.,={}\" -" || it == '[' || it == ']' }?.take(12000) }
+        VtopDiagnostics.last = "chosen=${clean(JSONObject().put("c", root.optString("chosen")).put("tt", root.optJSONArray("ttOptions")))} sems=${clean(root.optJSONObject("sems"))} shapes=${clean(root.optJSONObject("shapes"))} semesters=${semesters.size} " + listOf("timetable", "attendance", "marks", "exams", "calendar", "grades").joinToString(" | ") { VtopDiagnostics.describe(it, tables(it).first) }
         val (ttTables, ttErr) = tables("timetable")
         val courses = ttTables?.let { VtopParser.courses(it) }
         val meetings = ttTables?.let { VtopParser.meetings(it) }

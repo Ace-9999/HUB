@@ -268,3 +268,16 @@ Fix installed on the phone. PENDING: owner comparison of timetable/attendance/CG
 the portal (P02), weekly meeting count, marks endpoint investigation.
 Second owner sync with the fix: GRADES 46 rows (2 nested duplicates removed), 23 weekly
 timetable meetings parsed, CGPA found; timetable/attendance unchanged (11/11); marks still EMPTY.
+
+### Marks import fixed - 13 November 2026
+
+Diagnosis (structure only): the default semester was the first portal option (Winter,
+no data yet). Owner confirmed the active term is Fall 2026-27. Sync now defaults to the
+in-session semester by date (Fall Jul-Nov, Winter Dec-Apr, Summer May-Jun); explicit
+selection still wins. Marks/exam pages carry their own semester lists and are submitted
+as multipart FormData like the portal's script. Owner Fall sync: TIMETABLE 12 courses /
+25 weekly meetings, ATTENDANCE 11, MARKS 61 rows (13 tables: course list + 12 nested
+component tables), GRADES 46, CGPA found. Exam schedule and academic calendar
+(`processViewCalendar`, status 233 with first parameter guess) are still in discovery;
+debug-only structural probes remain in `VtopScripts` until they're implemented.
+Owner portal comparison (P02) still pending.

@@ -221,7 +221,7 @@ object VtopDiagnostics {
     @Volatile var last: String? = null
         internal set
     private val LABELS = listOf("course", "slot", "venue", "credit", "l t p j c", "attended", "total", "percentage", "mark title", "scored",
-        "weightage", "grade", "cgpa", "earned", "theory", "lab", "start", "end", "mon", "faculty")
+        "weightage", "grade", "cgpa", "earned", "theory", "lab", "start", "end", "mon", "faculty", "exam", "date", "session", "reporting", "seat", "time")
     fun describe(name: String, tables: List<PortalTable>?): String {
         if (tables == null) return "$name: none"
         val shapes = tables.mapIndexed { i, t ->
