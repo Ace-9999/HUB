@@ -59,10 +59,17 @@ import java.time.ZoneId
         Glance("💧", if (habits.isEmpty()) "–" else "$logged/${habits.size}", "habits", Hub.colors.mint, Modifier.weight(1f), openHabits)
     }
     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        Glance("📱", formatDuration(screen), "scrolling today", Hub.colors.lavender, Modifier.weight(1f), openUsage)
+        Glance("📱", short(screen), "scrolling today", Hub.colors.lavender, Modifier.weight(1f), openUsage)
         Glance("🏋️", "$week", "workouts · 7d", Hub.colors.apricot, Modifier.weight(1f), openTrain)
         Glance("🔥", "${streak(f, today)}", "day streak", Hub.colors.peach, Modifier.weight(1f), openHabits)
     }
+}
+
+/** Tile-sized duration: "45s", "12m", "1h 28m" (no seconds once past a minute). */
+private fun short(d: Duration): String = when {
+    d.toMinutes() < 1 -> "${d.seconds}s"
+    d.toHours() < 1 -> "${d.toMinutes()}m"
+    else -> "${d.toHours()}h ${d.toMinutes() % 60}m"
 }
 
 /** Consecutive days (ending today or yesterday) on which every non-private habit with an entry met its goal. Unknown days break it. */

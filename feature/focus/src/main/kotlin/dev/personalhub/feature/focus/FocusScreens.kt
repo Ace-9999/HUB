@@ -124,6 +124,61 @@ class GoogleTasksControls(val state: kotlinx.coroutines.flow.StateFlow<GoogleSyn
                 HubButton("Disconnect", g.disconnect, tone = ButtonTone.Plain, compact = true)
             }
         }
+        var help by remember { mutableStateOf(false) }
+        HubButton("How to set up Google Cloud", { help = true }, Modifier.fillMaxWidth(), tone = ButtonTone.Plain, compact = true)
+        if (help) GoogleSetupDialog { help = false }
+    }
+}
+
+/** This install's signing-certificate SHA-1, as Google Cloud expects it (AA:BB:...). */
+private fun signingSha1(context: android.content.Context): String = runCatching {
+    val info = context.packageManager.getPackageInfo(context.packageName, android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES)
+    val cert = info.signingInfo!!.apkContentsSigners.first().toByteArray()
+    java.security.MessageDigest.getInstance("SHA-1").digest(cert).joinToString(":") { "%02X".format(it) }
+}.getOrDefault("unavailable")
+
+/** One-time Google Cloud setup for Tasks sync. No secrets: an Android OAuth client is identified by package + SHA-1 only. */
+@Composable private fun GoogleSetupDialog(onDismiss: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+    val pkg = context.packageName
+    val sha = remember { signingSha1(context) }
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        HubPanel(padding = 20.dp) {
+            Column(Modifier.heightIn(max = 560.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("Connect via Google Cloud", style = MaterialTheme.typography.headlineSmall, color = Hub.colors.ink)
+                Text("Google only lets an app read your Tasks once you register it in your own (free) Google Cloud project. Do this once, on any browser:",
+                    style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
+                listOf(
+                    "Open console.cloud.google.com and create a new project (any name, e.g. PersonalHub).",
+                    "APIs & Services → Library → search \"Google Tasks API\" → Enable.",
+                    "APIs & Services → OAuth consent screen (Google Auth Platform) → Get started. User type: External; add your app name and your email.",
+                    "Audience → Test users → add the Google account whose tasks you want to sync. (Leave the app in Testing.)",
+                    "Data access → Add scope → .../auth/tasks → Save.",
+                    "Clients (Credentials) → Create client → OAuth client ID → type Android. Paste the package name and SHA-1 below → Create. No secret or JSON download is needed.",
+                    "Come back here and tap Connect Google Tasks, choose that account and allow access. It can take a few minutes after creating the client before Google accepts it.",
+                ).forEachIndexed { i, step ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Pill("${i + 1}", Hub.colors.lime)
+                        Text(step, style = MaterialTheme.typography.bodyMedium, color = Hub.colors.ink, modifier = Modifier.weight(1f))
+                    }
+                }
+                listOf("Package name" to pkg, "SHA-1" to sha).forEach { (label, value) ->
+                    HubSurface(Modifier.fillMaxWidth(), color = Hub.colors.raised, radius = 12.dp, shadow = 2.dp) {
+                        Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(label, style = MaterialTheme.typography.labelSmall, color = Hub.colors.inkSoft)
+                                Text(value, style = MaterialTheme.typography.bodySmall, color = Hub.colors.ink)
+                            }
+                            HubButton("Copy", { clipboard.setText(androidx.compose.ui.text.AnnotatedString(value)) }, tone = ButtonTone.Plain, compact = true)
+                        }
+                    }
+                }
+                Text("The SHA-1 belongs to this exact build. If you install a build signed with a different key, add another Android client with its SHA-1.",
+                    style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
+                HubButton("Got it", onDismiss, Modifier.fillMaxWidth(), compact = true)
+            }
+        }
     }
 }
 

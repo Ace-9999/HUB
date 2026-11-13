@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -219,7 +220,8 @@ private val TrainNavSaver = androidx.compose.runtime.saveable.listSaver<dev.pers
         Spacer(Modifier.weight(1f))
         HubIconButton(HubIcons.Settings, "Settings", onSettings)
     }
-    Text(greeting, style = MaterialTheme.typography.displayLarge, color = Hub.colors.ink)
+    androidx.compose.foundation.text.BasicText(greeting, style = MaterialTheme.typography.displayLarge.copy(color = Hub.colors.ink), maxLines = 1, softWrap = false,
+        autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 20.sp, maxFontSize = MaterialTheme.typography.displayLarge.fontSize))
     Text("Here's your day at a glance ✨", style = MaterialTheme.typography.bodyLarge, color = Hub.colors.inkSoft)
     TodayGlance(focus, college, training, usage, openCollege = { openCollege(CollegePage.OVERVIEW) }, openTasks = { openFocus(0) }, openHabits = { openFocus(1) },
         openUsage = { openFocus(4) }, openTrain = { openTrain(dev.personalhub.feature.training.TrainNav()) })

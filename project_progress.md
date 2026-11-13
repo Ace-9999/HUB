@@ -14,7 +14,11 @@ All work is committed and pushed. Status by area:
   usage tracking/limits/night cut-off (owner-verified working), Focus lock + reminders
   (phone check pending), Google Tasks API sync (blocked on owner Cloud OAuth setup).
 - Train (I07-I09): implemented and emulator-tested; phone check pending; GYM-12 deferred.
-- Next increments: I13 (JSON backup/export/restore, hardening, release), then I14 Music.
+- I13: full JSON backup/daily snapshots/verified restore done; review export and automatic external
+  copies outstanding. v1.0 APK (connected flavor, R8 `fast` build, debug-key signed) released on
+  GitHub 13 Nov 2026 at the owner's request.
+- Google Tasks card has an in-app "How to set up Google Cloud" pop-up (steps + this build's package/SHA-1).
+- Next: I13 remainder, then I14 Music.
 - See "PARKED FOR OWNER" below for everything that needs the owner.
 
 ### Previous checkpoint text (historical)
@@ -58,6 +62,12 @@ Implementation is being handed off at the owner's request. Read
 - Original planning/design/reference assets: unchanged under `PersonalHub_Plan/`.
 
 ## Changes and evidence
+
+v1.0 (13 Nov 2026): greeting auto-sizes to one line; screen-time tile shows whole minutes
+("12m", "1h 28m"); Google Cloud setup pop-up on the Google Tasks card (SHA-1 computed at
+runtime from the installed signing certificate). Regression: JVM tests, assembleDemoDebug,
+assembleConnectedDebug, lintDemoDebug, connectedDemoDebugAndroidTest on API 29 emulator all
+passed; installed on phone, launch ok, Today and pop-up checked by screenshot. versionName 1.0 (code 2).
 
 I00: read planning requirements and all linked guides. Rechecked the pinned VTOP
 README and service hashes directly from the reference source; GPL notice, WebView
