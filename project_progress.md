@@ -299,3 +299,6 @@ PENDING: owner sync of exams/calendar and comparison with the portal.
 Priority change (owner, 13 Nov): after VTOP, do Focus before Train. Order now
 I04-I06 finish -> Focus (I03 lock/reminders, then I10-I12 monitoring under its device gates)
 -> I07-I09 Train -> I13 -> I14 Music.
+Owner sync with 60805c3 (OnePlus API 36): TIMETABLE 12, ATTENDANCE 11, MARKS 61, GRADES 46,
+EXAMS 14, CALENDAR 129 labelled days, 25 meetings, CGPA found. All six datasets import.
+Remaining I04-I06 acceptance: owner comparison of values with the portal (P02).
