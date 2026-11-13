@@ -2,12 +2,15 @@
     <application android:name=".PersonalHubApplication" android:label="PersonalHub"
         android:theme="@style/Theme.PersonalHub" android:allowBackup="false"
         android:fullBackupContent="false" android:dataExtractionRules="@xml/data_extraction_rules"
-        android:supportsRtl="true" android:usesCleartextTraffic="false">
+        android:supportsRtl="true" android:usesCleartextTraffic="false"
+        android:networkSecurityConfig="@xml/vtop_network_security">
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".CollegeConnectActivity" android:exported="false" android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize" />
     </application>
 </manifest>

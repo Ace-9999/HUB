@@ -1,7 +1,12 @@
 # Keeping the UI replaceable
 
-Functionality is the current priority. The owner has requested a later visual
-redesign; existing screens are functional scaffolding, not approved final design.
+13 November 2026: owner-requested redesign applied, modelled on REF-01-REF-05
+(light default, ivory dotted canvas, 2dp ink outlines, hard 4dp offset shadows that
+collapse on press, lime/mint/cyan/peach/apricot/lavender pills, Archivo Black display
+and Space Grotesk body type, both SIL OFL 1.1 in `docs/licenses/`). No VITals name,
+logo or doodles are used. Tokens/components: `Design.kt` (`HubPalette`, `HubSurface`,
+`HubCard`, `HubButton`, `Pill`, `PillTabs`, `ChoiceCells`, `HubField`, `HubBottomBar`)
+and `HubIcons.kt`. Feature screens use only these components.
 
 Shared colors, shapes, cards and status presentation live in
 `core/designsystem/src/main/kotlin/dev/personalhub/design/Design.kt`. The app owns

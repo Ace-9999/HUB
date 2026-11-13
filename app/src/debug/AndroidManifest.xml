@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <application android:networkSecurityConfig="@xml/vtop_network_security">
+    <application>
         <activity android:name=".ProbeActivity" android:exported="false" />
         <activity android:name=".PortalProbeActivity" android:exported="false" android:hardwareAccelerated="true" />
         <service android:name="dev.personalhub.monitoring.ProbeAccessibilityService" android:exported="true" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">

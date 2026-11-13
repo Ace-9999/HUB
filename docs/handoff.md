@@ -1,5 +1,10 @@
 # PersonalHub agent handoff - 13 November 2026
 
+> UPDATE (later 13 Nov): the I03 WIP below was completed, tested and committed, the UI was
+> redesigned and the I04-I06 VTOP connector was implemented. The "Current local WIP" section is
+> historical. Current state and pending gates: root `project_progress.md` (last section).
+
+
 Start in `C:/Users/aniru/personalhub`. This is a continuation of authorized work,
 not a new scaffold. Do not overwrite or discard the uncommitted I03 files.
 

@@ -50,3 +50,16 @@ normal offline/CI suites unless `portalProbe` is explicitly enabled.
 
 The earlier public callback/shape test missed a TLS blank-page defect. Superseded by
 actual viewport pixel verification; see ADR-004. No authenticated source claim.
+
+## I04-I06 connector update - 13 November 2026
+
+| Capability | Evidence | Gate |
+|---|---|---|
+| Production VTOP sign-in + sync | `CollegeConnectActivity` + `VtopSyncView` built; owner signs in inside the portal; FLAG_SECURE; portal-only requests; no bridge/credential access | Owner-device authenticated run PENDING |
+| Timetable/courses, attendance, marks, grade history/CGPA parsing | Header-label parsers pass 11 synthetic JVM tests; Room cache passes 2 device tests | Live comparison with the owner's portal PENDING |
+| Academic calendar (holidays/instructional days) | Not imported; calendar shows weekly class days + weekends only | Source not established |
+
+Endpoint paths come from the pinned reference-source audit and are unverified on the
+current portal until the owner's first sync. Each dataset reports OK/EMPTY/FAILED
+separately; failed datasets keep their last saved rows. Debug builds log only
+structural diagnostics (table sizes, matched header labels, row counts).

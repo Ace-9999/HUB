@@ -29,3 +29,11 @@ it never authenticates. Public screenshots stay in ignored tooling output.
 Official platform contract:
 https://developer.android.com/privacy-and-security/security-config .
 No authenticated account or academic data was used for this diagnosis.
+
+## Addendum - 13 November 2026 (I04 production connector)
+
+The same exact-host configuration (`vtopcc.vit.ac.in` only, system roots plus the
+verified Sectigo R36 intermediate, R36/R46 SPKI pins, cleartext off) moved from the
+debug source set to `app/src/main/res` because the production `CollegeConnectActivity`
+needs it. Scope, pins, TLS-failure cancellation and rotation/rollback are unchanged.
+Release builds now include this config; the debug probes remain debug-only.

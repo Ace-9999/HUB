@@ -4,28 +4,48 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import org.junit.Rule
 import org.junit.Test
-import androidx.test.platform.app.InstrumentationRegistry
-import android.graphics.Bitmap
-import java.io.File
+import java.util.UUID
 
-// Real Compose navigation and recreation smoke, with no source permissions.
+// Real Compose navigation, recreation and a Focus task journey, with no source permissions.
+// Runs against the demo flavor; synthetic records it creates are deleted before it finishes.
 class ShellTest {
     @get:Rule val rule = createAndroidComposeRule<MainActivity>()
+
     @Test fun navigationSettingsAndRecreationRemainUsableWithoutPermissions() {
         rule.waitForIdle()
-        rule.onNodeWithText("A little more intentional.").assertIsDisplayed()
-        val instrumentation = InstrumentationRegistry.getInstrumentation()
-        instrumentation.uiAutomation.takeScreenshot()?.let { bitmap ->
-            File(instrumentation.targetContext.filesDir, "I01-shell.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-            bitmap.recycle()
-        }
-        rule.onNodeWithText("College", useUnmergedTree = true).performClick()
-        rule.onNodeWithText("Not connected").assertIsDisplayed()
+        rule.onNodeWithText("Your day, in one place.").assertIsDisplayed()
+        rule.onAllNodesWithText("Focus").onLast().performClick()
+        rule.onNodeWithText("Mood").performClick()
+        rule.onNodeWithText("How are you?").assertIsDisplayed()
         rule.activityRule.scenario.recreate()
-        rule.onNodeWithText("Not connected").assertIsDisplayed()
-        rule.onNodeWithText("Settings").performClick()
+        rule.onNodeWithText("How are you?").assertIsDisplayed()
+        rule.onNodeWithContentDescription("Settings").performClick()
         rule.onNodeWithText("Appearance").assertIsDisplayed()
-        rule.onNodeWithText("Done").performClick()
-        rule.onNodeWithText("Not connected").assertIsDisplayed()
+        rule.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+        rule.onNodeWithText("How are you?").assertIsDisplayed()
+        rule.onAllNodesWithText("College").onLast().performClick()
+        rule.waitUntil(5_000) { rule.onAllNodesWithText("Connect VTOP", ignoreCase = true).fetchSemanticsNodes().isNotEmpty() ||
+            rule.onAllNodesWithText("Portal sync").fetchSemanticsNodes().isNotEmpty() }
+    }
+
+    @Test fun taskCanBeAddedCompletedUndoneAndDeleted() {
+        val title = "Synthetic ${UUID.randomUUID().toString().take(8)}"
+        rule.onAllNodesWithText("Focus").onLast().performClick()
+        rule.onNodeWithText("Tasks").performClick()
+        rule.onNodeWithText("Add").performClick()
+        rule.onAllNodes(hasSetTextAction()).onFirst().performTextReplacement(title)
+        rule.onNodeWithText("SAVE").performScrollTo().performClick()
+        rule.waitUntil(5_000) { rule.onAllNodesWithText(title).fetchSemanticsNodes().isNotEmpty() }
+        rule.onNodeWithText(title).performScrollTo().assertIsDisplayed()
+        rule.onNode(hasClickLabel("Complete $title"), useUnmergedTree = true).performScrollTo().performClick()
+        rule.waitUntil(5_000) { rule.onAllNodesWithText("Completed “$title”").fetchSemanticsNodes().isNotEmpty() }
+        rule.onNodeWithText("Undo").performClick()
+        rule.waitUntil(5_000) { rule.onAllNodes(hasClickLabel("Complete $title"), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+        rule.onNode(hasClickLabel("Delete $title"), useUnmergedTree = true).performScrollTo().performClick()
+        rule.waitUntil(5_000) { rule.onAllNodesWithText(title).fetchSemanticsNodes().isEmpty() }
+    }
+
+    private fun hasClickLabel(label: String) = SemanticsMatcher("click label $label") {
+        it.config.getOrElseNullable(androidx.compose.ui.semantics.SemanticsActions.OnClick) { null }?.label == label
     }
 }

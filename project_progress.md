@@ -15,7 +15,7 @@ Repository: `Ace-9999/personalhub`, branch `main`. JDK 21.0.9 / Gradle 8.13,
 compile/target API 36, minimum API 29. OnePlus CPH2661/API 36 and an API 29 emulator
 were used on 12 November; recheck attachment/running state when resuming.
 Live authenticated dataset and monitoring gates remain pending.
-UI is functional scaffolding; owner requested functionality first and later redesign.
+UI redesigned 13 Nov to the owner-selected REF-01-05 style (see docs/ui_architecture.md).
 Implementation is being handed off at the owner's request. Read
 [docs/handoff.md](docs/handoff.md) before continuing I03. Preserve all local WIP.
 
@@ -26,8 +26,8 @@ Implementation is being handed off at the owner's request. Read
 | I00 | Complete | Toolchain/source audit passed; OnePlus CPH2661/API 36 recorded |
 | I01 | Verification pending | Functional gate passed on API 29 emulator and API 36 phone; manual TalkBack/200%/landscape review pending |
 | I02 | Verification pending | Debug probes built/tested; live validated read and monitoring/redirect evidence pending |
-| I03 | In progress | API/data/schema v2 verified (9 JVM + 4 Room emulator tests); Focus UI/app wiring next |
-| I04-I06 | Blocked | I02 live VTOP gate needed |
+| I03 | Verification pending | Tasks/habits/moods/trends UI wired and journey-tested on emulator; Focus lock, reminders and phone acceptance pending |
+| I04-I06 | Implemented, live gate pending | Owner-requested connector: sign-in WebView, sync, parsers, Room cache, College screens; first authenticated owner sync + portal comparison pending |
 | I07 | Not started | Catalog and routines; independent of VTOP |
 | I08 | Not started | Workout engine and timers |
 | I09 | Not started | Training history/analytics/body map |
@@ -209,3 +209,48 @@ PASS: boundaries; `test assembleDemoDebug assembleConnectedDebug lintDemoDebug` 
 Not yet: Focus ViewModel/screens, Today summary, reminders, Focus lock. No owner
 database upgraded yet (app does not open the repository until wiring lands).
 Rollback: revert commit; schema v1 retained. Next: shared UI redesign + Focus UI.
+
+### Redesign + I03 UI + I04-I06 connector - 13 November 2026
+
+Owner instruction (13 Nov): replace the UI with the REF-01-REF-05 style (light mode,
+distinct fonts, hard shadows) and make VTOP data actually import after login. The owner
+explicitly requested the connector, so I04-I06 production code was built ahead of the
+authenticated-sample gate; it stays labelled unverified until the owner's first sync is
+compared with the portal. Requirements: SYS-01-04, FOC tasks/habits/mood/trends, COL-01-07.
+
+Code map additions:
+- `core/designsystem/.../Design.kt`, `HubIcons.kt`, `res/font/*`, `assets/licenses/*`: tokens,
+  neo-brutalist components, OFL fonts (Archivo Black, Space Grotesk; hashes dd9a89a0…, acad6de1…).
+- `feature/focus/`: `FocusViewModel` (undo, validation messages) and `FocusScreens` (tasks with
+  day picker/recurrence/carry-forward, habits with explicit zero vs unknown and private reveal,
+  nine-category mood log with backdate/edit/delete, trends with distributions and unknown days).
+- `college/api/`: academic models, attendance target plan, VIT 10-point GPA and scenario CGPA
+  (null when official denominator is unknown), repository contract; 8 JVM tests.
+- `college/data/`: Room `college.db` v1 (schema exported), per-dataset replace-on-success,
+  semester-scoped rows, last-success timestamps, clear; 2 device tests.
+- `integration/vtop/VtopScripts.kt`, `VtopParser.kt`, `VtopSync.kt`: in-page bounded table
+  extraction using the page's own session/CSRF (paths from the pinned source audit), span-expanded
+  grids, header-label parsers, `VtopImport`, structural-only `VtopDiagnostics`; 11 JVM tests.
+- `feature/college/`: overview (CGPA/credits/low attendance, next class, sync status, semester
+  switch, disconnect), REF-03 timetable grid + day view, attendance with target planner, REF-04
+  calendar (weekly class days/weekends only), marks (pending not counted as zero), REF-05 CGPA.
+- `app/`: new shell (dotted canvas, display headers, REF-04 bottom bar, back handling, undo bar,
+  light default), `CollegeConnectActivity` (FLAG_SECURE, native WebView host, auto-sync once
+  signed in), demo-only labelled sample data, repository composition. NSC moved to main (ADR-004).
+
+Checks (13 Nov, API 29 emulator unless stated):
+PASS boundaries; `test assembleDemoDebug assembleConnectedDebug lintDemoDebug` (lint 0 errors,
+23 warnings); JVM 37/37 (core 3, focus 9, college 8, vtop 3+11, monitoring 3); Room focus 4/4 and
+college 2/2; Compose `ShellTest` 2/2 (navigation/recreation/settings back, task add-complete-undo-
+delete). Visual review of Today, College, Schedule, Calendar, CGPA, Focus task/mood screens with
+synthetic demo data. Known: 🫥 renders as a box on API 29's emoji font.
+
+Pending (not claimed): owner authenticated sync and P02 comparison; parser fixes from structural
+diagnostics; TalkBack/200%/landscape review of new screens; Focus device-credential lock and
+reminders (I03-T3/T4); academic calendar source (I05-T3); class/exam reminders (I05-T4); history
+suggestions (I06-T4). No credential storage: the owner signs in each time the portal session expires.
+
+Migration/rollback: Focus 1->2 additive (tested). New `college.db` v1. Disconnect clears college
+data and portal cookies. Reverting this commit leaves both databases readable by later versions;
+do not downgrade Focus below v2 on a device that opened this build.
+Next: install on the phone, owner signs in and syncs, read structural diagnostics, fix parsers.
