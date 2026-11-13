@@ -254,3 +254,15 @@ Migration/rollback: Focus 1->2 additive (tested). New `college.db` v1. Disconnec
 data and portal cookies. Reverting this commit leaves both databases readable by later versions;
 do not downgrade Focus below v2 on a device that opened this build.
 Next: install on the phone, owner signs in and syncs, read structural diagnostics, fix parsers.
+
+### I04-I06 first owner sync - 13 November 2026
+
+Owner signed in on OnePlus API 36 and the connector ran end to end. Structural log only
+(no values): 6 semesters offered; timetable page 2 tables (course list 13x16, grid 18x15)
+-> TIMETABLE OK, 11 courses; attendance 1 table -> OK, 11 components; marks endpoint
+returned 0 tables -> EMPTY (endpoint/params or no marks yet: unresolved); grade history
+7 tables incl. CGPA summary -> OK, 48 rows. Two nested attempt tables could duplicate
+history rows, so nested tables are now skipped when a top-level history exists (+1 test,
+vtop parser 12/12). Debug log now also reports meeting count and whether CGPA was found.
+Fix installed on the phone. PENDING: owner comparison of timetable/attendance/CGPA with
+the portal (P02), weekly meeting count, marks endpoint investigation.

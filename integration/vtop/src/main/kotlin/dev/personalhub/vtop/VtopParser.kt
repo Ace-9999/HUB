@@ -186,7 +186,10 @@ object VtopParser {
 
     fun grades(tables: List<PortalTable>): Pair<Parsed<GradeRecord>, CgpaSummary?> {
         val out = mutableListOf<GradeRecord>(); var summary: CgpaSummary? = null
+        // Nested per-course attempt tables (with a context row) repeat rows of the main history table.
+        val hasTopLevelHistory = tables.any { it.context.isEmpty() && Header.find(it, "course code", "grade") != null }
         for (t in tables) {
+            if (hasTopLevelHistory && t.context.isNotEmpty()) continue
             Header.find(t, "cgpa")?.let { h ->
                 val row = t.rows.drop(h.row + 1).map(Header::expand).firstOrNull { r -> num(h.col("cgpa")?.let { r.getOrNull(it) }) != null }
                 if (row != null && summary == null) summary = CgpaSummary(num(h.col("credits registered", "registered")?.let { row.getOrNull(it) }),

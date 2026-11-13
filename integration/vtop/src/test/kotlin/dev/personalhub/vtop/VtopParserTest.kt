@@ -94,6 +94,11 @@ class VtopParserTest {
         assertEquals(2, parsed.rows.size); assertEquals("A", parsed.rows[0].grade); assertEquals(3.0, parsed.rows[0].credits!!, 0.0)
         assertEquals(8.92, summary!!.cgpa!!, 0.0); assertEquals(40.0, summary.creditsEarned!!, 0.0)
     }
+    @Test fun nestedAttemptTablesDoNotDuplicateHistory() {
+        val main = table(listOf("Course Code", "Course Title", "Credits", "Grade"), listOf("ZZZ0101L", "Intro", "3", "A"))
+        val nested = table(listOf("Course Code", "Grade", "Exam Month"), listOf("ZZZ0101L", "A", "Nov"), context = listOf("1", "ZZZ0101L"))
+        assertEquals(1, VtopParser.grades(listOf(main, nested)).first.rows.size)
+    }
     @Test fun semesterPlaceholdersAreDropped() {
         val s = VtopParser.semesters(listOf("" to "-- Choose Semester --", "S1" to "Fall  Semester 2026-27", "S1" to "dup"))
         assertEquals(listOf(Semester("S1", "Fall Semester 2026-27")), s)

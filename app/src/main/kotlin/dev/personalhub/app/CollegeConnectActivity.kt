@@ -60,7 +60,7 @@ class CollegeConnectActivity : ComponentActivity() {
                         result.value = s.statuses.map { "${it.dataset.label}: ${it.detail}" }
                         status.value = "Saved ${s.semester.name}."
                         phase.value = if (s.statuses.any { it.state == ImportState.OK }) Phase.DONE else Phase.FAILED
-                        if (BuildConfig.DEBUG) Log.i(TAG, "sync statuses: " + s.statuses.joinToString { "${it.dataset}=${it.state}/${it.rows}" })
+                        if (BuildConfig.DEBUG) Log.i(TAG, "sync statuses: " + s.statuses.joinToString { "${it.dataset}=${it.state}/${it.rows}" } + " meetings=${s.meetings.size} cgpaFound=${s.summary?.cgpa != null}")
                     }.onFailure { status.value = "Couldn't save on this device. Previously saved data is unchanged."; phase.value = Phase.FAILED }
                 }
                 is SyncOutcome.Failure -> { status.value = outcome.reason; phase.value = Phase.FAILED }
