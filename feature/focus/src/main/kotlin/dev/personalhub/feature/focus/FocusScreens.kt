@@ -463,7 +463,8 @@ private val backdates = listOf("Now" to 0L, "15 min ago" to 15L, "1 hr ago" to 6
     val ui by vm.state.collectAsStateWithLifecycle()
     val last = ui.recentMoods.firstOrNull()
     HubCard("Check in", color = Hub.colors.lavender, onClick = onOpen, trailing = { Icon(HubIcons.Arrow, null, tint = Hub.colors.onAccent) }) {
-        Text(last?.let { "Last: ${it.mood.emoji} ${it.mood.label} at ${it.occurredAt.atZone(ui.zone).toLocalTime().format(timeFmt)}" } ?: "How are you feeling right now?",
+        // HAB-06: mood values stay off the Today page; only the time of the last check-in is shown.
+        Text(last?.let { "Last check-in at ${it.occurredAt.atZone(ui.zone).toLocalTime().format(timeFmt)}" } ?: "How are you feeling right now?",
             style = MaterialTheme.typography.bodyLarge, color = Hub.colors.onAccent)
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             listOf(Mood.CALM_CONTENT, Mood.GOOD_ENERGISED, Mood.ANXIOUS_RESTLESS, Mood.LOW_SAD, Mood.BORED).forEach { m ->

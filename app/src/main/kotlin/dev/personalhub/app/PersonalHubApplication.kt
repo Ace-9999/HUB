@@ -39,7 +39,8 @@ class PersonalHubApplication : Application(), dev.personalhub.monitoring.UsageHo
         // Debug builds record layout id names (no text) for on-device classifier calibration.
         if (BuildConfig.DEBUG) dev.personalhub.monitoring.Calibration.enabled = true
         // Local task edits schedule a debounced Google Tasks sync when connected.
-        focus.onTasksChanged = { mainScope.launch { if (googleTasks.enabled()) googleTasks.syncSoon(this@PersonalHubApplication) } }
+        focus.onTasksChanged = { mainScope.launch { if (googleTasks.enabled()) googleTasks.syncSoon(this@PersonalHubApplication); Reminders.reschedule(this@PersonalHubApplication) } }
+        mainScope.launch { Reminders.reschedule(this@PersonalHubApplication); Reminders.scheduleNudge(this@PersonalHubApplication) }
         mainScope.launch { if (googleTasks.enabled()) { googleTasks.schedule(this@PersonalHubApplication); googleTasks.syncSoon(this@PersonalHubApplication, 1) } }
     }
 }
@@ -48,6 +49,17 @@ class SettingsStore(private val context: Context) {
     private val googleKey = androidx.datastore.preferences.core.booleanPreferencesKey("googleTasks")
     val googleTasks = context.preferences.data.map { it[googleKey] ?: false }
     suspend fun googleTasks(on: Boolean) { context.preferences.edit { it[googleKey] = on } }
+    private val lockKey = androidx.datastore.preferences.core.booleanPreferencesKey("focusLock")
+    private val remindKey = androidx.datastore.preferences.core.booleanPreferencesKey("taskReminders")
+    private val nudgeKey = androidx.datastore.preferences.core.booleanPreferencesKey("habitNudge")
+    private val nudgeTimeKey = stringPreferencesKey("habitNudgeTime")
+    val focusLock = context.preferences.data.map { it[lockKey] ?: false }
+    val taskReminders = context.preferences.data.map { it[remindKey] ?: false }
+    val habitNudge = context.preferences.data.map { it[nudgeKey] ?: false }
+    val habitNudgeTime = context.preferences.data.map { it[nudgeTimeKey] ?: "21:00" }
+    suspend fun focusLock(on: Boolean) { context.preferences.edit { it[lockKey] = on } }
+    suspend fun taskReminders(on: Boolean) { context.preferences.edit { it[remindKey] = on } }
+    suspend fun habitNudge(on: Boolean, time: String? = null) { context.preferences.edit { it[nudgeKey] = on; time?.let { t -> it[nudgeTimeKey] = t } } }
     val theme = context.preferences.data.map { it[themeKey] ?: DEFAULT_THEME }
     suspend fun theme(value: String) {
         require(value in setOf("system", "dark", "light"))

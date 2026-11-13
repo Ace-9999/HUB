@@ -20,6 +20,7 @@ Purpose comments in source and the progress log describe responsibilities.
 | `app/src/main/kotlin/dev/personalhub/app/GoogleTasksHost.kt` | Source/config/schema |
 | `app/src/main/kotlin/dev/personalhub/app/MainActivity.kt` | Source/config/schema |
 | `app/src/main/kotlin/dev/personalhub/app/PersonalHubApplication.kt` | Source/config/schema |
+| `app/src/main/kotlin/dev/personalhub/app/Reminders.kt` | Source/config/schema |
 | `app/src/main/res/drawable/ic_launcher_background.xml` | Source/config/schema |
 | `app/src/main/res/drawable/ic_launcher_foreground.xml` | Source/config/schema |
 | `app/src/main/res/drawable/ic_launcher_monochrome.xml` | Source/config/schema |
@@ -33,6 +34,7 @@ Purpose comments in source and the progress log describe responsibilities.
 | `app/src/main/res/xml/usage_tracker.xml` | Source/config/schema |
 | `app/src/main/res/xml/vtop_network_security.xml` | Source/config/schema |
 | `app/src/portalProbe/kotlin/dev/personalhub/app/PublicPortalProbeTest.kt` | Source/config/schema |
+| `app/src/test/kotlin/dev/personalhub/app/RemindersTest.kt` | Test |
 | `core/designsystem/build.gradle.kts` | Source/config/schema |
 | `core/designsystem/src/main/assets/licenses/ArchivoBlack-OFL.txt` | Source/config/schema |
 | `core/designsystem/src/main/assets/licenses/SpaceGrotesk-OFL.txt` | Source/config/schema |

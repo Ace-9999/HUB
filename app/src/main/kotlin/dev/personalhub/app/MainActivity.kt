@@ -55,6 +55,18 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+    /** Device-credential/biometric prompt (platform API; no extra library). Unlock lasts until the app leaves the foreground. */
+    fun unlockFocus() {
+        val km = getSystemService(android.app.KeyguardManager::class.java)
+        if (!km.isDeviceSecure) { FocusLock.unlock(); return }
+        val builder = android.hardware.biometrics.BiometricPrompt.Builder(this).setTitle("Unlock Focus").setSubtitle("Tasks, habits and mood stay private")
+        if (android.os.Build.VERSION.SDK_INT >= 30) builder.setAllowedAuthenticators(android.hardware.biometrics.BiometricManager.Authenticators.BIOMETRIC_WEAK or android.hardware.biometrics.BiometricManager.Authenticators.DEVICE_CREDENTIAL)
+        else @Suppress("DEPRECATION") builder.setDeviceCredentialAllowed(true)
+        builder.build().authenticate(android.os.CancellationSignal(), mainExecutor, object : android.hardware.biometrics.BiometricPrompt.AuthenticationCallback() {
+            override fun onAuthenticationSucceeded(result: android.hardware.biometrics.BiometricPrompt.AuthenticationResult?) { FocusLock.unlock() }
+        })
+    }
+    override fun onStop() { super.onStop(); if (!isChangingConfigurations) FocusLock.lock() }
     override fun onStart() {
         super.onStart()
         val app = application as PersonalHubApplication
@@ -127,7 +139,12 @@ private val tabs = listOf("today", "college", "training", "focus")
                                 }
                             }
                             "training" -> { Header("Train", "Routines & workouts") { settings = true }; TrainingPlaceholder() }
-                            else -> { Header("Focus", "Tasks, habits & mood") { settings = true }; FocusContent(focus, usage, focusTab, { focusTab = it }, openAccessibility, googleControls) }
+                            else -> {
+                                Header("Focus", "Tasks, habits & mood") { settings = true }
+                                val locked by app.settings.focusLock.collectAsStateWithLifecycle(false)
+                                if (locked && !FocusLock.unlocked) FocusLockedCard { (context as? MainActivity)?.unlockFocus() }
+                                else FocusContent(focus, usage, focusTab, { focusTab = it }, openAccessibility, googleControls)
+                            }
                         }
                     }
                 }
@@ -188,10 +205,50 @@ private fun subPageTransition(forward: Boolean): ContentTransform {
     EmptyState("Make room for progress", "The offline exercise catalog, routines and live workout logging are the next training increments (I07–I09). Nothing here is tracked yet.")
 }
 
+/** Session unlock state for the Focus lock; observable so the page re-composes on unlock. */
+object FocusLock {
+    var unlocked by mutableStateOf(false); private set
+    fun unlock() { unlocked = true }
+    fun lock() { unlocked = false }
+}
+
+@Composable private fun FocusLockedCard(onUnlock: () -> Unit) {
+    EmptyState("Focus is locked", "Tasks, habits and mood are protected. Unlock with your fingerprint or screen-lock PIN.") {
+        HubButton("Unlock", onUnlock, Modifier.fillMaxWidth(), icon = HubIcons.Lock)
+    }
+}
+
 @Composable private fun SettingsScreen(app: PersonalHubApplication, theme: String, close: () -> Unit) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     ScreenTitle("Settings", onBack = close, back = HubIcons.Back)
+    val lock by app.settings.focusLock.collectAsStateWithLifecycle(false)
+    val remind by app.settings.taskReminders.collectAsStateWithLifecycle(false)
+    val nudge by app.settings.habitNudge.collectAsStateWithLifecycle(false)
+    val nudgeTime by app.settings.habitNudgeTime.collectAsStateWithLifecycle("21:00")
+    val notifPermission = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { }
+    fun askNotifications() { if (android.os.Build.VERSION.SDK_INT >= 33) notifPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS) }
+    HubCard("Privacy lock") {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Lock Focus with fingerprint / screen lock", style = MaterialTheme.typography.bodyLarge, color = Hub.colors.ink, modifier = Modifier.weight(1f))
+            HubCheck(lock, { on -> scope.launch { app.settings.focusLock(on); if (on) FocusLock.lock() } }, "Lock Focus", check = HubIcons.Check)
+        }
+        Text("Unlocks until you leave the app. Mood values never appear on Today; private habits stay hidden until revealed.", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
+    }
+    HubCard("Reminders") {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Notify at task due times", style = MaterialTheme.typography.bodyLarge, color = Hub.colors.ink, modifier = Modifier.weight(1f))
+            HubCheck(remind, { on -> scope.launch { app.settings.taskReminders(on); if (on) askNotifications(); Reminders.reschedule(app) } }, "Task reminders", check = HubIcons.Check)
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Daily habit check-in at $nudgeTime", style = MaterialTheme.typography.bodyLarge, color = Hub.colors.ink, modifier = Modifier.weight(1f))
+            HubCheck(nudge, { on -> scope.launch { app.settings.habitNudge(on); if (on) askNotifications(); Reminders.scheduleNudge(app) } }, "Habit check-in", check = HubIcons.Check)
+        }
+        if (nudge) PillTabs(listOf("08:00", "13:00", "18:00", "21:00", "22:30"), listOf("08:00", "13:00", "18:00", "21:00", "22:30").indexOf(nudgeTime),
+            { i -> scope.launch { app.settings.habitNudge(true, listOf("08:00", "13:00", "18:00", "21:00", "22:30")[i]); Reminders.scheduleNudge(app) } }, color = Hub.colors.cyan)
+        Text("Neutral wording only — habit names, private values and moods never appear in notifications. Delivery may be a few minutes late under battery saving.",
+            style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
+    }
     HubCard("Appearance") {
         val modes = listOf("light", "dark", "system")
         ChoiceCells(listOf("Light", "Dark", "System"), modes.indexOf(theme).takeIf { it >= 0 }, { scope.launch { app.settings.theme(modes[it]) } }, description = "Theme")
@@ -200,7 +257,7 @@ private fun subPageTransition(forward: Boolean): ContentTransform {
         Text("No account, ads, analytics or remote AI. College data is read from the official portal only when you sync, and saved on this device. Android cloud backup is disabled; local JSON backup arrives in I13.",
             style = MaterialTheme.typography.bodyLarge, color = Hub.colors.onAccent)
     }
-    StatusCard(DataStatus.UNAVAILABLE, "Screen-time tracking", "Optional monitoring stays off until device checks pass (I10–I12). Local features need no permissions.")
+    StatusCard(DataStatus.CONTENT, "Screen-time tracking", "Managed in Focus → Usage: opt-in accessibility tracking, limits and night cut-off.")
     if (BuildConfig.DEMO) HubButton("Load sample college data (demo)", { app.scope.launch { app.college.save(DemoData.college(java.time.Instant.now())) } }, tone = ButtonTone.Mint)
     if (BuildConfig.DEBUG) {
         var calib by remember { mutableStateOf(dev.personalhub.monitoring.Calibration.enabled) }

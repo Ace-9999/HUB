@@ -446,4 +446,19 @@ full test/assemble (debug + R8 fast)/lint, Compose 2/2.
    SHA-1 `51:64:C1:CA:C0:4C:0D:29:87:64:C3:68:52:2C:91:4A:7D:73:B6:62`. No key or secret is
    copied into the app. Then Focus -> Tasks -> Connect Google Tasks and approve.
    Live sync is UNVERIFIED until this is done.
-2. Phone checks of things built without you (listed per increment below as they land).
+2. Focus lock (Settings -> Privacy lock): check the fingerprint/PIN prompt appears when opening
+   Focus, cancelling keeps it locked, and leaving the app re-locks.
+3. Reminders (Settings -> Reminders): allow notifications when asked; add a task due in ~3
+   minutes and confirm the notification; enable the daily check-in and confirm it never names habits.
+4. Phone checks of later increments (listed per increment below as they land).
+
+### Focus lock and reminders (HAB-02, HAB-06) - 13 November 2026
+
+Built while owner away. Focus lock: platform BiometricPrompt with biometric-or-device-credential
+(no new library), unlock per foreground session, re-locks on app stop; phones without a secure
+lock screen are not locked out. Today check-in card no longer shows mood values (HAB-06).
+Reminders: WorkManager one-time work per task at its next not-completed due occurrence
+(`Reminders.nextFire`), rescheduled after every task change; optional neutral daily habit
+check-in (count only, never names). POST_NOTIFICATIONS requested on enabling; USE_BIOMETRIC
+declared (lint caught it). PASS: reminder rules 3/3 JVM, full test, R8 build, lint (0 errors after
+fresh rerun), Compose 2/2. PENDING (owner): prompt/notification behaviour on the phone.
