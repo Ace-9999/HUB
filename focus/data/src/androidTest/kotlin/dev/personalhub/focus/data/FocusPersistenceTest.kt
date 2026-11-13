@@ -35,7 +35,7 @@ class FocusPersistenceTest {
             migration.createDatabase(name, 2).apply {
                 execSQL("INSERT INTO tasks VALUES ('t1','Synthetic','2026-11-12','NORMAL',NULL,'NONE',0,1,1,0)"); close()
             }
-            migration.runMigrationsAndValidate(name, 3, true, FocusDatabase.MIGRATION_1_2, FocusDatabase.MIGRATION_2_3).close()
+            migration.runMigrationsAndValidate(name, 4, true, FocusDatabase.MIGRATION_1_2, FocusDatabase.MIGRATION_2_3, FocusDatabase.MIGRATION_3_4).close()
             val repo = RoomFocusRepository.open(context, time, name = name)
             try {
                 assertEquals("Synthetic", repo.snapshots.first().tasks.single().title)
@@ -52,6 +52,14 @@ class FocusPersistenceTest {
                 repo.applyRemote(RemoteTask("g1", "L", "Deleted remotely", null, false, true, now.plusSeconds(60)))
                 assertTrue(repo.snapshots.first().tasks.none { it.id == imported.id })
                 repo.setLastSync(now); assertEquals(now, repo.lastSync())
+                // Google undated task stays undated locally and syncs back with no due date
+                repo.applyRemote(RemoteTask("g2", "L", "Someday", null, false, false, now))
+                val someday = repo.snapshots.first().tasks.single { it.title == "Someday" }
+                assertTrue(someday.undated); assertNull(repo.syncCandidates().single { it.localId == someday.id }.due)
+                // one-off tasks can be finished early
+                val future = repo.saveTask(TaskDraft(title = "Next month", firstDay = time.today().plusDays(30)))
+                repo.completeTask(future, time.today().plusDays(30), true)
+                assertTrue(repo.snapshots.first().occurrences.any { it.taskId == future && it.completed })
             } finally { repo.close() }
         } finally { context.deleteDatabase(name) }
     }

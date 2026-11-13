@@ -6,7 +6,8 @@ import androidx.room.*
 @Entity(tableName = "tasks")
 internal data class TaskRow(@PrimaryKey val id: String, val title: String, val firstDay: String, val priority: String,
     val dueTime: String?, val recurrence: String, val carryForward: Boolean, val createdAt: Long, val updatedAt: Long, val deleted: Boolean = false,
-    val googleId: String? = null, val googleList: String? = null, @ColumnInfo(defaultValue = "0") val dirty: Boolean = false)
+    val googleId: String? = null, val googleList: String? = null, @ColumnInfo(defaultValue = "0") val dirty: Boolean = false,
+    @ColumnInfo(defaultValue = "0") val undated: Boolean = false)
 @Entity(tableName = "sync_state") internal data class SyncStateRow(@PrimaryKey val key: String, val value: String)
 @Entity(tableName = "task_occurrences", primaryKeys = ["taskId", "day"], foreignKeys = [ForeignKey(entity = TaskRow::class, parentColumns = ["id"], childColumns = ["taskId"], onDelete = ForeignKey.CASCADE)])
 internal data class OccurrenceRow(val taskId: String, val day: String, val completed: Boolean, val updatedAt: Long)

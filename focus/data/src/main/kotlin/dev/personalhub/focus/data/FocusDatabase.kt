@@ -16,7 +16,7 @@ internal data class FocusRevision(@PrimaryKey val id: Int = 1, val revision: Lon
     @Query("SELECT revision FROM focus_revision WHERE id = 1") fun observe(): Flow<Long?>
     @Transaction suspend fun committedChange() { seed(FocusRevision()); bump() }
 }
-@Database(entities = [FocusRevision::class, TaskRow::class, OccurrenceRow::class, HabitRow::class, HabitEntryRow::class, MoodRow::class, SyncStateRow::class], version = 3, exportSchema = true)
+@Database(entities = [FocusRevision::class, TaskRow::class, OccurrenceRow::class, HabitRow::class, HabitEntryRow::class, MoodRow::class, SyncStateRow::class], version = 4, exportSchema = true)
 internal abstract class FocusDatabase : RoomDatabase() {
     abstract fun revision(): RevisionDao
     abstract fun records(): FocusDao
@@ -39,6 +39,10 @@ internal abstract class FocusDatabase : RoomDatabase() {
                 db.execSQL("CREATE TABLE IF NOT EXISTS `sync_state` (`key` TEXT NOT NULL, `value` TEXT NOT NULL, PRIMARY KEY(`key`))")
             }
         }
-        fun open(context: Context, name: String = "focus.db") = Room.databaseBuilder(context, FocusDatabase::class.java, name).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
+        /** Additive: Google-Tasks-style undated tasks. */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) { db.execSQL("ALTER TABLE tasks ADD COLUMN undated INTEGER NOT NULL DEFAULT 0") }
+        }
+        fun open(context: Context, name: String = "focus.db") = Room.databaseBuilder(context, FocusDatabase::class.java, name).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build()
     }
 }

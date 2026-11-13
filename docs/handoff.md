@@ -1,8 +1,9 @@
 # PersonalHub agent handoff - 13 November 2026
 
-> UPDATE (later 13 Nov): the I03 WIP below was completed, tested and committed, the UI was
-> redesigned and the I04-I06 VTOP connector was implemented. The "Current local WIP" section is
-> historical. Current state and pending gates: root `project_progress.md` (last section).
+> UPDATE (end of 13 Nov session): everything below about I03 WIP is historical. I03-I12 and I07-I09
+> are implemented; VTOP is owner-verified. Read root `project_progress.md` -> "Current checkpoint"
+> and "PARKED FOR OWNER". Install the owner build with `python scripts/run_gradle.py installConnectedFast`
+> (R8, signed with the local debug key; upgrades in place, keeps data). Next increment: I13.
 
 
 Start in `C:/Users/aniru/personalhub`. This is a continuation of authorized work,

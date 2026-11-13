@@ -48,12 +48,14 @@ Purpose comments in source and the progress log describe responsibilities.
 | `focus/api/build.gradle.kts` | Source/config/schema |
 | `focus/api/src/main/kotlin/dev/personalhub/focus/api/FocusModels.kt` | Source/config/schema |
 | `focus/api/src/main/kotlin/dev/personalhub/focus/api/FocusRepository.kt` | Source/config/schema |
+| `focus/api/src/test/kotlin/dev/personalhub/focus/api/AgendaTest.kt` | Test |
 | `focus/api/src/test/kotlin/dev/personalhub/focus/api/FocusRulesTest.kt` | Test |
 | `focus/api/src/test/kotlin/dev/personalhub/focus/api/TaskSyncRulesTest.kt` | Test |
 | `focus/data/build.gradle.kts` | Source/config/schema |
 | `focus/data/schemas/dev.personalhub.focus.data.FocusDatabase/1.json` | Source/config/schema |
 | `focus/data/schemas/dev.personalhub.focus.data.FocusDatabase/2.json` | Source/config/schema |
 | `focus/data/schemas/dev.personalhub.focus.data.FocusDatabase/3.json` | Source/config/schema |
+| `focus/data/schemas/dev.personalhub.focus.data.FocusDatabase/4.json` | Source/config/schema |
 | `focus/data/src/androidTest/kotlin/dev/personalhub/focus/data/FocusDatabaseTest.kt` | Test |
 | `focus/data/src/androidTest/kotlin/dev/personalhub/focus/data/FocusPersistenceTest.kt` | Test |
 | `focus/data/src/main/kotlin/dev/personalhub/focus/data/FocusDatabase.kt` | Source/config/schema |

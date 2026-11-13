@@ -3,6 +3,9 @@ package dev.personalhub.feature.focus
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -126,39 +129,54 @@ class GoogleTasksControls(val state: kotlinx.coroutines.flow.StateFlow<GoogleSyn
 
 // ---------------------------------------------------------------- Tasks
 @Composable private fun TasksPane(vm: FocusViewModel, ui: FocusUi) {
-    var offset by rememberSaveable { mutableIntStateOf(0) }
     var editing by remember { mutableStateOf<Task?>(null) }
     var adding by rememberSaveable { mutableStateOf(false) }
-    val day = ui.today.plusDays(offset.toLong())
-    val labels = (0..6).map { when (it) { 0 -> "Today"; 1 -> "Tomorrow"; else -> ui.today.plusDays(it.toLong()).dayOfWeek.getDisplayName(DayStyle.SHORT, Locale.getDefault()) } }
-    PillTabs(labels, offset, { offset = it }, color = Hub.colors.cyan)
-    val items = ui.tasksOn(day)
-    val done = items.count { it.completed }
-    SectionHeader(day.format(dayFmt), action = { HubButton("Add", { adding = true; editing = null }, icon = HubIcons.Plus, compact = true) })
-    if (items.isNotEmpty()) {
-        Text("$done of ${items.size} done", style = MaterialTheme.typography.titleSmall, color = Hub.colors.inkSoft)
-        HubBar(done / items.size.toFloat(), color = Hub.colors.mint)
+    var showDone by rememberSaveable { mutableStateOf(false) }
+    val sections = agenda(ui.snapshot, ui.today)
+    val pending = sections.filter { it.kind != SectionKind.COMPLETED }.sumOf { it.items.size }
+    SectionHeader("Tasks · $pending", action = { HubButton("Add", { adding = true; editing = null }, icon = HubIcons.Plus, compact = true) })
+    if (adding || editing != null) TaskEditor(vm, ui, editing) { adding = false; editing = null }
+    if (pending == 0 && !adding) EmptyState("All clear", "Add a task with or without a date. Dated tasks are grouped as Today, Tomorrow, Next 7 days and Later.")
+    sections.forEach { section ->
+        val done = section.kind == SectionKind.COMPLETED
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+            Text(section.kind.title.uppercase() + " · ${section.items.size}", style = MaterialTheme.typography.labelLarge,
+                color = if (section.kind == SectionKind.OVERDUE) Hub.colors.danger else Hub.colors.ink, modifier = Modifier.weight(1f))
+            if (done) HubButton(if (showDone) "Hide" else "Show", { showDone = !showDone }, tone = ButtonTone.Plain, compact = true)
+        }
+        if (!done || showDone) section.items.forEach { item ->
+            TaskRow(item, ui.today, onDone = { vm.setTaskDone(item.day, it) }, onEdit = { editing = item.day.task; adding = false }, onDelete = { vm.deleteTask(item.day.task) })
+        }
     }
-    if (adding || editing != null) TaskEditor(vm, ui, editing, day) { adding = false; editing = null }
-    if (items.isEmpty() && !adding) EmptyState("Nothing planned", "Add a task for ${if (offset == 0) "today" else day.format(dayFmt)}. Daily and weekly tasks repeat automatically.")
-    items.forEach { item -> TaskRow(item, canComplete = !day.isAfter(ui.today), onDone = { vm.setTaskDone(item, it) }, onEdit = { editing = item.task; adding = false }, onDelete = { vm.deleteTask(item.task) }) }
 }
 
-@Composable private fun TaskRow(item: TaskDay, canComplete: Boolean, onDone: (Boolean) -> Unit, onEdit: () -> Unit, onDelete: () -> Unit) {
-    val t = item.task
-    HubSurface(Modifier.fillMaxWidth(), color = if (item.completed) Hub.colors.raised else Hub.colors.surface) {
-        Row(Modifier.fillMaxWidth().padding(start = 6.dp, end = 10.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (canComplete) HubCheck(item.completed, onDone, if (item.completed) "Mark ${t.title} not done" else "Complete ${t.title}", check = HubIcons.Check)
+private val shortDate = DateTimeFormatter.ofPattern("EEE d MMM")
+private fun dueLabel(date: LocalDate?, today: LocalDate): String? = when {
+    date == null -> null
+    date == today -> "Today"
+    date == today.plusDays(1) -> "Tomorrow"
+    date.year == today.year -> date.format(shortDate)
+    else -> date.format(DateTimeFormatter.ofPattern("d MMM yyyy"))
+}
+
+@Composable private fun TaskRow(item: AgendaItem, today: LocalDate, onDone: (Boolean) -> Unit, onEdit: () -> Unit, onDelete: () -> Unit) {
+    val t = item.day.task
+    val completed = item.day.completed
+    // Repeating occurrences can't be ticked before their day; one-offs can be finished early.
+    val canComplete = t.recurrence == Recurrence.NONE || item.date?.isAfter(today) != true
+    HubSurface(Modifier.fillMaxWidth(), color = if (completed) Hub.colors.raised else Hub.colors.surface, shadow = 3.dp) {
+        Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 10.dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (canComplete) HubCheck(completed, onDone, if (completed) "Mark ${t.title} not done" else "Complete ${t.title}", check = HubIcons.Check)
             else Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) { Dot(Hub.colors.raised, 14.dp) }
-            Column(Modifier.weight(1f).padding(vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(t.title, style = MaterialTheme.typography.titleMedium, color = Hub.colors.ink, fontWeight = if (item.completed) FontWeight.Medium else FontWeight.Bold)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    if (t.priority == Priority.HIGH) Pill("High", Hub.colors.peach)
-                    if (t.priority == Priority.LOW) Pill("Low", Hub.colors.raised)
+            Column(Modifier.weight(1f).padding(vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                Text(t.title, style = MaterialTheme.typography.titleMedium, color = if (completed) Hub.colors.inkSoft else Hub.colors.ink,
+                    textDecoration = if (completed) androidx.compose.ui.text.style.TextDecoration.LineThrough else null)
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    dueLabel(item.date, today)?.let { Pill(it, if (item.date?.isBefore(today) == true && !completed) Hub.colors.peach else Hub.colors.cyan) }
                     t.dueTime?.let { Pill(it.format(timeFmt), Hub.colors.apricot) }
-                    if (t.google) Pill("Google", Hub.colors.cyan)
-                    when (t.recurrence) { Recurrence.DAILY -> Pill("Daily", Hub.colors.mint); Recurrence.WEEKLY -> Pill("Weekly", Hub.colors.cyan); Recurrence.NONE -> Unit }
-                    if (t.recurrence == Recurrence.NONE && t.carryForward) Pill("From ${item.occurrenceDay.format(dayFmt)}", Hub.colors.lavender)
+                    if (t.priority == Priority.HIGH) Pill("High", Hub.colors.peach)
+                    when (t.recurrence) { Recurrence.DAILY -> Pill("Daily", Hub.colors.mint); Recurrence.WEEKLY -> Pill("Weekly", Hub.colors.mint); Recurrence.NONE -> Unit }
+                    if (t.google) Pill("Google", Hub.colors.lavender)
                 }
             }
             HubIconButton(HubIcons.Edit, "Edit ${t.title}", onEdit)
@@ -168,28 +186,41 @@ class GoogleTasksControls(val state: kotlinx.coroutines.flow.StateFlow<GoogleSyn
     }
 }
 
-@Composable private fun TaskEditor(vm: FocusViewModel, ui: FocusUi, task: Task?, day: LocalDate, close: () -> Unit) {
+@Composable private fun TaskEditor(vm: FocusViewModel, ui: FocusUi, task: Task?, close: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     var title by rememberSaveable(task?.id) { mutableStateOf(task?.title ?: "") }
     var priority by rememberSaveable(task?.id) { mutableIntStateOf(task?.priority?.ordinal ?: 1) }
     var repeat by rememberSaveable(task?.id) { mutableIntStateOf(task?.recurrence?.ordinal ?: 0) }
-    var carry by rememberSaveable(task?.id) { mutableStateOf(task?.carryForward ?: false) }
+    var date by rememberSaveable(task?.id) { mutableStateOf(if (task == null || task.undated) null else task.firstDay.toString()) }
     var due by rememberSaveable(task?.id) { mutableStateOf(task?.dueTime?.toString() ?: "") }
-    HubCard(if (task == null) "New task" else "Edit task", color = Hub.colors.surface) {
+    val picked = date?.let(LocalDate::parse)
+    HubCard(if (task == null) "New task" else "Edit task") {
         HubField(title, { title = it }, "Title", placeholder = "What needs doing?")
+        Text("DUE", style = MaterialTheme.typography.labelLarge, color = Hub.colors.ink)
+        val chips = listOf("No date", "Today", "Tomorrow", picked?.takeIf { it != ui.today && it != ui.today.plusDays(1) }?.format(shortDate) ?: "Pick date…")
+        val selected = when (picked) { null -> 0; ui.today -> 1; ui.today.plusDays(1) -> 2; else -> 3 }
+        PillTabs(chips, selected, { i ->
+            when (i) {
+                0 -> { date = null; due = ""; repeat = 0 }
+                1 -> date = ui.today.toString()
+                2 -> date = ui.today.plusDays(1).toString()
+                else -> { val base = picked ?: ui.today
+                    android.app.DatePickerDialog(context, { _, y, m, d -> date = LocalDate.of(y, m + 1, d).toString() }, base.year, base.monthValue - 1, base.dayOfMonth).show() }
+            }
+        }, color = Hub.colors.cyan)
+        if (picked != null) {
+            HubField(due, { due = it }, "Time (optional)", placeholder = "e.g. 17:30")
+            Text("REPEAT", style = MaterialTheme.typography.labelLarge, color = Hub.colors.ink)
+            ChoiceCells(listOf("Once", "Daily", "Weekly"), repeat, { repeat = it }, description = "Repeat")
+        }
         Text("PRIORITY", style = MaterialTheme.typography.labelLarge, color = Hub.colors.ink)
         ChoiceCells(listOf("Low", "Normal", "High"), priority, { priority = it }, description = "Priority")
-        Text("REPEAT", style = MaterialTheme.typography.labelLarge, color = Hub.colors.ink)
-        ChoiceCells(listOf("Once", "Daily", "Weekly"), repeat, { repeat = it }, description = "Repeat")
-        HubField(due, { due = it }, "Due time (optional)", placeholder = "e.g. 17:30")
-        if (repeat == 0) Row(verticalAlignment = Alignment.CenterVertically) {
-            HubCheck(carry, { carry = it }, "Carry forward until done", check = HubIcons.Check)
-            Text("Carry forward until done", style = MaterialTheme.typography.bodyLarge, color = Hub.colors.ink)
-        }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             HubButton("Save", {
                 vm.saveTask {
-                    val time = due.trim().takeIf { it.isNotEmpty() }?.let { runCatching { LocalTime.parse(if (it.length == 4) "0$it" else it) }.getOrElse { throw IllegalArgumentException("Use 24-hour time like 07:30 or 17:30.") } }
-                    TaskDraft(task?.id, title, task?.firstDay ?: day, Priority.entries[priority], time, Recurrence.entries[repeat], repeat == 0 && carry)
+                    val time = due.trim().takeIf { it.isNotEmpty() && picked != null }?.let { runCatching { LocalTime.parse(if (it.length == 4) "0$it" else it) }.getOrElse { throw IllegalArgumentException("Use 24-hour time like 07:30 or 17:30.") } }
+                    TaskDraft(task?.id, title, picked ?: task?.firstDay ?: ui.today, Priority.entries[priority], time,
+                        if (picked == null) Recurrence.NONE else Recurrence.entries[repeat], carryForward = false, undated = picked == null)
                 }
                 if (title.isNotBlank()) close()
             }, Modifier.weight(1f), icon = HubIcons.Check)
@@ -356,18 +387,42 @@ private val backdates = listOf("Now" to 0L, "15 min ago" to 15L, "1 hr ago" to 6
 }
 
 @Composable private fun MoodRow(entry: MoodEntry, zone: ZoneId, onEdit: () -> Unit, onDelete: () -> Unit) {
-    HubSurface(Modifier.fillMaxWidth(), shadow = 3.dp) {
+    var open by remember(entry.id) { mutableStateOf(false) }
+    val at = entry.occurredAt.atZone(zone)
+    HubSurface(Modifier.fillMaxWidth(), shadow = 3.dp, onClick = if (entry.note != null) ({ open = true }) else null, onClickLabel = "Read note") {
         Row(Modifier.fillMaxWidth().padding(10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Box(Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)).background(moodColor(entry.mood)).border(1.5.dp, Hub.colors.outline, RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
                 Text(entry.mood.emoji, style = MaterialTheme.typography.titleLarge)
             }
-            Column(Modifier.weight(1f)) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(entry.mood.label, style = MaterialTheme.typography.titleMedium, color = Hub.colors.ink)
-                val at = entry.occurredAt.atZone(zone)
-                Text("${at.toLocalDate().format(dayFmt)} · ${at.toLocalTime().format(timeFmt)}${if (entry.note != null) " · note" else ""}", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("${at.toLocalDate().format(dayFmt)} · ${at.toLocalTime().format(timeFmt)}", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
+                    if (entry.note != null) Pill("note", Hub.colors.apricot)
+                }
             }
             HubIconButton(HubIcons.Edit, "Edit mood entry", onEdit)
             HubIconButton(HubIcons.Trash, "Delete mood entry", onDelete, color = Hub.colors.peach)
+        }
+    }
+    val note = entry.note
+    if (open && note != null) androidx.compose.ui.window.Dialog(onDismissRequest = { open = false }) {
+        HubPanel(padding = 20.dp) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(Modifier.size(52.dp).clip(RoundedCornerShape(12.dp)).background(moodColor(entry.mood)).border(1.5.dp, Hub.colors.outline, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
+                    Text(entry.mood.emoji, style = MaterialTheme.typography.headlineMedium)
+                }
+                Column {
+                    Text(entry.mood.label, style = MaterialTheme.typography.titleLarge, color = Hub.colors.ink)
+                    Text("${at.toLocalDate().format(dayFmt)} · ${at.toLocalTime().format(timeFmt)}", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
+                }
+            }
+            HubDivider()
+            Text(note, style = MaterialTheme.typography.bodyLarge, color = Hub.colors.ink, modifier = Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState()))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                HubButton("Close", { open = false }, Modifier.weight(1f), tone = ButtonTone.Plain, compact = true)
+                HubButton("Edit", { open = false; onEdit() }, Modifier.weight(1f), compact = true, icon = HubIcons.Edit)
+            }
         }
     }
 }
@@ -468,14 +523,17 @@ private val backdates = listOf("Now" to 0L, "15 min ago" to 15L, "1 hr ago" to 6
 /** Compact Today card: today's tasks with completion controls. */
 @Composable fun FocusTodayCard(vm: FocusViewModel, onOpen: () -> Unit) {
     val ui by vm.state.collectAsStateWithLifecycle()
-    val items = ui.tasksOn(ui.today)
-    HubCard("Today's tasks", trailing = { Pill(if (items.isEmpty()) "None" else "${items.count { it.completed }}/${items.size}", Hub.colors.mint) }, onClick = onOpen) {
-        if (items.isEmpty()) Text("Nothing planned. Tap to add a task.", style = MaterialTheme.typography.bodyLarge, color = Hub.colors.inkSoft)
+    val sections = agenda(ui.snapshot, ui.today)
+    val items = sections.filter { it.kind == SectionKind.OVERDUE || it.kind == SectionKind.TODAY }.flatMap { it.items }
+    val overdue = sections.firstOrNull { it.kind == SectionKind.OVERDUE }?.items?.size ?: 0
+    HubCard("Today's tasks", trailing = { Pill(if (items.isEmpty()) "None" else if (overdue > 0) "$overdue overdue" else "${items.size} due", if (overdue > 0) Hub.colors.peach else Hub.colors.mint) }, onClick = onOpen) {
+        if (items.isEmpty()) Text("Nothing due today. Tap to see everything.", style = MaterialTheme.typography.bodyLarge, color = Hub.colors.inkSoft)
         items.take(5).forEach { item ->
             Row(verticalAlignment = Alignment.CenterVertically) {
-                HubCheck(item.completed, { vm.setTaskDone(item, it) }, "Complete ${item.task.title}", check = HubIcons.Check)
-                Text(item.task.title, style = MaterialTheme.typography.bodyLarge, color = Hub.colors.ink, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                item.task.dueTime?.let { Text(it.format(timeFmt), style = MaterialTheme.typography.labelMedium, color = Hub.colors.inkSoft) }
+                HubCheck(false, { vm.setTaskDone(item.day, it) }, "Complete ${item.day.task.title}", check = HubIcons.Check)
+                Text(item.day.task.title, style = MaterialTheme.typography.bodyLarge, color = Hub.colors.ink, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (item.date?.isBefore(ui.today) == true) Text("overdue", style = MaterialTheme.typography.labelMedium, color = Hub.colors.danger)
+                else item.day.task.dueTime?.let { Text(it.format(timeFmt), style = MaterialTheme.typography.labelMedium, color = Hub.colors.inkSoft) }
             }
         }
         if (items.size > 5) Text("+${items.size - 5} more", style = MaterialTheme.typography.labelMedium, color = Hub.colors.inkSoft)

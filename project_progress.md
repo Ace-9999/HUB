@@ -4,7 +4,20 @@ Updated 13 November 2026 (Asia/Kolkata). Owner authorized implementation, packag
 installation and sequential tested commits/pushes. Original planning history is in
 `PersonalHub_Plan/project_progress.md`; SRS baseline 1.1 remains authoritative.
 
-## Current checkpoint
+## Current checkpoint (UPDATED 13 Nov 2026, end of session - read this first)
+
+All work is committed and pushed. Status by area:
+- College/VTOP (I04-I06): all datasets import and owner confirmed them against the portal
+  (timetable, attendance, marks, CGPA, exams, academic calendar, grade history). Done.
+- UI: REF-01-05 redesign, motion, pager navigation/swipe, app icon, optimised `fast` build.
+- Focus: tasks (Google-Tasks-style agenda), habits, moods (+note popup), trends (incl. workouts),
+  usage tracking/limits/night cut-off (owner-verified working), Focus lock + reminders
+  (phone check pending), Google Tasks API sync (blocked on owner Cloud OAuth setup).
+- Train (I07-I09): implemented and emulator-tested; phone check pending; GYM-12 deferred.
+- Next increments: I13 (JSON backup/export/restore, hardening, release), then I14 Music.
+- See "PARKED FOR OWNER" below for everything that needs the owner.
+
+### Previous checkpoint text (historical)
 
 I00 toolchain/source audit complete. Native app exists, with four destinations,
 themes/settings and a Focus Room schema skeleton. Last verified code checkpoint:
@@ -496,3 +509,21 @@ workout-metric trends (I09-T5).
 Training's finished workouts are mapped by the app into read-only `WorkoutDay` summaries
 (core model) and passed explicitly into Focus -> Trends (per-day minutes bars, count, sets);
 Focus never reads Training's database. PASS: full test, lint, Compose 3/3.
+
+### Tasks redesign + mood note popup - 13 November 2026 (session end)
+
+Owner: tasks should work like Google Tasks (no day-by-day paging; a task due next month must
+not require scrolling days) and mood entries with a note should open a popup. Changes:
+`agenda()` (focus api) groups all pending tasks as Overdue / Today / Tomorrow / Next 7 days /
+Later / No date plus a collapsible Completed section; repeating tasks appear once at their next
+pending occurrence; one-off tasks can be completed early; optional due date (No date / Today /
+Tomorrow / date picker) with optional time; Today card shows overdue + today. Focus DB v4
+(additive `undated` column; Google undated tasks map both ways). Mood rows with a note show a
+"note" pill and open a dialog with mood, time, full note and Edit. PASS: agenda 4/4 JVM, focus
+data 5/5 incl. 1->4 migrations and undated/early-completion cases, full test/lint, Compose 3/3.
+Installed on the phone (fast build) at session end.
+
+Session-end next action for the next agent: run `git status` (should be clean), then start
+I13 (plain JSON backup/export + restore preview, scheduled best-effort daily backup with 7-snapshot
+retention, SYS-11/NFR rules in SRS §4/data_export.md), unless the owner returns with parked-item
+results to act on first.

@@ -7,17 +7,23 @@ import java.time.*
 enum class Recurrence { NONE, DAILY, WEEKLY }
 enum class Priority { LOW, NORMAL, HIGH }
 data class Task(val id: String, val title: String, val firstDay: LocalDate, val priority: Priority,
-    val dueTime: LocalTime?, val recurrence: Recurrence, val carryForward: Boolean, val createdAt: Instant, val updatedAt: Instant, val google: Boolean = false) {
+    val dueTime: LocalTime?, val recurrence: Recurrence, val carryForward: Boolean, val createdAt: Instant, val updatedAt: Instant, val google: Boolean = false,
+    /** No due date (Google-Tasks style); [firstDay] is then only the creation day. */
+    val undated: Boolean = false) {
     fun occurs(day: LocalDate): Boolean = day >= firstDay && when (recurrence) {
-        Recurrence.NONE -> day == firstDay || carryForward
+        Recurrence.NONE -> day == firstDay || carryForward || undated
         Recurrence.DAILY -> true
         Recurrence.WEEKLY -> day.dayOfWeek == firstDay.dayOfWeek
     }
     fun occurrenceKey(day: LocalDate): LocalDate = if (recurrence == Recurrence.NONE) firstDay else day
 }
 data class TaskDraft(val id: String? = null, val title: String, val firstDay: LocalDate, val priority: Priority = Priority.NORMAL,
-    val dueTime: LocalTime? = null, val recurrence: Recurrence = Recurrence.NONE, val carryForward: Boolean = false) {
-    init { require(title.isNotBlank() && title.length <= 160) { "Enter a task title of 1–160 characters." } }
+    val dueTime: LocalTime? = null, val recurrence: Recurrence = Recurrence.NONE, val carryForward: Boolean = false, val undated: Boolean = false) {
+    init {
+        require(title.isNotBlank() && title.length <= 160) { "Enter a task title of 1–160 characters." }
+        require(!undated || recurrence == Recurrence.NONE) { "Repeating tasks need a start date." }
+        require(!undated || dueTime == null) { "Add a date before setting a time." }
+    }
 }
 data class TaskOccurrence(val taskId: String, val day: LocalDate, val completed: Boolean)
 data class TaskDay(val task: Task, val occurrenceDay: LocalDate, val completed: Boolean)
@@ -77,4 +83,41 @@ fun habitSeries(habit: Habit, entries: List<HabitEntry>, range: DateRange): Metr
         MetricPoint(day, entry?.value, if (entry == null) Completeness.UNKNOWN else Completeness.COMPLETE)
     }.toList()
     return MetricSeries("habit:${habit.id}", habit.unit.label, points)
+}
+
+// ---------------------------------------------------------------- Google-Tasks-style agenda
+enum class SectionKind(val title: String) { OVERDUE("Overdue"), TODAY("Today"), TOMORROW("Tomorrow"), WEEK("Next 7 days"), LATER("Later"), NO_DATE("No date"), COMPLETED("Completed") }
+data class AgendaItem(val day: TaskDay, val date: LocalDate?)
+data class AgendaSection(val kind: SectionKind, val items: List<AgendaItem>)
+
+/**
+ * One list of everything pending, grouped by due date relative to [today] (no day-by-day paging).
+ * One-off tasks sit at their due date (overdue stays visible until done); undated tasks under "No date";
+ * repeating tasks appear once, at their next not-completed occurrence within [horizonDays].
+ */
+fun agenda(s: FocusSnapshot, today: LocalDate, horizonDays: Long = 60, completedLimit: Int = 30): List<AgendaSection> {
+    fun done(t: Task, key: LocalDate) = s.occurrences.any { it.taskId == t.id && it.day == key && it.completed }
+    val open = mutableListOf<AgendaItem>(); val completed = mutableListOf<Pair<AgendaItem, Instant>>()
+    s.tasks.forEach { t ->
+        if (t.recurrence == Recurrence.NONE) {
+            val item = AgendaItem(TaskDay(t, t.firstDay, done(t, t.firstDay)), if (t.undated) null else t.firstDay)
+            if (item.day.completed) completed += item to t.updatedAt else open += item
+        } else {
+            val next = generateSequence(maxOf(today, t.firstDay)) { it.plusDays(1) }.take(horizonDays.toInt()).firstOrNull { t.occurs(it) && !done(t, it) }
+            if (next != null) open += AgendaItem(TaskDay(t, next, false), next)
+        }
+    }
+    val order = compareBy<AgendaItem>({ it.date ?: LocalDate.MAX }, { -it.day.task.priority.ordinal }, { it.day.task.dueTime ?: LocalTime.MAX }, { it.day.task.createdAt })
+    fun kind(d: LocalDate?) = when {
+        d == null -> SectionKind.NO_DATE
+        d < today -> SectionKind.OVERDUE
+        d == today -> SectionKind.TODAY
+        d == today.plusDays(1) -> SectionKind.TOMORROW
+        d <= today.plusDays(7) -> SectionKind.WEEK
+        else -> SectionKind.LATER
+    }
+    val grouped = open.sortedWith(order).groupBy { kind(it.date) }
+    val sections = SectionKind.entries.filter { it != SectionKind.COMPLETED }.mapNotNull { k -> grouped[k]?.let { AgendaSection(k, it) } }
+    val doneList = completed.sortedByDescending { it.second }.take(completedLimit).map { it.first }
+    return if (doneList.isEmpty()) sections else sections + AgendaSection(SectionKind.COMPLETED, doneList)
 }
