@@ -1,19 +1,23 @@
 # PersonalHub implementation progress
 
-Updated 12 November 2026 (Asia/Kolkata). Owner authorized implementation, package
+Updated 13 November 2026 (Asia/Kolkata). Owner authorized implementation, package
 installation and sequential tested commits/pushes. Original planning history is in
 `PersonalHub_Plan/project_progress.md`; SRS baseline 1.1 remains authoritative.
 
 ## Current checkpoint
 
 I00 toolchain/source audit complete. Native app exists, with four destinations,
-themes/settings and a Focus Room schema skeleton. Last previous checkpoint:
-`3f1c6ae`; current I02 repair passes public portal painting on API 29 and API 36.
+themes/settings and a Focus Room schema skeleton. Last verified code checkpoint:
+`e548f06` (committed and pushed). Its I02 repair passed actual public portal painting
+on API 29 and API 36. I03 API/data work is now partially written, UNCOMMITTED and
+UNTESTED. No I03 functionality is installed or wired into the app yet.
 Repository: `Ace-9999/personalhub`, branch `main`. JDK 21.0.9 / Gradle 8.13,
-compile/target API 36, minimum API 29. OnePlus CPH2661/API 36 attached; API 29
-emulator available. Live authenticated dataset and monitoring gates remain pending.
+compile/target API 36, minimum API 29. OnePlus CPH2661/API 36 and an API 29 emulator
+were used on 12 November; recheck attachment/running state when resuming.
+Live authenticated dataset and monitoring gates remain pending.
 UI is functional scaffolding; owner requested functionality first and later redesign.
-Next implementation: I03 local tasks/habits/moods after this repair checkpoint.
+Implementation is being handed off at the owner's request. Read
+[docs/handoff.md](docs/handoff.md) before continuing I03. Preserve all local WIP.
 
 ## Increment gates
 
@@ -22,12 +26,12 @@ Next implementation: I03 local tasks/habits/moods after this repair checkpoint.
 | I00 | Complete | Toolchain/source audit passed; OnePlus CPH2661/API 36 recorded |
 | I01 | Verification pending | Functional gate passed on API 29 emulator and API 36 phone; manual TalkBack/200%/landscape review pending |
 | I02 | Verification pending | Debug probes built/tested; live validated read and monitoring/redirect evidence pending |
-| I03 | Not started | Local tasks, habits, moods, trends |
-| I04â€“I06 | Blocked | I02 live VTOP gate needed |
+| I03 | In progress | API/data/migration/test source written locally; not compiled/run; feature UI and app wiring not created |
+| I04-I06 | Blocked | I02 live VTOP gate needed |
 | I07 | Not started | Catalog and routines; independent of VTOP |
 | I08 | Not started | Workout engine and timers |
 | I09 | Not started | Training history/analytics/body map |
-| I10â€“I12 | Blocked | I02 physical monitoring gate needed |
+| I10-I12 | Blocked | I02 physical monitoring gate needed |
 | I13 | Not started | Backups/hardening and release gates |
 | I14 | Blocked | Final module, after I13 |
 
@@ -56,7 +60,7 @@ Next exact task: I03 offline daily tools. I04-I06 and I10-I12 remain gated by li
 
 ### I01 working evidence (not a completed checkpoint)
 
-Requirements: SYS-01?04, SYS-07?09, NFR-01/02/09?12. Four routes, shared
+Requirements: SYS-01-04, SYS-07-09, NFR-01/02/09-12. Four routes, shared
 light/dark/system tokens, DataStore theme, Room focus dirty revision schema v1,
 module boundaries, demo/connected flavors and CI added. Exact source inventory:
 [docs/code_inventory.md](docs/code_inventory.md).
@@ -69,7 +73,7 @@ reported SCREEN_STATE_OFF; no UI pass claimed. Added assertion before synthetic
 screenshot. Emulator API 29 installed; UI rerun next. No production data exists;
 rollback is code revert, preserve Room schema v1 for the next additive migration.
 
-### I01 verified checkpoint ? 12 November 2026
+### I01 verified checkpoint - 12 November 2026
 
 Base: `26abe61`. PASS: three core JVM tests; demo/connected debug assembly;
 lint (0 errors, warnings retained); boundary check. PASS: Compose navigation and
@@ -88,7 +92,7 @@ Migration: Focus schema v1 exported; no destructive fallback. Revert code using
 forward-compatible schema; retain local data. Next: debug-only I02 origin-restricted
 VTOP and opt-in monitoring probes, then I03 while live source gates are pending.
 
-### I02 bounded probe checkpoint ? 12 November 2026
+### I02 bounded probe checkpoint - 12 November 2026
 
 Base `f3fb80a`. Added debug-only VTOP WebView with strict HTTPS-origin policy,
 no credential extraction/native JavaScript bridge and bounded structural counters.
@@ -100,7 +104,7 @@ packages are unavailable. No personal source content appears in tracked evidence
 PASS: all nine JVM tests (three shared, three origin/shape, three monitoring/privacy);
 both debug APK assemblies; lint; boundary check; existing API 29 Compose regression
 (34s total Gradle run, exit 0). I02 physical source gates remain pending; structural
-page counts do not validate a dataset. I04?I06 and I10?I12 stay blocked. Release
+page counts do not validate a dataset. I04-I06 and I10-I12 stay blocked. Release
 flavors exclude the debug probes. No schema change; disable/close probes and revert
 this checkpoint safely. Next: I03 tasks/manual habits/moods, explicitly independent
 of live integrations per the plan.
@@ -131,5 +135,63 @@ in ignored tooling output; no authenticated screenshot or HTML committed.
 PASS: final public visual run (32s), then JVM tests, both APKs, lint, Compose and
 Room emulator regression (43s, exit 0), boundaries and release-manifest isolation.
 Owner authenticated login/semester/validated read remains PENDING. Installed repair
-next. No database schema changes. Revert this repair only with offline modules
+successfully on the phone after the passing checks. No database schema changes. Revert this repair only with offline modules
 preserved; failed TLS must remain visible. UI replacement map: docs/ui_architecture.md.
+
+### I03 interrupted WIP / handoff - 13 November 2026
+
+Base and last verified code ref: `e548f06`. I03 has NOT been committed or pushed.
+The exact source inventory now includes the WIP, with verification status governed
+by this entry rather than inferred from the existence of files.
+
+Written locally:
+
+- `focus/api/build.gradle.kts` and `focus/api/src/main/kotlin/dev/personalhub/focus/api/FocusModels.kt`:
+  pure models, daily/weekly/nonrecurring task semantics, count/minutes/yes-no habits,
+  nine exact mood categories, categorical distributions, range/zone and missing/zero series.
+- `focus/api/src/main/kotlin/dev/personalhub/focus/api/FocusRepository.kt`:
+  Flow snapshot and suspend CRUD/completion/soft-delete/restore commands.
+- `focus/api/src/test/kotlin/dev/personalhub/focus/api/FocusRulesTest.kt`:
+  nine proposed domain tests, NOT RUN.
+- `focus/data/src/main/kotlin/dev/personalhub/focus/data/FocusEntities.kt`:
+  typed Room task/occurrence/habit/entry/mood rows and DAO.
+- `focus/data/src/main/kotlin/dev/personalhub/focus/data/RoomFocusRepository.kt`:
+  proposed transactional repository with injected clocks/IDs, validation and reopen support.
+- Modified `focus/data/src/main/kotlin/dev/personalhub/focus/data/FocusDatabase.kt`:
+  proposed additive migration 1->2. Only schema v1 is exported; v2 has NOT been
+  generated, tested or installed. No destructive fallback was added.
+- `focus/data/src/androidTest/kotlin/dev/personalhub/focus/data/FocusPersistenceTest.kt`:
+  proposed migration, close/reopen, ten same-millisecond mood, undo and invalid-command
+  tests, NOT RUN.
+- Modified `focus/data/build.gradle.kts` and `settings.gradle.kts`: new API edge,
+  migration-test schema assets and reserved `:feature:focus` include.
+
+Still missing: `feature/focus/` itself (currently no directory/build file), Focus
+ViewModel/screens/forms, app repository wiring, Today task summary, reminders,
+private reveal/device-credential lock, full trend interactions and I03 UI journeys.
+The reserved module include must be completed or deliberately deferred before
+claiming a working project configuration. Review command validation and historical
+editing semantics; generated source is not evidence of correctness.
+
+Tests/build for I03: NOT RUN. The last passing application regression applies to
+`e548f06`, not this dirty tree. No new APK was produced from the I03 edits.
+
+Transfer safety: local `artifacts/handoff-I03-WIP.patch` captures all ten changed/new
+I03 files, including untracked source. SHA-256:
+`4291b9728a1218140ee175a78cbd5e7885cbec27a0ffb2b119033ab4e5989229`.
+It was verified with `git apply --cached --check` against a separate temporary index
+at `e548f06`; the real index/worktree was not modified by that verification. The
+patch is intentionally ignored and must be supplied separately for a new checkout.
+Do NOT apply it again in this working folder. Handoff documentation can be committed
+separately; it does not turn the untested code into a verified checkpoint.
+
+Next exact action: the receiving agent reads the requirements/handoff, inspects and
+preserves the WIP, creates the missing feature module and app composition, then
+compiles/tests the proposed API/repository/migration before advancing dependent UI
+or claiming completion. Run the existing regressions as well. Commit/push a cohesive
+I03 checkpoint only after applicable tests pass; record pending physical acceptance.
+
+Rollback: no device database has been upgraded to v2 by this work. Preserve a WIP
+patch before any intentional code rollback. Keep schema v1; do not reset/clean this
+folder or downgrade/delete owner data. Later applied migrations require tested
+forward-compatible rollback or verified backup restoration.
