@@ -5,11 +5,12 @@ import androidx.room.withTransaction
 import dev.personalhub.core.*
 import dev.personalhub.focus.api.*
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
 import java.io.Closeable
 import java.time.*
 
 // All commands commit rows and the dirty revision atomically; snapshots read one transaction.
-class RoomFocusRepository private constructor(private val db: FocusDatabase, private val time: AppTime, private val ids: IdSource) : FocusRepository, TaskSyncStore, Closeable {
+class RoomFocusRepository private constructor(private val db: FocusDatabase, private val time: AppTime, private val ids: IdSource) : FocusRepository, TaskSyncStore, FocusBackupStore, Closeable {
     /** Called after every committed local task change so the host can schedule a debounced sync. */
     @Volatile var onTasksChanged: (() -> Unit)? = null
     private val dao get() = db.records()
@@ -110,6 +111,23 @@ class RoomFocusRepository private constructor(private val db: FocusDatabase, pri
     override suspend fun unlink(localId: String) = change { dao.task(localId)?.let { dao.task(it.copy(googleId = null, googleList = null, dirty = false)) }; Unit }
     override suspend fun lastSync(): Instant? = dao.syncValue("googleLastSync")?.let(Instant::parse)
     override suspend fun setLastSync(at: Instant) = dao.syncValue(SyncStateRow("googleLastSync", at.toString()))
+
+    override suspend fun exportAll(): FocusBackup = db.withTransaction {
+        val s = snapshots.first()
+        FocusBackup(s.tasks, dao.tasks().filter { it.googleId != null }.associate { it.id to (it.googleId!! to it.googleList) }, s.occurrences, s.habits, s.habitEntries, s.moods)
+    }
+    override suspend fun replaceAll(b: FocusBackup) = change {
+        dao.wipeOccurrences(); dao.wipeEntries(); dao.wipeTasks(); dao.wipeHabits(); dao.wipeMoods()
+        b.tasks.forEach { t -> val link = b.googleLinks[t.id]
+            dao.task(TaskRow(t.id, t.title, t.firstDay.toString(), t.priority.name, t.dueTime?.toString(), t.recurrence.name, t.carryForward,
+                t.createdAt.toEpochMilli(), t.updatedAt.toEpochMilli(), false, link?.first, link?.second, false, t.undated)) }
+        val taskIds = b.tasks.map { it.id }.toSet()
+        b.occurrences.filter { it.taskId in taskIds }.forEach { dao.occurrence(OccurrenceRow(it.taskId, it.day.toString(), it.completed, time.clock.millis())) }
+        b.habits.forEach { h -> dao.habit(HabitRow(h.id, h.label, h.unit.name, h.direction.name, h.target, h.sensitive, h.createdAt.toEpochMilli(), h.updatedAt.toEpochMilli())) }
+        val habitIds = b.habits.map { it.id }.toSet()
+        b.entries.filter { it.habitId in habitIds }.forEach { e -> dao.entry(HabitEntryRow(e.habitId, e.day.toString(), e.value, e.explicitZero, e.note, e.updatedAt.toEpochMilli())) }
+        b.moods.forEach { m -> dao.mood(MoodRow(m.id, m.mood.code, m.occurredAt.toEpochMilli(), m.originalZone.id, m.createdAt.toEpochMilli(), m.updatedAt.toEpochMilli(), m.note, m.revision)) }
+    }
 
     override fun close() { db.close() }
     companion object {

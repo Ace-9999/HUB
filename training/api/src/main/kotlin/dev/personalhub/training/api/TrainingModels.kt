@@ -143,4 +143,8 @@ interface TrainingRepository {
     suspend fun discardActive()
     suspend fun deleteWorkout(id: String)
     suspend fun saveFinished(w: Workout)
+    /** Custom exercises, routines and workouts (seed catalog lives in code). */
+    suspend fun exportAll(): TrainingBackup
+    suspend fun replaceAll(b: TrainingBackup)
 }
+data class TrainingBackup(val customExercises: List<Exercise>, val routines: List<Routine>, val workouts: List<Workout>)

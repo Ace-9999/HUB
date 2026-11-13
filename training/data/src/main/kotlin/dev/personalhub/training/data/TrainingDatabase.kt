@@ -6,6 +6,7 @@ import dev.personalhub.training.api.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
 import java.time.Instant
 
 // Training owns its database. Seed exercises live in code (stable ids); only custom exercises are stored.
@@ -43,6 +44,12 @@ internal data class SetRow(val workoutId: String, val exercisePosition: Int, val
     @Insert suspend fun sets(rows: List<SetRow>)
     @Query("UPDATE workouts SET finishedAt = :at WHERE id = :id AND finishedAt IS NULL") suspend fun finish(id: String, at: Long): Int
     @Query("DELETE FROM workouts WHERE id = :id") suspend fun deleteWorkout(id: String)
+    @Query("DELETE FROM custom_exercises") suspend fun wipeExercises()
+    @Query("DELETE FROM routines") suspend fun wipeRoutines()
+    @Query("DELETE FROM routine_items") suspend fun wipeItems()
+    @Query("DELETE FROM workouts") suspend fun wipeWorkouts()
+    @Query("DELETE FROM workout_exercises") suspend fun wipeWorkoutExercises()
+    @Query("DELETE FROM workout_sets") suspend fun wipeSets()
 }
 
 @Database(entities = [ExerciseRow::class, RoutineRow::class, RoutineItemRow::class, WorkoutRow::class, WorkoutExerciseRow::class, SetRow::class], version = 1, exportSchema = true)
@@ -99,6 +106,13 @@ class RoomTrainingRepository private constructor(private val db: TrainingDatabas
     override suspend fun discardActive() = db.withTransaction { dao.activeIds().forEach { id -> dao.clearSets(id); dao.clearExercises(id); dao.deleteWorkout(id) } }
     override suspend fun deleteWorkout(id: String) = db.withTransaction { dao.clearSets(id); dao.clearExercises(id); dao.deleteWorkout(id) }
     override suspend fun saveFinished(w: Workout) = db.withTransaction { require(!w.active); write(w) }
+    override suspend fun exportAll() = TrainingBackup(exercises.first().filter { it.custom }, routines.first(), workouts.first())
+    override suspend fun replaceAll(b: TrainingBackup) = db.withTransaction {
+        dao.wipeSets(); dao.wipeWorkoutExercises(); dao.wipeWorkouts(); dao.wipeItems(); dao.wipeRoutines(); dao.wipeExercises()
+        b.customExercises.forEach { saveExercise(it) }
+        b.routines.forEach { saveRoutine(it) }
+        b.workouts.forEach { write(it) }
+    }
     override fun close() = db.close()
 
     companion object { fun open(context: Context, name: String = "training.db") = RoomTrainingRepository(Room.databaseBuilder(context, TrainingDatabase::class.java, name).build()) }

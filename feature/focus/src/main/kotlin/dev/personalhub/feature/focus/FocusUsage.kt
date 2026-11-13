@@ -73,7 +73,7 @@ private fun mins(d: Duration) = formatDuration(d)
     HealthCard(ui, vm, openAccessibilitySettings)
     val day = ui.today
     if (day != null) {
-        StatRow(Triple("REELS & VIDEO", mins(day.time(Surface.VIDEO)), null), Triple("FEEDS", mins(day.time(Surface.TEXT_FEED)), null),
+        StatRow(Triple("REELS", mins(day.time(Surface.VIDEO)), null), Triple("FEEDS", mins(day.time(Surface.TEXT_FEED)), null),
             Triple("SCROLLS", day.bursts.toString(), day.screens?.let { "≈ %.0f screens".format(it) }))
         Text("Scrolls are grouped swipes (bursts), not posts or reels watched. Screens are estimated where the app reports distance.",
             style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
@@ -84,7 +84,7 @@ private fun mins(d: Duration) = formatDuration(d)
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Row { Text(t.label, style = MaterialTheme.typography.titleMedium, color = Hub.colors.ink, modifier = Modifier.weight(1f)); Text(mins(day.time(target = t)), style = MaterialTheme.typography.titleSmall, color = Hub.colors.ink) }
                     HubBar(day.time(target = t).toMinutes() / total.toFloat(), color = Hub.colors.lime)
-                    Text("Reels/video ${mins(v)} · feed ${mins(f)}${if (u > Duration.ZERO) " · unclassified ${mins(u)}" else ""}", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
+                    Text("Reels ${mins(v)} · feed ${mins(f)}${if (u > Duration.ZERO) " · unclassified ${mins(u)}" else ""}", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
                 }
             } ?: Text("No tracked time today.", style = MaterialTheme.typography.bodyLarge, color = Hub.colors.inkSoft)
         }
@@ -106,7 +106,7 @@ private fun mins(d: Duration) = formatDuration(d)
     }
     HubCard("Tracking", trailing = { Pill(label, color) }) {
         if (!ui.settings.tracking) {
-            Text("Measures Instagram, X, Reddit and YouTube — apps and those sites in Chrome or Brave — splitting reels/video from feed scrolling, and enforces your limits and curfew. " +
+            Text("Measures Instagram, X, Reddit and YouTube — apps and those sites in Chrome or Brave — splitting reels from feed scrolling, and enforces your limits and curfew. " +
                 "Only app identity, layout IDs and the site address are read; never posts, messages or screenshots. Everything stays on this phone.",
                 style = MaterialTheme.typography.bodyMedium, color = Hub.colors.ink)
             HubButton("Turn on tracking", { vm.setTracking(true) }, Modifier.fillMaxWidth(), icon = HubIcons.Eye)
@@ -141,7 +141,7 @@ private fun mins(d: Duration) = formatDuration(d)
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Dot(Hub.colors.lime, 12.dp); Text("Reels/video", style = MaterialTheme.typography.bodySmall, color = Hub.colors.ink)
+            Dot(Hub.colors.lime, 12.dp); Text("Reels", style = MaterialTheme.typography.bodySmall, color = Hub.colors.ink)
             Dot(Hub.colors.cyan, 12.dp); Text("Feeds", style = MaterialTheme.typography.bodySmall, color = Hub.colors.ink)
             Dot(Hub.colors.raised, 12.dp); Text("Unclassified", style = MaterialTheme.typography.bodySmall, color = Hub.colors.ink)
         }
@@ -154,7 +154,7 @@ private fun mins(d: Duration) = formatDuration(d)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("Per-app time limits", style = MaterialTheme.typography.titleMedium, color = Hub.colors.ink)
-                Text(if (ui.settings.perApp) "Each app has its own reels/video and feed limits." else "Off: one reels/video limit and one feed limit shared by all apps and sites.",
+                Text(if (ui.settings.perApp) "Each app has its own reels and feed limits." else "Off: one reels limit and one feed limit shared by all apps and sites.",
                     style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
             }
             HubCheck(ui.settings.perApp, { vm.setPerApp(it) }, "Per-app time limits", check = HubIcons.Check)
@@ -189,7 +189,7 @@ private fun mins(d: Duration) = formatDuration(d)
     val used = vm.used(rule ?: LimitRule("preview", target, surface, 0))
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            HubField(text, { text = it.filter(Char::isDigit).take(4) }, if (surface == Surface.VIDEO) "Reels & video · min/day" else "Feeds · min/day",
+            HubField(text, { text = it.filter(Char::isDigit).take(4) }, if (surface == Surface.VIDEO) "Reels · min/day" else "Feeds · min/day",
                 Modifier.weight(1f), placeholder = "No limit", number = true, committed = rule != null && text == rule.dailyMinutes.toString())
             val value = text.toIntOrNull()
             val changed = value != rule?.dailyMinutes

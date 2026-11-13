@@ -546,3 +546,22 @@ frames bundled (5.8 MB) with per-file source/sha256 manifest. UI: REF-11-style l
 exercise page (start/end crossfade every 1.3 s, pause/play, static when system animations are off),
 REF-12-style round thumbnails in catalog, routine editor and live workout; off-main-thread
 downsampled decode with LRU cache; custom exercises fall back to an initial. Visual check on API 29.
+
+### I13 JSON backup/restore + Today widgets + polish - 14 November 2026
+
+Owner skipped auto-login (VTOP login uses Google reCAPTCHA; no solver built; login stays manual).
+I13 (SYS-10..12, data_export.md): every domain exposes export/replace-all (Focus incl. Google links,
+Training, Usage incl. gaps/overrides, College snapshot); `BackupCodec` writes the versioned
+`personalhub-json` envelope (stable ids, zones, units; no passwords/cookies/tokens) and strictly
+validates on read (size/record bounds, format/version, review exports refused, enum/mood codes,
+duplicate ids, habit value rules, single active workout). `BackupManager`: daily WorkManager backup,
+temp -> decode-verify -> atomic rename -> keep 7, Backup now, Save a copy (system picker), restore with
+preview + pre-restore snapshot + journal/staged-file recovery at start-up. Settings Backup card.
+PASS: codec 3/3 JVM (exact round trip of synthetic data across all domains incl. ten same-ms moods,
+hostile inputs). NOT yet: review/scoped export, external-folder automatic copies, restore journal
+crash test on device, owner restore drill.
+Owner UI requests: Today has emoji greeting, six glance tiles (classes/holiday, tasks left, habits,
+scrolling today, workouts 7d, day streak), habits chips and screen-time widget; Train tiles even
+(shared surface now fills its given width - fixes short "full-width" buttons app-wide), "Stats" ->
+"Statistics", stat tiles share one height; Focus "Reels & video" -> "Reels".
+PASS: full test, R8 build, lint, Compose 3/3, Room focus 5/5, training 1/1, usage 2/2, college 4/4.

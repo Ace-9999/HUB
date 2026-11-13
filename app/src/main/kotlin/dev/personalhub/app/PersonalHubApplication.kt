@@ -26,6 +26,7 @@ class PersonalHubApplication : Application(), dev.personalhub.monitoring.UsageHo
     val college by lazy { RoomCollegeRepository.open(this) }
     val usage by lazy { dev.personalhub.usage.data.RoomUsageRepository.open(this) }
     val googleTasks by lazy { GoogleTasksHost(this) }
+    val backups by lazy { dev.personalhub.app.backup.BackupManager(this) }
     val training by lazy { dev.personalhub.training.data.RoomTrainingRepository.open(this) }
     /** Rest-over alert at the countdown deadline (WorkManager; may be a few seconds late, disclosed in UI). */
     val restAlerts = object : dev.personalhub.feature.training.RestAlerts {
@@ -51,6 +52,7 @@ class PersonalHubApplication : Application(), dev.personalhub.monitoring.UsageHo
         // Local task edits schedule a debounced Google Tasks sync when connected.
         focus.onTasksChanged = { mainScope.launch { if (googleTasks.enabled()) googleTasks.syncSoon(this@PersonalHubApplication); Reminders.reschedule(this@PersonalHubApplication) } }
         mainScope.launch { Reminders.reschedule(this@PersonalHubApplication); Reminders.scheduleNudge(this@PersonalHubApplication) }
+        mainScope.launch { backups.recover(); backups.schedule() }
         mainScope.launch { if (googleTasks.enabled()) { googleTasks.schedule(this@PersonalHubApplication); googleTasks.syncSoon(this@PersonalHubApplication, 1) } }
     }
 }

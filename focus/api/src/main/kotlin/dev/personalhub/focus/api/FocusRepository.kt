@@ -45,3 +45,13 @@ sealed interface GoogleSyncState {
     data class Synced(val at: java.time.Instant, val pulled: Int, val pushed: Int) : GoogleSyncState
     data class Failed(val reason: String) : GoogleSyncState
 }
+
+// ---------------------------------------------------------------- backup (I13)
+/** Everything Focus retains, including Google Tasks links so a restore does not duplicate remote tasks. */
+data class FocusBackup(val tasks: List<Task>, val googleLinks: Map<String, Pair<String, String?>>, val occurrences: List<TaskOccurrence>,
+    val habits: List<Habit>, val entries: List<HabitEntry>, val moods: List<MoodEntry>)
+interface FocusBackupStore {
+    suspend fun exportAll(): FocusBackup
+    /** Replaces every Focus record in one transaction. */
+    suspend fun replaceAll(b: FocusBackup)
+}

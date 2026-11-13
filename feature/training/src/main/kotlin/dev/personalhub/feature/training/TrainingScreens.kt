@@ -75,7 +75,7 @@ private fun dur(d: Duration) = d.seconds.let { if (it >= 3600) "${it / 3600}h ${
     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         Tile("Exercises", Hub.colors.cyan, Modifier.weight(1f)) { go(TrainNav(TrainPage.CATALOG)) }
         Tile("History", Hub.colors.apricot, Modifier.weight(1f)) { go(TrainNav(TrainPage.HISTORY)) }
-        Tile("Stats", Hub.colors.lavender, Modifier.weight(1f)) { go(TrainNav(TrainPage.STATS)) }
+        Tile("Statistics", Hub.colors.lavender, Modifier.weight(1f)) { go(TrainNav(TrainPage.STATS)) }
     }
     SectionHeader("Routines", action = { HubButton("New", { go(TrainNav(TrainPage.ROUTINE, "new")) }, icon = HubIcons.Plus, compact = true) })
     val routines = ui.routines.filter { !it.archived }
@@ -94,7 +94,8 @@ private fun dur(d: Duration) = d.seconds.let { if (it >= 3600) "${it / 3600}h ${
 
 @Composable private fun Tile(label: String, color: androidx.compose.ui.graphics.Color, modifier: Modifier, onClick: () -> Unit) {
     HubSurface(modifier, color = color, onClick = onClick, onClickLabel = "Open $label") {
-        Text(label, style = MaterialTheme.typography.titleMedium, color = Hub.colors.onAccent, modifier = Modifier.padding(horizontal = 12.dp, vertical = 18.dp), maxLines = 1)
+        Text(label, style = MaterialTheme.typography.titleMedium, color = Hub.colors.onAccent, textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 18.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 

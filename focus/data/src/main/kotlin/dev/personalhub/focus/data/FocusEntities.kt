@@ -39,4 +39,9 @@ internal data class MoodRow(@PrimaryKey val id: String, val code: String, val oc
     @Query("SELECT * FROM moods WHERE deleted = 0") suspend fun moods(): List<MoodRow>
     @Query("SELECT * FROM moods WHERE id = :id") suspend fun mood(id: String): MoodRow?
     @Upsert suspend fun mood(row: MoodRow)
+    @Query("DELETE FROM task_occurrences") suspend fun wipeOccurrences()
+    @Query("DELETE FROM habit_entries") suspend fun wipeEntries()
+    @Query("DELETE FROM tasks") suspend fun wipeTasks()
+    @Query("DELETE FROM habits") suspend fun wipeHabits()
+    @Query("DELETE FROM moods") suspend fun wipeMoods()
 }

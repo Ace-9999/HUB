@@ -14,6 +14,9 @@ Purpose comments in source and the progress log describe responsibilities.
 | `app/src/debug/res/values/strings.xml` | Source/config/schema |
 | `app/src/debug/res/xml/probe_accessibility.xml` | Source/config/schema |
 | `app/src/main/AndroidManifest.xml` | Source/config/schema |
+| `app/src/main/kotlin/dev/personalhub/app/backup/BackupCard.kt` | Source/config/schema |
+| `app/src/main/kotlin/dev/personalhub/app/backup/BackupCodec.kt` | Source/config/schema |
+| `app/src/main/kotlin/dev/personalhub/app/backup/BackupManager.kt` | Source/config/schema |
 | `app/src/main/kotlin/dev/personalhub/app/BlockedActivity.kt` | Source/config/schema |
 | `app/src/main/kotlin/dev/personalhub/app/CollegeConnectActivity.kt` | Source/config/schema |
 | `app/src/main/kotlin/dev/personalhub/app/DemoData.kt` | Source/config/schema |
@@ -21,6 +24,7 @@ Purpose comments in source and the progress log describe responsibilities.
 | `app/src/main/kotlin/dev/personalhub/app/MainActivity.kt` | Source/config/schema |
 | `app/src/main/kotlin/dev/personalhub/app/PersonalHubApplication.kt` | Source/config/schema |
 | `app/src/main/kotlin/dev/personalhub/app/Reminders.kt` | Source/config/schema |
+| `app/src/main/kotlin/dev/personalhub/app/TodayWidgets.kt` | Source/config/schema |
 | `app/src/main/res/drawable/ic_launcher_background.xml` | Source/config/schema |
 | `app/src/main/res/drawable/ic_launcher_foreground.xml` | Source/config/schema |
 | `app/src/main/res/drawable/ic_launcher_monochrome.xml` | Source/config/schema |
@@ -34,6 +38,7 @@ Purpose comments in source and the progress log describe responsibilities.
 | `app/src/main/res/xml/usage_tracker.xml` | Source/config/schema |
 | `app/src/main/res/xml/vtop_network_security.xml` | Source/config/schema |
 | `app/src/portalProbe/kotlin/dev/personalhub/app/PublicPortalProbeTest.kt` | Source/config/schema |
+| `app/src/test/kotlin/dev/personalhub/app/BackupCodecTest.kt` | Test |
 | `app/src/test/kotlin/dev/personalhub/app/RemindersTest.kt` | Test |
 | `core/designsystem/build.gradle.kts` | Source/config/schema |
 | `core/designsystem/src/main/assets/licenses/ArchivoBlack-OFL.txt` | Source/config/schema |

@@ -100,6 +100,14 @@ interface CollegeRepository {
     /** Atomically replaces each successfully imported dataset; failed datasets keep their cached rows. */
     suspend fun save(import: CollegeImport)
     suspend fun clear()
+    /** Restores a full snapshot (clear + import with the original sync time and statuses). */
+    suspend fun replaceAll(s: CollegeSnapshot) {
+        clear()
+        val sem = s.semester ?: return
+        save(CollegeImport(sem, s.semesters, s.syncedAt ?: java.time.Instant.EPOCH, s.courses, s.meetings, s.attendance, s.marks, s.grades, s.summary,
+            Dataset.entries.map { d -> s.statuses.firstOrNull { it.dataset == d }?.takeIf { it.state == ImportState.OK || it.state == ImportState.EMPTY }
+                ?: DatasetStatus(d, ImportState.OK, 0, "restored from backup") }, s.exams, s.calendar, s.results))
+    }
 }
 
 fun courseKey(code: String, type: String) = "$code|${componentOf(type)}"

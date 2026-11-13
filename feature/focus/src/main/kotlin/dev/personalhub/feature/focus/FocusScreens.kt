@@ -526,7 +526,7 @@ private val backdates = listOf("Now" to 0L, "15 min ago" to 15L, "1 hr ago" to 6
     val sections = agenda(ui.snapshot, ui.today)
     val items = sections.filter { it.kind == SectionKind.OVERDUE || it.kind == SectionKind.TODAY }.flatMap { it.items }
     val overdue = sections.firstOrNull { it.kind == SectionKind.OVERDUE }?.items?.size ?: 0
-    HubCard("Today's tasks", trailing = { Pill(if (items.isEmpty()) "None" else if (overdue > 0) "$overdue overdue" else "${items.size} due", if (overdue > 0) Hub.colors.peach else Hub.colors.mint) }, onClick = onOpen) {
+    HubCard("📝 Today's tasks", trailing = { Pill(if (items.isEmpty()) "None" else if (overdue > 0) "$overdue overdue" else "${items.size} due", if (overdue > 0) Hub.colors.peach else Hub.colors.mint) }, onClick = onOpen) {
         if (items.isEmpty()) Text("Nothing due today. Tap to see everything.", style = MaterialTheme.typography.bodyLarge, color = Hub.colors.inkSoft)
         items.take(5).forEach { item ->
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -543,7 +543,7 @@ private val backdates = listOf("Now" to 0L, "15 min ago" to 15L, "1 hr ago" to 6
 @Composable fun MoodQuickCard(vm: FocusViewModel, onOpen: () -> Unit) {
     val ui by vm.state.collectAsStateWithLifecycle()
     val last = ui.recentMoods.firstOrNull()
-    HubCard("Check in", color = Hub.colors.lavender, onClick = onOpen, trailing = { Icon(HubIcons.Arrow, null, tint = Hub.colors.onAccent) }) {
+    HubCard("😊 Check in", color = Hub.colors.lavender, onClick = onOpen, trailing = { Icon(HubIcons.Arrow, null, tint = Hub.colors.onAccent) }) {
         // HAB-06: mood values stay off the Today page; only the time of the last check-in is shown.
         Text(last?.let { "Last check-in at ${it.occurredAt.atZone(ui.zone).toLocalTime().format(timeFmt)}" } ?: "How are you feeling right now?",
             style = MaterialTheme.typography.bodyLarge, color = Hub.colors.onAccent)

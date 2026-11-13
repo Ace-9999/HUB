@@ -150,7 +150,7 @@ private val tabs = listOf("today", "college", "training", "focus")
                     beyondViewportPageCount = 0, key = { tabs[it] }) { index ->
                     PageColumn {
                         when (tabs[index]) {
-                            "today" -> TodayScreen(focus, college, training, onSettings = { settings = true }, openCollege = { collegePage = it; go("college") }, openFocus = { focusTab = it; go("focus") },
+                            "today" -> TodayScreen(focus, college, training, usage, onSettings = { settings = true }, openCollege = { collegePage = it; go("college") }, openFocus = { focusTab = it; go("focus") },
                                 openTrain = { trainNav = it; go("training") })
                             "college" -> AnimatedContent(collegePage, transitionSpec = { subPageTransition(initialState == CollegePage.OVERVIEW) }, label = "college") { page ->
                                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -210,24 +210,28 @@ private val TrainNavSaver = androidx.compose.runtime.saveable.listSaver<dev.pers
     save = { listOf(it.page.name, it.arg, it.pickFor?.name) },
     restore = { dev.personalhub.feature.training.TrainNav(dev.personalhub.feature.training.TrainPage.valueOf(it[0]!!), it[1], it[2]?.let(dev.personalhub.feature.training.TrainPage::valueOf)) })
 
-@Composable private fun TodayScreen(focus: FocusViewModel, college: CollegeViewModel, training: dev.personalhub.feature.training.TrainingViewModel, onSettings: () -> Unit,
+@Composable private fun TodayScreen(focus: FocusViewModel, college: CollegeViewModel, training: dev.personalhub.feature.training.TrainingViewModel, usage: UsageViewModel, onSettings: () -> Unit,
     openCollege: (CollegePage) -> Unit, openFocus: (Int) -> Unit, openTrain: (dev.personalhub.feature.training.TrainNav) -> Unit) {
     val now = LocalTime.now()
-    val greeting = when (now.hour) { in 5..11 -> "Good morning"; in 12..16 -> "Good afternoon"; else -> "Good evening" }
+    val greeting = when (now.hour) { in 5..11 -> "Good morning ☀️"; in 12..16 -> "Good afternoon 🌤️"; in 17..20 -> "Good evening 🌆"; else -> "Good night 🌙" }
     Row(verticalAlignment = Alignment.CenterVertically) {
         Pill(AppTime().today().format(DateTimeFormatter.ofPattern("EEEE, d MMMM")).uppercase(), Hub.colors.lime)
         Spacer(Modifier.weight(1f))
         HubIconButton(HubIcons.Settings, "Settings", onSettings)
     }
     Text(greeting, style = MaterialTheme.typography.displayLarge, color = Hub.colors.ink)
-    Text("Your day, in one place.", style = MaterialTheme.typography.bodyLarge, color = Hub.colors.inkSoft)
+    Text("Here's your day at a glance ✨", style = MaterialTheme.typography.bodyLarge, color = Hub.colors.inkSoft)
+    TodayGlance(focus, college, training, usage, openCollege = { openCollege(CollegePage.OVERVIEW) }, openTasks = { openFocus(0) }, openHabits = { openFocus(1) },
+        openUsage = { openFocus(4) }, openTrain = { openTrain(dev.personalhub.feature.training.TrainNav()) })
     CollegeTodayCards(college, openCollege)
     FocusTodayCard(focus) { openFocus(0) }
+    HabitsTodayCard(focus) { openFocus(1) }
+    ScreenTimeCard(usage) { openFocus(4) }
     MoodQuickCard(focus) { openFocus(2) }
     val t by training.state.collectAsStateWithLifecycle()
     val active = t.active
     val week = t.finished.count { dev.personalhub.training.api.inRange(it, java.time.LocalDate.now().minusDays(6), java.time.LocalDate.now(), java.time.ZoneId.systemDefault()) }
-    HubCard(if (active != null) "Workout in progress" else "Training", color = if (active != null) Hub.colors.lime else Hub.colors.surface,
+    HubCard(if (active != null) "🔥 Workout in progress" else "🏋️ Training", color = if (active != null) Hub.colors.lime else Hub.colors.surface,
         trailing = { Pill("$week this week", Hub.colors.mint) },
         onClick = { openTrain(dev.personalhub.feature.training.TrainNav(if (active != null) dev.personalhub.feature.training.TrainPage.WORKOUT else dev.personalhub.feature.training.TrainPage.OVERVIEW)) }) {
         Text(active?.let { "${it.name} — tap to resume." } ?: t.finished.firstOrNull()?.let { "Last: ${it.name}, ${it.startedAt.atZone(java.time.ZoneId.systemDefault()).toLocalDate().format(DateTimeFormatter.ofPattern("EEE d MMM"))}." }
@@ -284,8 +288,9 @@ object FocusLock {
         val modes = listOf("light", "dark", "system")
         ChoiceCells(listOf("Light", "Dark", "System"), modes.indexOf(theme).takeIf { it >= 0 }, { scope.launch { app.settings.theme(modes[it]) } }, description = "Theme")
     }
+    dev.personalhub.app.backup.BackupCard(app)
     HubCard("Your data stays here", color = Hub.colors.mint) {
-        Text("No account, ads, analytics or remote AI. College data is read from the official portal only when you sync, and saved on this device. Android cloud backup is disabled; local JSON backup arrives in I13.",
+        Text("No account, ads, analytics or remote AI. College data is read from the official portal only when you sync, and saved on this device. Android cloud backup is disabled; use Backup above for local JSON copies.",
             style = MaterialTheme.typography.bodyLarge, color = Hub.colors.onAccent)
     }
     StatusCard(DataStatus.CONTENT, "Screen-time tracking", "Managed in Focus → Usage: opt-in accessibility tracking, limits and night cut-off.")

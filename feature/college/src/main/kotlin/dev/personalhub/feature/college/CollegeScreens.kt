@@ -589,16 +589,16 @@ internal fun trim(v: Double) = if (v % 1.0 == 0.0) v.toLong().toString() else "%
     vm.nextClass(s)?.let { NextClassCard(it, s, onClick = { onOpen(CollegePage.TIMETABLE) }) }
     val today = vm.time.today()
     s.exams.filter { val d = it.date; d != null && !d.isBefore(today) && !d.isAfter(today.plusDays(14)) }.minByOrNull { it.date!! }?.let { e ->
-        HubCard("Next exam · ${e.date!!.format(examDateFmt)}", color = Hub.colors.lime, onClick = { onOpen(CollegePage.EXAMS) }) {
+        HubCard("📝 Next exam · ${e.date!!.format(examDateFmt)}", color = Hub.colors.lime, onClick = { onOpen(CollegePage.EXAMS) }) {
             Text("${e.examType} · ${s.course(e.courseCode)?.title ?: e.courseTitle ?: e.courseCode}", style = MaterialTheme.typography.titleMedium, color = Hub.colors.onAccent)
             listOfNotNull(e.examTime, e.venue, e.seatNumber?.let { "seat $it" }).takeIf { it.isNotEmpty() }?.let { Text(it.joinToString(" · "), style = MaterialTheme.typography.bodyMedium, color = Hub.colors.onAccent) }
         }
     }
     s.calendarOn(today).firstOrNull { it.kind == CalendarKind.HOLIDAY }?.let { h ->
-        HubCard("Holiday today", color = Hub.colors.peach, onClick = { onOpen(CollegePage.CALENDAR) }) { Text(h.label, style = MaterialTheme.typography.bodyLarge, color = Hub.colors.onAccent) }
+        HubCard("🎉 Holiday today", color = Hub.colors.peach, onClick = { onOpen(CollegePage.CALENDAR) }) { Text(h.label, style = MaterialTheme.typography.bodyLarge, color = Hub.colors.onAccent) }
     }
     val low = s.attendance.filter { (it.percent ?: 100.0) < ui.target }.minByOrNull { it.percent ?: 100.0 }
-    if (low != null) HubCard("Attendance warning", color = Hub.colors.peach, onClick = { onOpen(CollegePage.ATTENDANCE) }) {
+    if (low != null) HubCard("⚠️ Attendance warning", color = Hub.colors.peach, onClick = { onOpen(CollegePage.ATTENDANCE) }) {
         val plan = attendancePlan(low.attended, low.total, ui.target)
         Text("${low.courseTitle ?: low.courseCode} is at %.0f%%. Attend the next ${plan.mustAttend} to reach ${ui.target}%%.".format(Math.floor(low.percent!!)), style = MaterialTheme.typography.bodyLarge, color = Hub.colors.onAccent)
     }

@@ -28,7 +28,7 @@ enum class Target(val label: String, val packages: Set<String>, val hosts: Set<S
 /** Browsers whose address bar is read (host/path only) to recognise target sites. */
 val BROWSERS = setOf("com.android.chrome", "com.brave.browser")
 
-enum class Surface(val label: String) { VIDEO("Reels & video"), TEXT_FEED("Feed scrolling"), OTHER("Other"), UNKNOWN("Unclassified") }
+enum class Surface(val label: String) { VIDEO("Reels"), TEXT_FEED("Feed scrolling"), OTHER("Other"), UNKNOWN("Unclassified") }
 enum class Source { APP, BROWSER }
 
 data class UsageContext(val target: Target, val surface: Surface, val source: Source, val pkg: String, val classifierVersion: Int = 1)
@@ -158,7 +158,10 @@ interface UsageRepository {
     suspend fun activeOverride(now: Instant): Override?
     suspend fun openGap(at: Instant, reason: GapReason)
     suspend fun closeGap(at: Instant)
+    suspend fun exportAll(): UsageBackup
+    suspend fun replaceAll(b: UsageBackup)
 }
+data class UsageBackup(val settings: FocusSettings, val rules: List<LimitRule>, val intervals: List<UsageInterval>, val overrides: List<Override>, val gaps: List<CoverageGap>)
 
 /** Live tracker state for the health card (FOC-10). Held in memory by the running service. */
 data class TrackerHealth(val connected: Boolean = false, val lastEvent: Instant? = null, val current: UsageContext? = null,

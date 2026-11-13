@@ -13,7 +13,7 @@ class ShellTest {
 
     @Test fun navigationSettingsAndRecreationRemainUsableWithoutPermissions() {
         rule.waitForIdle()
-        rule.onNodeWithText("Your day, in one place.").assertIsDisplayed()
+        rule.onNodeWithText("your day at a glance", substring = true).assertIsDisplayed()
         rule.onAllNodesWithText("Focus").onLast().performClick()
         rule.onNodeWithText("Mood").performClick()
         rule.onNodeWithText("How are you?").assertIsDisplayed()

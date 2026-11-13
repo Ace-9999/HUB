@@ -156,7 +156,7 @@ fun Modifier.dottedCanvas(background: Color, dot: Color, spacing: Dp = 22.dp): M
     val fill by animateColorAsState(color, tween(220), label = "fill")
     val shape = RoundedCornerShape(radius)
     val travel = shadow - depth
-    Box(modifier.padding(end = shadow, bottom = shadow)) {
+    Box(modifier.padding(end = shadow, bottom = shadow), propagateMinConstraints = true) {
         Box(
             Modifier.offset(travel, travel).hardShadow(c.shadow, depth, radius).clip(shape).background(fill).border(stroke, c.outline, shape)
                 .then(if (onClick != null) Modifier.clickable(source, LocalIndicationNone, enabled = enabled, onClickLabel = onClickLabel, role = Role.Button, onClick = onClick) else Modifier),
@@ -279,7 +279,8 @@ enum class ButtonTone { Primary, Plain, Danger, Mint }
                 Column(Modifier.fillMaxWidth().padding(vertical = 12.dp, horizontal = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(label, style = MaterialTheme.typography.labelMedium, color = Hub.colors.inkSoft, maxLines = 1)
                     Text(value, style = MaterialTheme.typography.headlineSmall, color = Hub.colors.ink, maxLines = 1, softWrap = false)
-                    caption?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = Hub.colors.inkSoft, maxLines = 1, textAlign = TextAlign.Center) }
+                    // Always reserve the caption line so tiles in a row share one height.
+                    Text(caption ?: " ", style = MaterialTheme.typography.labelSmall, color = Hub.colors.inkSoft, maxLines = 1, textAlign = TextAlign.Center)
                 }
             }
         }

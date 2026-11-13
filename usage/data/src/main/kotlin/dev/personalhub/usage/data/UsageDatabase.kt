@@ -7,6 +7,7 @@ import dev.personalhub.usage.api.Target
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
 import java.time.*
 
 // Usage owns its database. Rows hold target/surface identities, times and counts only — never content text or URLs.
@@ -33,6 +34,13 @@ internal data class IntervalRow(@PrimaryKey(autoGenerate = true) val id: Long = 
     @Insert suspend fun gap(row: GapRow)
     @Query("UPDATE gaps SET endMs = :at WHERE endMs IS NULL") suspend fun closeGaps(at: Long)
     @Query("SELECT * FROM gaps ORDER BY startMs DESC LIMIT 50") fun gaps(): Flow<List<GapRow>>
+    @Query("SELECT * FROM intervals ORDER BY startMs") suspend fun allIntervals(): List<IntervalRow>
+    @Query("SELECT * FROM overrides") suspend fun allOverrides(): List<OverrideRow>
+    @Query("SELECT * FROM gaps") suspend fun allGaps(): List<GapRow>
+    @Query("DELETE FROM intervals") suspend fun wipeIntervals()
+    @Query("DELETE FROM rules") suspend fun wipeRules()
+    @Query("DELETE FROM overrides") suspend fun wipeOverrides()
+    @Query("DELETE FROM gaps") suspend fun wipeGaps()
 }
 
 @Database(entities = [IntervalRow::class, RuleRow::class, SettingsRow::class, OverrideRow::class, GapRow::class], version = 2, exportSchema = true)
@@ -79,6 +87,15 @@ class RoomUsageRepository private constructor(private val db: UsageDatabase) : U
     override suspend fun activeOverride(now: Instant) = dao.activeOverride(now.toEpochMilli())?.let { Override(Instant.ofEpochMilli(it.untilMs), Instant.ofEpochMilli(it.createdMs), it.reason) }
     override suspend fun openGap(at: Instant, reason: GapReason) = db.withTransaction { dao.closeGaps(at.toEpochMilli()); dao.gap(GapRow(0, at.toEpochMilli(), null, reason.name)) }
     override suspend fun closeGap(at: Instant) = dao.closeGaps(at.toEpochMilli())
+    override suspend fun exportAll() = UsageBackup(settings.first(), rules.first(), dao.allIntervals().map { it.model() },
+        dao.allOverrides().map { Override(Instant.ofEpochMilli(it.untilMs), Instant.ofEpochMilli(it.createdMs), it.reason) },
+        dao.allGaps().map { CoverageGap(Instant.ofEpochMilli(it.startMs), it.endMs?.let(Instant::ofEpochMilli), GapReason.valueOf(it.reason)) })
+    override suspend fun replaceAll(b: UsageBackup) = db.withTransaction {
+        dao.wipeIntervals(); dao.wipeRules(); dao.wipeOverrides(); dao.wipeGaps()
+        b.intervals.forEach { add(it) }; b.rules.forEach { saveRule(it) }; saveSettings(b.settings)
+        b.overrides.forEach { addOverride(it) }
+        b.gaps.forEach { g -> dao.gap(GapRow(0, g.start.toEpochMilli(), g.end?.toEpochMilli(), g.reason.name)) }
+    }
     override fun close() = db.close()
 
     companion object {
