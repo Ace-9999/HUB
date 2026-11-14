@@ -43,7 +43,7 @@ class BackupCodecTest {
             listOf(ExamSlot("FAT", "ZZZ1001L", null, null, day, "FN", null, null, "XB1", null, "12")),
             listOf(CalendarDay(day, "Holiday - Synthetic", CalendarKind.HOLIDAY)),
             listOf(SemesterResult(Semester("W25", "Winter"), listOf(GradedCourse("ZZZ0001L", "Old", null, 3.0, "RG", 71.5, "A",
-                listOf(MarkComponent("ZZZ0001L", null, "CAT1", 50.0, 15.0, 40.0, 12.0, null)), listOf(GradeRange("A", "72 - 79")))))))
+                listOf(MarkComponent("ZZZ0001L", null, "CAT1", 50.0, 15.0, 40.0, 12.0, null)), listOf(GradeRange("A", "72 - 79")))), 8.61)))
         return FullBackup(t0, zone, focus, training, usage, college, AppSettingsBackup("light", true, true, false, "21:00"))
     }
 

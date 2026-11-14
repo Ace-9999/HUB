@@ -3,6 +3,9 @@ package dev.personalhub.feature.focus
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
@@ -45,7 +48,9 @@ private val timeFmt = DateTimeFormatter.ofPattern("h:mm a")
 /** Focus destination body (FOC-05/06/08/09). The host supplies scrolling and the title row. */
 /** Google Tasks controls supplied by the app (the feature never touches the network adapter directly). */
 class GoogleTasksControls(val state: kotlinx.coroutines.flow.StateFlow<GoogleSyncState>, val connected: kotlinx.coroutines.flow.Flow<Boolean>,
-    val connect: () -> Unit, val syncNow: () -> Unit, val disconnect: () -> Unit)
+    val connect: () -> Unit, val syncNow: () -> Unit, val disconnect: () -> Unit,
+    /** True once the owner closed the connect card without connecting; it then stays a small icon. */
+    val dismissed: kotlinx.coroutines.flow.Flow<Boolean> = kotlinx.coroutines.flow.flowOf(false), val setDismissed: (Boolean) -> Unit = {})
 
 @Composable fun FocusContent(vm: FocusViewModel, usage: UsageViewModel, tab: Int, onTab: (Int) -> Unit, openAccessibilitySettings: () -> Unit, google: GoogleTasksControls? = null,
     /** Optional read-only workout summaries for trends, supplied by the app from Training's public state. */
@@ -61,7 +66,7 @@ class GoogleTasksControls(val state: kotlinx.coroutines.flow.StateFlow<GoogleSyn
         }, label = "focusTab") { t ->
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 when (t) {
-                    0 -> { google?.let { GoogleTasksCard(it) }; TasksPane(vm, ui) }
+                    0 -> TasksPane(vm, ui, google)
                     1 -> HabitsPane(vm, ui)
                     2 -> MoodPane(vm, ui)
                     3 -> TrendsPane(ui, workouts)
@@ -95,7 +100,39 @@ class GoogleTasksControls(val state: kotlinx.coroutines.flow.StateFlow<GoogleSyn
 }
 
 // ---------------------------------------------------------------- Google Tasks
-@Composable private fun GoogleTasksCard(g: GoogleTasksControls) {
+/**
+ * Compact Google Tasks control for the Tasks header: a sync arrow. Connected: tap syncs, long-press shows details.
+ * Not connected (card dismissed): tap brings the connect card back. Spins while syncing; a dot shows trouble.
+ */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable private fun GoogleSyncIcon(g: GoogleTasksControls, onExpand: () -> Unit) {
+    val state by g.state.collectAsStateWithLifecycle()
+    val connected by g.connected.collectAsStateWithLifecycle(false)
+    val syncing = connected && state is GoogleSyncState.Syncing
+    val trouble = connected && (state is GoogleSyncState.Failed || state is GoogleSyncState.NeedsConsent)
+    val spin = androidx.compose.animation.core.rememberInfiniteTransition(label = "sync")
+    val angle by spin.animateFloat(0f, if (syncing) -360f else 0f, androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(900, easing = androidx.compose.animation.core.LinearEasing)), label = "angle")
+    val shape = RoundedCornerShape(12.dp)
+    Box {
+        Box(Modifier.size(46.dp).clip(shape).background(if (connected) Hub.colors.mint else Hub.colors.surface).border(1.5.dp, Hub.colors.outline, shape)
+            .combinedClickable(role = androidx.compose.ui.semantics.Role.Button,
+                onClickLabel = if (connected) "Sync with Google Tasks" else "Show Google Tasks setup",
+                onLongClickLabel = "Google Tasks details",
+                onLongClick = onExpand,
+                onClick = { if (!connected) onExpand() else if (state is GoogleSyncState.NeedsConsent) g.connect() else g.syncNow() }),
+            contentAlignment = Alignment.Center) {
+            androidx.compose.material3.Icon(HubIcons.Sync, null, tint = if (connected) Hub.colors.onAccent else Hub.colors.inkSoft,
+                modifier = Modifier.size(22.dp).graphicsLayer { rotationZ = if (syncing) angle else 0f })
+        }
+        if (trouble) Box(Modifier.align(Alignment.TopEnd).offset(x = 3.dp, y = (-3).dp).size(12.dp).clip(androidx.compose.foundation.shape.CircleShape)
+            .background(Hub.colors.danger).border(1.dp, Hub.colors.outline, androidx.compose.foundation.shape.CircleShape))
+    }
+}
+
+/** Settings entry point: the same card, without the close button, so the owner can connect or disconnect any time. */
+@Composable fun GoogleTasksSettingsCard(g: GoogleTasksControls) = GoogleTasksCard(g, null)
+
+@Composable private fun GoogleTasksCard(g: GoogleTasksControls, onClose: (() -> Unit)?) {
     val state by g.state.collectAsStateWithLifecycle()
     val connected by g.connected.collectAsStateWithLifecycle(false)
     val (pill, color) = when {
@@ -104,7 +141,8 @@ class GoogleTasksControls(val state: kotlinx.coroutines.flow.StateFlow<GoogleSyn
         state is GoogleSyncState.Failed || state is GoogleSyncState.NeedsConsent -> "Attention" to Hub.colors.peach
         else -> "On" to Hub.colors.mint
     }
-    HubCard("Google Tasks", trailing = { Pill(pill, color) }) {
+    HubCard("Google Tasks", trailing = { Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Pill(pill, color); onClose?.let { HubIconButton(HubIcons.Close, if (connected) "Minimise Google Tasks" else "Not now", it) } } }) {
         if (!connected) {
             Text("Two-way sync with your Google Tasks: lists come in, one-off tasks go out, completions and deletes match. Repeating tasks stay on this phone.",
                 style = MaterialTheme.typography.bodyMedium, color = Hub.colors.inkSoft)
@@ -150,7 +188,7 @@ private fun signingSha1(context: android.content.Context): String = runCatching 
                 Text("Google only lets an app read your Tasks once you register it in your own (free) Google Cloud project. Do this once, on any browser:",
                     style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
                 listOf(
-                    "Open console.cloud.google.com and create a new project (any name, e.g. PersonalHub).",
+                    "Open console.cloud.google.com and create a new project (any name, e.g. HUB).",
                     "APIs & Services → Library → search \"Google Tasks API\" → Enable.",
                     "APIs & Services → OAuth consent screen (Google Auth Platform) → Get started. User type: External; add your app name and your email.",
                     "Audience → Test users → add the Google account whose tasks you want to sync. (Leave the app in Testing.)",
@@ -183,13 +221,21 @@ private fun signingSha1(context: android.content.Context): String = runCatching 
 }
 
 // ---------------------------------------------------------------- Tasks
-@Composable private fun TasksPane(vm: FocusViewModel, ui: FocusUi) {
+@Composable private fun TasksPane(vm: FocusViewModel, ui: FocusUi, google: GoogleTasksControls? = null) {
     var editing by remember { mutableStateOf<Task?>(null) }
     var adding by rememberSaveable { mutableStateOf(false) }
     var showDone by rememberSaveable { mutableStateOf(false) }
     val sections = agenda(ui.snapshot, ui.today)
     val pending = sections.filter { it.kind != SectionKind.COMPLETED }.sumOf { it.items.size }
-    SectionHeader("Tasks · $pending", action = { HubButton("Add", { adding = true; editing = null }, icon = HubIcons.Plus, compact = true) })
+    // Google Tasks: the full card only while it's an open question (not connected and not dismissed) or when expanded on request.
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    val connected = google?.connected?.collectAsStateWithLifecycle(false)?.value ?: false
+    val dismissed = google?.dismissed?.collectAsStateWithLifecycle(true)?.value ?: true
+    val showCard = google != null && (expanded || (!connected && !dismissed))
+    if (showCard) GoogleTasksCard(google!!) { expanded = false; if (!connected) google.setDismissed(true) }
+    SectionHeader("Tasks · $pending", action = { Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        if (google != null && !showCard) GoogleSyncIcon(google) { expanded = true; google.setDismissed(false) }
+        HubButton("Add", { adding = true; editing = null }, icon = HubIcons.Plus, compact = true) } })
     if (adding || editing != null) TaskEditor(vm, ui, editing) { adding = false; editing = null }
     if (pending == 0 && !adding) EmptyState("All clear", "Add a task with or without a date. Dated tasks are grouped as Today, Tomorrow, Next 7 days and Later.")
     sections.forEach { section ->
@@ -330,12 +376,13 @@ private fun dueLabel(date: LocalDate?, today: LocalDate): String? = when {
                     }
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Text actions on the left, icon-only edit/remove on the right so the row never wraps on narrow screens.
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (habit.unit != HabitUnit.YES_NO) HubButton("None today", { vm.logHabit(habit, ui.today, 0.0) }, tone = ButtonTone.Mint, compact = true)
                 if (today != null) HubButton("Clear", { vm.logHabit(habit, ui.today, null) }, tone = ButtonTone.Plain, compact = true)
                 Spacer(Modifier.weight(1f))
-                HubButton("Edit", onEdit, tone = ButtonTone.Plain, compact = true)
-                HubButton("Remove", { vm.deleteHabit(habit) }, tone = ButtonTone.Danger, compact = true)
+                HubIconButton(HubIcons.Edit, "Edit habit", onEdit)
+                HubIconButton(HubIcons.Trash, "Remove habit", { vm.deleteHabit(habit) }, color = Hub.colors.peach)
             }
             WeekStrip(ui, habit)
         }

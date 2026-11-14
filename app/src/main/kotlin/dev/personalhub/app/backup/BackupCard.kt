@@ -2,6 +2,7 @@ package dev.personalhub.app.backup
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -30,21 +31,21 @@ private fun size(b: Long) = if (b > 1_048_576) "%.1f MB".format(b / 1_048_576.0)
     var showAll by remember { mutableStateOf(false) }
     fun run(label: String, block: suspend () -> Unit) { busy = true; scope.launch {
         message = runCatching { block(); label }.getOrElse { it.message ?: "Backup failed." }; busy = false; refresh++ } }
-    val save = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri -> uri?.let { run("Copy saved.") { app.backups.exportTo(it) } } }
     val open = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let { busy = true; scope.launch { runCatching { app.backups.read(it) }.onSuccess { b -> preview = b }.onFailure { e -> message = e.message }; busy = false } }
     }
+    // Daily automatic backups (last 7 kept); two actions and an expandable list — no extra text.
     HubCard("Backup", trailing = { Pill(snaps.firstOrNull()?.let { "Last ${fmt.format(it.createdAt)}" } ?: "None yet", if (snaps.isEmpty()) Hub.colors.apricot else Hub.colors.mint) }) {
-        Text("Full plain-JSON backups of tasks, habits, moods (with notes), workouts, usage, limits and college data — automatically once a day, last 7 kept on this phone. " +
-            "No passwords or permissions are included. Copies stay wherever you save them; nothing is uploaded.", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             HubButton("Back up now", { run("Backup saved.") { app.backups.backupNow() } }, Modifier.weight(1f), enabled = !busy, icon = HubIcons.Check, compact = true)
-            HubButton("Save a copy…", { save.launch("personalhub-backup.json") }, Modifier.weight(1f), enabled = !busy, tone = ButtonTone.Plain, compact = true)
+            HubButton("Restore…", { open.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }, Modifier.weight(1f), enabled = !busy, tone = ButtonTone.Plain, compact = true, icon = HubIcons.Undo)
         }
-        HubButton("Restore from file…", { open.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }, enabled = !busy, tone = ButtonTone.Plain, compact = true)
         message?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = Hub.colors.ink) }
         if (snaps.isNotEmpty()) {
-            HubButton(if (showAll) "Hide saved backups" else "Saved backups (${snaps.size})", { showAll = !showAll }, tone = ButtonTone.Plain, compact = true)
+            Row(Modifier.fillMaxWidth().clickable(onClickLabel = if (showAll) "Hide saved backups" else "Show saved backups") { showAll = !showAll }.padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("Saved on this phone · ${snaps.size}", style = MaterialTheme.typography.titleSmall, color = Hub.colors.ink, modifier = Modifier.weight(1f))
+                androidx.compose.material3.Icon(if (showAll) HubIcons.Up else HubIcons.Arrow, null, tint = Hub.colors.ink)
+            }
             if (showAll) snaps.forEach { s ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("${fmt.format(s.createdAt)} · ${size(s.bytes)}", style = MaterialTheme.typography.bodyMedium, color = Hub.colors.ink, modifier = Modifier.weight(1f))
@@ -60,7 +61,7 @@ private fun size(b: Long) = if (b > 1_048_576) "%.1f MB".format(b / 1_048_576.0)
                 Text("Restore this backup?", style = MaterialTheme.typography.headlineSmall, color = Hub.colors.ink)
                 Text("Created ${fmt.format(b.createdAt)} · zone ${b.zone.id}", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
                 b.counts.forEach { (k, v) -> Row { Text(k, style = MaterialTheme.typography.bodyMedium, color = Hub.colors.ink, modifier = Modifier.weight(1f)); Text("$v", style = MaterialTheme.typography.titleSmall, color = Hub.colors.ink) } }
-                Text("Everything in PersonalHub is replaced by this file. A safety backup of your current data is saved first. " +
+                Text("Everything in HUB is replaced by this file. A safety backup of your current data is saved first. " +
                     "Afterwards, sign in to VTOP and re-enable tracking/notification permissions yourself.", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     HubButton("Cancel", { preview = null }, Modifier.weight(1f), tone = ButtonTone.Plain, compact = true)

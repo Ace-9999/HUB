@@ -47,12 +47,12 @@ class CollegePersistenceTest {
                 val course = GradedCourse("ZZZ0101L", "Intro", "Theory Only", 3.0, "RG", 71.5, "A",
                     listOf(MarkComponent("ZZZ0101L", null, "CAT1", 50.0, 15.0, 40.0, 12.0, null), MarkComponent("ZZZ0101L", null, "FAT", 100.0, 40.0, null, null, null)),
                     listOf(GradeRange("S", ">= 80"), GradeRange("A", "72 - 79")))
-                repo.save(import(s1, 2000, null, listOf(ok(Dataset.RESULTS))).copy(results = listOf(SemesterResult(Semester("W25", "Synthetic Winter 2025-26"), listOf(course)))))
+                repo.save(import(s1, 2000, null, listOf(ok(Dataset.RESULTS))).copy(results = listOf(SemesterResult(Semester("W25", "Synthetic Winter 2025-26"), listOf(course), 8.61))))
                 val r = repo.snapshots.first().results.single()
                 assertEquals("Synthetic Winter 2025-26", r.semester.name)
                 val c = r.courses.single()
                 assertEquals(listOf("CAT1", "FAT"), c.components.map { it.title }); assertNull(c.components[1].scored)
-                assertEquals("72 - 79", c.ranges.single { it.grade == "A" }.range); assertEquals(9.0, r.gpa.gpa!!, 0.0)
+                assertEquals("72 - 79", c.ranges.single { it.grade == "A" }.range); assertEquals(8.61, r.portalGpa!!, 0.0)
             } finally { repo.close() }
         } finally { context.deleteDatabase(name) }
     }

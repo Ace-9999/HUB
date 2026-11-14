@@ -109,6 +109,29 @@ class VtopParserTest {
         assertEquals(java.time.LocalDate.of(2026, 11, 24), rows[0].date); assertEquals("12", rows[0].seatNumber)
         assertNull(rows[1].date); assertNull(rows[1].venue)
     }
+    @Test fun examSeatPositionFromColumnOrRowCellShape() {
+        val head = listOf("Course Code", "Exam Date", "Venue", "Seat Location", "Seat No.")
+        val labelled = table(head, listOf("ZZZ1001L", "24-Nov-2026", "XB1-101", "r1 c4", "12"))
+        assertEquals("R1C4", VtopParser.exams(listOf(labelled)).rows.single().seatLocation)
+        val unlabelled = table(listOf("Course Code", "Exam Date", "Venue", "Seat No.", "Position"), listOf("ZZZ1001L", "24-Nov-2026", "XB1-101", "12", "R3C10"))
+        assertEquals("R3C10", VtopParser.exams(listOf(unlabelled)).rows.single().seatLocation)
+    }
+    @Test fun gradeViewCreditsComeFromTheLastSubColumnOfASpanningHeader() {
+        // "Credits" spans L T P J C; data rows have five separate cells.
+        val head = listOf(PortalCell("Course Code"), PortalCell("Course Title"), PortalCell("Credits", colspan = 5), PortalCell("Grade"))
+        val t = PortalTable("", listOf(head,
+            listOf("ZZZ0101L", "Theory", "2", "0", "0", "0", "3", "A").map { PortalCell(it) },
+            listOf("ZZZ0102P", "Lab", "0", "0", "2", "0", "1.5", "S").map { PortalCell(it) }))
+        assertEquals(listOf(3.0, 1.5), VtopParser.gradeView(listOf(t)).map { it.credits })
+        assertEquals(listOf(3.0, 1.5), VtopParser.grades(listOf(t)).first.rows.map { it.credits })
+    }
+    @Test fun gradeViewGpaIsReadFromThePortalNotComputed() {
+        val t = table(listOf("Course Code", "Course Title", "Credits", "Grade"), listOf("ZZZ0101L", "Intro", "3", "A"), listOf("CGPA", "9.10", "GPA : 8.61", ""))
+        assertEquals(8.61, VtopParser.gradeViewGpa(listOf(t))!!, 0.0)
+        val split = table(listOf("Course Code", "Grade"), listOf("ZZZ0101L", "A"), listOf("GPA", "7.95"))
+        assertEquals(7.95, VtopParser.gradeViewGpa(listOf(split))!!, 0.0)
+        assertNull(VtopParser.gradeViewGpa(listOf(table(listOf("Course Code", "Grade"), listOf("ZZZ0101L", "A"), listOf("CGPA", "9.10")))))
+    }
     @Test fun calendarCellsBecomeLabelledDaysAndBlankDaysAreSkipped() {
         val t = table(listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"),
             listOf("", "", "1", "2 Instructional Day", "3 Holiday - Synthetic Festival", "4 CAT - II", "5"), context = listOf("01-NOV-2026"))

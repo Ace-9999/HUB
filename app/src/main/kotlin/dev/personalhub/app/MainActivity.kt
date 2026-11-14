@@ -39,7 +39,10 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 class MainActivity : ComponentActivity() {
-    companion object { const val OPEN_USAGE = "openUsage" }
+    companion object { const val OPEN_USAGE = "openUsage"; const val OPEN_TARGET = "openTarget" }
+    /** Where a tapped notification wants to go ("marks", "timetable", "workout", "inbox"); consumed by the shell. */
+    val openTarget = mutableStateOf<String?>(null)
+    override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); intent.getStringExtra(OPEN_TARGET)?.let { openTarget.value = it } }
     private val consent = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartIntentSenderForResult()) { r ->
         val app = application as PersonalHubApplication
         val token = dev.personalhub.googletasks.GoogleAuth.tokenFromConsent(this, r.data)
@@ -78,13 +81,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val app = application as PersonalHubApplication
+        intent?.getStringExtra(OPEN_TARGET)?.let { openTarget.value = it }
         setContent {
             val theme by app.settings.theme.collectAsStateWithLifecycle(SettingsStore.DEFAULT_THEME)
             PersonalHubTheme(theme) {
                 val dark = Hub.colors.dark
                 val view = androidx.compose.ui.platform.LocalView.current
                 SideEffect { androidx.core.view.WindowCompat.getInsetsController(window, view).run { isAppearanceLightStatusBars = !dark; isAppearanceLightNavigationBars = !dark } }
-                HubApp(app, theme, intent?.getBooleanExtra(OPEN_USAGE, false) == true)
+                HubApp(app, theme, intent?.getBooleanExtra(OPEN_USAGE, false) == true, openTarget)
             }
         }
     }
@@ -96,10 +100,11 @@ private val navItems = listOf(NavItem("today", "Today", HubIcons.Home), NavItem(
 
 private val tabs = listOf("today", "college", "training", "focus")
 
-@Composable fun HubApp(app: PersonalHubApplication, theme: String, openUsage: Boolean = false) {
+@Composable fun HubApp(app: PersonalHubApplication, theme: String, openUsage: Boolean = false, target: MutableState<String?> = remember { mutableStateOf(null) }) {
     // Bottom destinations are pages of a horizontal pager: swipe or tap to move between Today, College, Train and Focus.
     val pager = rememberPagerState(initialPage = if (openUsage) 3 else 0) { tabs.size }
     var settings by rememberSaveable { mutableStateOf(false) }
+    var inbox by rememberSaveable { mutableStateOf(false) }
     var collegePage by rememberSaveable { mutableStateOf(CollegePage.OVERVIEW) }
     var focusTab by rememberSaveable { mutableIntStateOf(if (openUsage) 4 else 0) }
     val context = LocalContext.current
@@ -128,12 +133,37 @@ private val tabs = listOf("today", "college", "training", "focus")
         GoogleTasksControls(app.googleTasks.state, app.settings.googleTasks,
             connect = { (context as? MainActivity)?.connectGoogleTasks() },
             syncNow = { scope.launch { app.googleTasks.sync() } },
-            disconnect = { scope.launch { app.settings.googleTasks(false); app.googleTasks.cancel(context) } })
+            disconnect = { scope.launch { app.settings.googleTasks(false); app.googleTasks.cancel(context) } },
+            dismissed = app.settings.googleTasksDismissed, setDismissed = { d -> scope.launch { app.settings.googleTasksDismissed(d) } })
     }
-    val go: (String) -> Unit = { tab -> settings = false; scope.launch { pager.animateScrollToPage(tabs.indexOf(tab)) } }
+    val go: (String) -> Unit = { tab -> settings = false; inbox = false; scope.launch { pager.animateScrollToPage(tabs.indexOf(tab)) } }
+    val openTarget: (String) -> Unit = { t ->
+        when (t) {
+            "marks" -> { collegePage = CollegePage.MARKS; go("college") }
+            "timetable" -> { collegePage = CollegePage.TIMETABLE; go("college") }
+            "workout" -> { trainNav = dev.personalhub.feature.training.TrainNav(dev.personalhub.feature.training.TrainPage.WORKOUT); go("training") }
+            "inbox" -> { settings = false; inbox = true }
+        }
+    }
+    LaunchedEffect(target.value) { target.value?.let { openTarget(it); target.value = null } }
+    val openInbox = { inbox = true }
+    // One scroll state per destination; any sub-page change (forward or BACK) starts at the top of the new page.
+    val scrolls = remember { tabs.associateWith { androidx.compose.foundation.ScrollState(0) } }
+    LaunchedEffect(collegePage) { scrolls.getValue("college").scrollTo(0) }
+    LaunchedEffect(trainNav.page, trainNav.arg) { scrolls.getValue("training").scrollTo(0) }
+    LaunchedEffect(focusTab) { scrolls.getValue("focus").scrollTo(0) }
+    // Tapping the destination you're already on returns to its home page, scrolled to the top.
+    val reselect: (String) -> Unit = { tab ->
+        when (tab) {
+            "college" -> collegePage = CollegePage.OVERVIEW
+            "training" -> trainNav = dev.personalhub.feature.training.TrainNav()
+        }
+        scope.launch { scrolls.getValue(tab).animateScrollTo(0) }
+    }
 
-    BackHandler(enabled = settings || collegePage != CollegePage.OVERVIEW || trainNav.page != dev.personalhub.feature.training.TrainPage.OVERVIEW || pager.currentPage != 0) {
+    BackHandler(enabled = settings || inbox || collegePage != CollegePage.OVERVIEW || trainNav.page != dev.personalhub.feature.training.TrainPage.OVERVIEW || pager.currentPage != 0) {
         when {
+            inbox -> inbox = false
             settings -> settings = false
             selected == "college" && collegePage != CollegePage.OVERVIEW -> collegePage = CollegePage.OVERVIEW
             selected == "training" && trainNav.page != dev.personalhub.feature.training.TrainPage.OVERVIEW ->
@@ -147,24 +177,24 @@ private val tabs = listOf("today", "college", "training", "focus")
     HubCanvas {
         Column(Modifier.fillMaxSize()) {
             Box(Modifier.weight(1f)) {
-                HorizontalPager(pager, Modifier.fillMaxSize(), userScrollEnabled = !settings && !(selected == "college" && collegePage != CollegePage.OVERVIEW) && !(selected == "training" && trainNav.page != dev.personalhub.feature.training.TrainPage.OVERVIEW),
+                HorizontalPager(pager, Modifier.fillMaxSize(), userScrollEnabled = !settings && !inbox && !(selected == "college" && collegePage != CollegePage.OVERVIEW) && !(selected == "training" && trainNav.page != dev.personalhub.feature.training.TrainPage.OVERVIEW),
                     beyondViewportPageCount = 0, key = { tabs[it] }) { index ->
-                    PageColumn {
+                    PageColumn(scrolls.getValue(tabs[index])) {
                         when (tabs[index]) {
-                            "today" -> TodayScreen(focus, college, training, usage, onSettings = { settings = true }, openCollege = { collegePage = it; go("college") }, openFocus = { focusTab = it; go("focus") },
+                            "today" -> TodayScreen(app, focus, college, training, usage, onSettings = { settings = true }, onInbox = openInbox, openCollege = { collegePage = it; go("college") }, openFocus = { focusTab = it; go("focus") },
                                 openTrain = { trainNav = it; go("training") })
                             "college" -> AnimatedContent(collegePage, transitionSpec = { subPageTransition(initialState == CollegePage.OVERVIEW) }, label = "college") { page ->
                                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                                    if (page == CollegePage.OVERVIEW) Header("College", college.state.collectAsStateWithLifecycle().value.snapshot.semester?.name ?: "VTOP · Chennai") { settings = true }
+                                    if (page == CollegePage.OVERVIEW) Header(app, "College", college.state.collectAsStateWithLifecycle().value.snapshot.semester?.name ?: "VTOP · Chennai", openInbox) { settings = true }
                                     CollegeContent(college, page, { collegePage = it }, connect)
                                 }
                             }
                             "training" -> {
-                                if (trainNav.page == dev.personalhub.feature.training.TrainPage.OVERVIEW) Header("Train", "Routines & workouts") { settings = true }
+                                if (trainNav.page == dev.personalhub.feature.training.TrainPage.OVERVIEW) Header(app, "Train", "Routines & workouts", openInbox) { settings = true }
                                 dev.personalhub.feature.training.TrainingContent(training, trainNav) { trainNav = it }
                             }
                             else -> {
-                                Header("Focus", "Tasks, habits & mood") { settings = true }
+                                Header(app, "Focus", "Tasks, habits & mood", openInbox) { settings = true }
                                 val locked by app.settings.focusLock.collectAsStateWithLifecycle(false)
                                 if (locked && !FocusLock.unlocked) FocusLockedCard { (context as? MainActivity)?.unlockFocus() }
                                 else FocusContent(focus, usage, focusTab, { focusTab = it }, openAccessibility, googleControls, workoutDays)
@@ -173,20 +203,23 @@ private val tabs = listOf("today", "college", "training", "focus")
                     }
                 }
                 androidx.compose.animation.AnimatedVisibility(visible = settings, enter = slideInHorizontally(tween(260)) { it / 4 } + fadeIn(tween(200)), exit = slideOutHorizontally(tween(220)) { it / 4 } + fadeOut(tween(160))) {
-                    HubCanvas { PageColumn { SettingsScreen(app, theme) { settings = false } } }
+                    HubCanvas { PageColumn(rememberScrollState()) { SettingsScreen(app, theme, googleControls) { settings = false } } }
+                }
+                androidx.compose.animation.AnimatedVisibility(visible = inbox, enter = slideInHorizontally(tween(260)) { it / 4 } + fadeIn(tween(200)), exit = slideOutHorizontally(tween(220)) { it / 4 } + fadeOut(tween(160))) {
+                    HubCanvas { PageColumn(rememberScrollState()) { InboxScreen(app, close = { inbox = false }, open = { t -> inbox = false; openTarget(t) }) } }
                 }
                 // Canvas-coloured scrim keeps scrolled content out from under the status bar icons.
                 Box(Modifier.fillMaxWidth().windowInsetsTopHeight(WindowInsets.statusBars).background(Hub.colors.canvas).align(Alignment.TopCenter))
                 FocusUndoBar(focus, Modifier.align(Alignment.BottomCenter).padding(horizontal = Hub.ScreenPadding, vertical = 12.dp))
             }
-            HubBottomBar(navItems, if (settings) null else selected, { tab -> if (tab == "college" && selected == "college") collegePage = CollegePage.OVERVIEW; go(tab) })
+            HubBottomBar(navItems, if (settings || inbox) null else selected, { tab -> if (tab == selected && !settings && !inbox) reselect(tab) else go(tab) })
         }
     }
 }
 
 /** One scrollable page; each pager page keeps its own scroll position. */
-@Composable private fun PageColumn(content: @Composable ColumnScope.() -> Unit) {
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(horizontal = Hub.ScreenPadding).padding(top = 12.dp, bottom = 96.dp),
+@Composable private fun PageColumn(scroll: androidx.compose.foundation.ScrollState, content: @Composable ColumnScope.() -> Unit) {
+    Column(Modifier.fillMaxSize().verticalScroll(scroll).statusBarsPadding().padding(horizontal = Hub.ScreenPadding).padding(top = 12.dp, bottom = 96.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp), content = content)
 }
 
@@ -197,12 +230,14 @@ private fun subPageTransition(forward: Boolean): ContentTransform {
         (fadeOut(tween(120)) + slideOutHorizontally(tween(260, easing = FastOutSlowInEasing)) { -it / 10 * dir })
 }
 
-@Composable private fun Header(title: String, subtitle: String, onSettings: () -> Unit) {
+@Composable private fun Header(app: PersonalHubApplication, title: String, subtitle: String, onInbox: () -> Unit, onSettings: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.displayMedium, color = Hub.colors.ink)
             Text(subtitle, style = MaterialTheme.typography.bodyLarge, color = Hub.colors.inkSoft)
         }
+        BellButton(app, onInbox)
+        Spacer(Modifier.width(10.dp))
         HubIconButton(HubIcons.Settings, "Settings", onSettings)
     }
 }
@@ -211,13 +246,15 @@ private val TrainNavSaver = androidx.compose.runtime.saveable.listSaver<dev.pers
     save = { listOf(it.page.name, it.arg, it.pickFor?.name) },
     restore = { dev.personalhub.feature.training.TrainNav(dev.personalhub.feature.training.TrainPage.valueOf(it[0]!!), it[1], it[2]?.let(dev.personalhub.feature.training.TrainPage::valueOf)) })
 
-@Composable private fun TodayScreen(focus: FocusViewModel, college: CollegeViewModel, training: dev.personalhub.feature.training.TrainingViewModel, usage: UsageViewModel, onSettings: () -> Unit,
+@Composable private fun TodayScreen(app: PersonalHubApplication, focus: FocusViewModel, college: CollegeViewModel, training: dev.personalhub.feature.training.TrainingViewModel, usage: UsageViewModel, onSettings: () -> Unit, onInbox: () -> Unit,
     openCollege: (CollegePage) -> Unit, openFocus: (Int) -> Unit, openTrain: (dev.personalhub.feature.training.TrainNav) -> Unit) {
     val now = LocalTime.now()
     val greeting = when (now.hour) { in 5..11 -> "Good morning ☀️"; in 12..16 -> "Good afternoon 🌤️"; in 17..20 -> "Good evening 🌆"; else -> "Good night 🌙" }
     Row(verticalAlignment = Alignment.CenterVertically) {
         Pill(AppTime().today().format(DateTimeFormatter.ofPattern("EEEE, d MMMM")).uppercase(), Hub.colors.lime)
         Spacer(Modifier.weight(1f))
+        BellButton(app, onInbox)
+        Spacer(Modifier.width(10.dp))
         HubIconButton(HubIcons.Settings, "Settings", onSettings)
     }
     androidx.compose.foundation.text.BasicText(greeting, style = MaterialTheme.typography.displayLarge.copy(color = Hub.colors.ink), maxLines = 1, softWrap = false,
@@ -225,7 +262,9 @@ private val TrainNavSaver = androidx.compose.runtime.saveable.listSaver<dev.pers
     Text("Here's your day at a glance ✨", style = MaterialTheme.typography.bodyLarge, color = Hub.colors.inkSoft)
     TodayGlance(focus, college, training, usage, openCollege = { openCollege(CollegePage.OVERVIEW) }, openTasks = { openFocus(0) }, openHabits = { openFocus(1) },
         openUsage = { openFocus(4) }, openTrain = { openTrain(dev.personalhub.feature.training.TrainNav()) })
-    CollegeTodayCards(college, openCollege)
+    val context = LocalContext.current
+    val fact = remember { FunFacts.random(context) }
+    CollegeTodayCards(college, openCollege, fact)
     FocusTodayCard(focus) { openFocus(0) }
     HabitsTodayCard(focus) { openFocus(1) }
     ScreenTimeCard(usage) { openFocus(4) }
@@ -255,37 +294,31 @@ object FocusLock {
     }
 }
 
-@Composable private fun SettingsScreen(app: PersonalHubApplication, theme: String, close: () -> Unit) {
+@Composable private fun SettingsScreen(app: PersonalHubApplication, theme: String, google: GoogleTasksControls, close: () -> Unit) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    var page by rememberSaveable { mutableStateOf("main") }
+    if (page == "notifications") { BackHandler { page = "main" }; NotificationSettings(app) { page = "main" }; return }
     ScreenTitle("Settings", onBack = close, back = HubIcons.Back)
     val lock by app.settings.focusLock.collectAsStateWithLifecycle(false)
-    val remind by app.settings.taskReminders.collectAsStateWithLifecycle(false)
-    val nudge by app.settings.habitNudge.collectAsStateWithLifecycle(false)
-    val nudgeTime by app.settings.habitNudgeTime.collectAsStateWithLifecycle("21:00")
-    val notifPermission = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { }
-    fun askNotifications() { if (android.os.Build.VERSION.SDK_INT >= 33) notifPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS) }
     HubCard("Privacy lock") {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Lock Focus with fingerprint / screen lock", style = MaterialTheme.typography.bodyLarge, color = Hub.colors.ink, modifier = Modifier.weight(1f))
             HubCheck(lock, { on -> scope.launch { app.settings.focusLock(on); if (on) FocusLock.lock() } }, "Lock Focus", check = HubIcons.Check)
         }
-        Text("Unlocks until you leave the app. Mood values never appear on Today; private habits stay hidden until revealed.", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
     }
-    HubCard("Reminders") {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Notify at task due times", style = MaterialTheme.typography.bodyLarge, color = Hub.colors.ink, modifier = Modifier.weight(1f))
-            HubCheck(remind, { on -> scope.launch { app.settings.taskReminders(on); if (on) askNotifications(); Reminders.reschedule(app) } }, "Task reminders", check = HubIcons.Check)
+    HubSurface(Modifier.fillMaxWidth(), onClick = { page = "notifications" }, onClickLabel = "Open notification settings") {
+        Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            androidx.compose.material3.Icon(HubIcons.Bell, null, tint = Hub.colors.ink)
+            Column(Modifier.weight(1f)) {
+                Text("Notifications", style = MaterialTheme.typography.titleLarge, color = Hub.colors.ink)
+                Text("Next class, new marks, rest timer, tasks, habits", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
+            }
+            androidx.compose.material3.Icon(HubIcons.Arrow, null, tint = Hub.colors.ink)
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Daily habit check-in at $nudgeTime", style = MaterialTheme.typography.bodyLarge, color = Hub.colors.ink, modifier = Modifier.weight(1f))
-            HubCheck(nudge, { on -> scope.launch { app.settings.habitNudge(on); if (on) askNotifications(); Reminders.scheduleNudge(app) } }, "Habit check-in", check = HubIcons.Check)
-        }
-        if (nudge) PillTabs(listOf("08:00", "13:00", "18:00", "21:00", "22:30"), listOf("08:00", "13:00", "18:00", "21:00", "22:30").indexOf(nudgeTime),
-            { i -> scope.launch { app.settings.habitNudge(true, listOf("08:00", "13:00", "18:00", "21:00", "22:30")[i]); Reminders.scheduleNudge(app) } }, color = Hub.colors.cyan)
-        Text("Neutral wording only — habit names, private values and moods never appear in notifications. Delivery may be a few minutes late under battery saving.",
-            style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
     }
+    GoogleTasksSettingsCard(google)
+    UpdatesCard(app)
     HubCard("Appearance") {
         val modes = listOf("light", "dark", "system")
         ChoiceCells(listOf("Light", "Dark", "System"), modes.indexOf(theme).takeIf { it >= 0 }, { scope.launch { app.settings.theme(modes[it]) } }, description = "Theme")
@@ -304,6 +337,6 @@ object FocusLock {
             calib = !calib; dev.personalhub.monitoring.Calibration.enabled = calib }, tone = if (calib) ButtonTone.Mint else ButtonTone.Plain, compact = true)
     }
     if (BuildConfig.DEBUG) HubButton("Device probes (debug)", { context.startActivity(Intent().setClassName(context, "dev.personalhub.app.ProbeActivity")) }, tone = ButtonTone.Plain)
-    Text("PersonalHub ${BuildConfig.VERSION_NAME} · ${if (BuildConfig.DEMO) "Demo" else "Connected"} · Fonts: Archivo Black & Space Grotesk (SIL OFL 1.1)",
+    Text("HUB ${BuildConfig.VERSION_NAME} · ${if (BuildConfig.DEMO) "Demo" else "Connected"} · Fonts: Archivo Black & Space Grotesk (SIL OFL 1.1)",
         style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
 }

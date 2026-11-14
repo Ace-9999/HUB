@@ -40,7 +40,7 @@ class ProbeActivity : ComponentActivity() {
                         Text("Last selected package: ${signals.lastPackage ?: "none"}. Raw events are not scroll bursts or items viewed.")
                     }
                     HubCard("Reversible Home redirect test") {
-                        Text("Reddit native only, while this toggle is on. Chrome, Android settings and PersonalHub cannot be selected. This is a probe, not a limit.")
+                        Text("Reddit native only, while this toggle is on. Chrome, Android settings and HUB cannot be selected. This is a probe, not a limit.")
                         Row { Switch(checked = redirect, enabled = opted && signals.connected, onCheckedChange = { redirect = it; ProbeControl.redirectPackage = if (it) "com.reddit.frontpage" else null }); Text("Redirect Reddit Home") }
                     }
                     Text("Grant/revoke access yourself in Android settings. Missing signals remain unknown. All native/web classifications require physical evaluation.")

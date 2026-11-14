@@ -56,8 +56,9 @@ data class GradeRange(val grade: String, val range: String)
 /** One graded course from Examination -> Grade View, with its assessment breakdown and ranges. */
 data class GradedCourse(val code: String, val title: String, val type: String?, val credits: Double?, val gradingType: String?,
     val grandTotal: Double?, val grade: String?, val components: List<MarkComponent> = emptyList(), val ranges: List<GradeRange> = emptyList())
-data class SemesterResult(val semester: Semester, val courses: List<GradedCourse>) {
-    val gpa: GpaResult get() = gpa(courses.mapNotNull { c -> c.credits?.let { cr -> c.grade?.let { g -> cr to g } } })
+/** One semester's Grade View. [portalGpa] is the GPA exactly as VTOP prints it; the app never computes a semester GPA. */
+data class SemesterResult(val semester: Semester, val courses: List<GradedCourse>, val portalGpa: Double? = null) {
+    val credits: Double get() = courses.sumOf { it.credits ?: 0.0 }
 }
 
 data class CgpaSummary(val creditsRegistered: Double?, val creditsEarned: Double?, val cgpa: Double?)
@@ -160,3 +161,26 @@ fun scenarioCgpa(officialCgpa: Double?, baseCredits: Double?, scenario: List<Pai
 
 /** Latest attempt per course code in portal order (later rows supersede earlier attempts). */
 fun latestAttempts(grades: List<GradeRecord>): List<GradeRecord> = grades.groupBy { it.courseCode }.map { it.value.last() }
+
+/**
+ * Marks that appeared (or changed score) in [after] compared with what was saved before, for the same semester only.
+ * The first sync of a semester returns nothing, so connecting never floods the inbox with old marks.
+ */
+/**
+ * Calendar entries worth showing for [date]: instructional-day entries for other programmes are dropped when the calendar
+ * has "General Semester" entries (only those matter to the owner); duplicates are removed. Holidays, exams and events stay.
+ */
+fun CollegeSnapshot.relevantCalendarOn(date: java.time.LocalDate): List<CalendarDay> {
+    val general = calendar.any { it.kind == CalendarKind.INSTRUCTIONAL && it.label.contains("general", ignoreCase = true) }
+    return calendarOn(date).filter { d -> d.kind != CalendarKind.INSTRUCTIONAL || !general || d.label.contains("general", ignoreCase = true) }.distinctBy { it.label.lowercase() }
+}
+
+/** Holidays and exam days (calendar CAT/FAT label, or any paper in the exam schedule) have no regular classes. */
+fun CollegeSnapshot.noClassesOn(date: java.time.LocalDate): Boolean =
+    calendarOn(date).any { it.kind == CalendarKind.HOLIDAY || it.kind == CalendarKind.EXAM } || exams.any { it.date == date }
+
+fun newMarks(before: CollegeSnapshot, after: CollegeImport): List<MarkComponent> {
+    if (before.syncedAt == null || before.semester?.id != after.semester.id || before.marks.isEmpty()) return emptyList()
+    val old = before.marks.associateBy { Triple(it.courseCode, it.courseType, it.title) }
+    return after.marks.filter { m -> m.scored != null && old[Triple(m.courseCode, m.courseType, m.title)]?.scored != m.scored }
+}

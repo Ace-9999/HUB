@@ -73,8 +73,9 @@ object VtopImport {
                 if (courses.isEmpty()) return@mapNotNull null
                 val details = o.optJSONArray("details")
                 val byCode = (0 until (details?.length() ?: 0)).associate { j -> val d = details!!.getJSONObject(j); d.optString("code") to VtopParser.gradeDetail(d.optString("code"), VtopScripts.tables(d.optJSONArray("tables"))) }
+                val portalGpa = o.optString("gpa").toDoubleOrNull()?.takeIf { it in 0.0..10.0 } ?: VtopParser.gradeViewGpa(VtopScripts.tables(o.optJSONArray("tables")))
                 SemesterResult(Semester(o.optString("semester"), o.optString("name").ifBlank { o.optString("semester") }),
-                    courses.map { c -> byCode[c.code]?.let { (comps, ranges) -> c.copy(components = comps, ranges = ranges) } ?: c })
+                    courses.map { c -> byCode[c.code]?.let { (comps, ranges) -> c.copy(components = comps, ranges = ranges) } ?: c }, portalGpa)
             }
         }
         statuses += if (results == null) skippedStatus(Dataset.RESULTS, "results") ?: DatasetStatus(Dataset.RESULTS, ImportState.FAILED, 0, "not fetched")

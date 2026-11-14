@@ -1,4 +1,4 @@
 <resources>
-    <string name="usage_tracker_label">PersonalHub Focus tracking</string>
-    <string name="usage_tracker_description">Measures time on Instagram, X, Reddit and YouTube (apps, and those sites in Chrome or Brave), separating reels/video from feed scrolling, and applies the limits and curfew you set in PersonalHub. It reads window identities, layout IDs and the browser address only — never post text, messages or screenshots. Data stays on this phone. Turn it off here or in PersonalHub at any time.</string>
+    <string name="usage_tracker_label">HUB Focus tracking</string>
+    <string name="usage_tracker_description">Measures time on Instagram, X, Reddit and YouTube (apps, and those sites in Chrome or Brave), separating reels/video from feed scrolling, and applies the limits and curfew you set in HUB. It reads window identities, layout IDs and the browser address only — never post text, messages or screenshots. Data stays on this phone. Turn it off here or in HUB at any time.</string>
 </resources>

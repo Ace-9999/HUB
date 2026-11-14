@@ -61,9 +61,10 @@ object ExerciseMedia {
 }
 
 /** Round thumbnail (REF-12 style). */
-@Composable fun ExerciseThumb(e: Exercise?, size: Dp = 48.dp) {
+@Composable fun ExerciseThumb(e: Exercise?, size: Dp = 48.dp, square: Boolean = false) {
     val img = e?.let { rememberFrame(it, 0, 160) }
-    Box(Modifier.size(size).clip(CircleShape).background(Hub.colors.surface).border(1.5.dp, Hub.colors.outline, CircleShape), contentAlignment = Alignment.Center) {
+    val shape = if (square) RoundedCornerShape(6.dp) else CircleShape
+    Box(Modifier.size(size).clip(shape).background(Hub.colors.surface).border(1.5.dp, Hub.colors.outline, shape), contentAlignment = Alignment.Center) {
         if (img != null) Image(img, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         else Text(e?.name?.take(1) ?: "?", style = MaterialTheme.typography.titleMedium, color = Hub.colors.ink)
     }

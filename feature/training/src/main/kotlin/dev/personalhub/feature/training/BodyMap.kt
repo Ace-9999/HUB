@@ -55,15 +55,17 @@ private val BACK = listOf(
 
 @Composable fun heatColor(bin: Int): Color = when (bin) { 0 -> Hub.colors.raised; 1 -> Hub.colors.mint; 2 -> Hub.colors.lime; 3 -> Hub.colors.apricot; else -> Hub.colors.peach }
 
-@Composable fun BodyMap(values: Map<Muscle, Double>, modifier: Modifier = Modifier, front: Boolean = true, compact: Boolean = false) {
+/** [compact] shows front and back together; [figureWidth] overrides the per-figure width (height is twice it). */
+@Composable fun BodyMap(values: Map<Muscle, Double>, modifier: Modifier = Modifier, front: Boolean = true, compact: Boolean = false, figureWidth: androidx.compose.ui.unit.Dp? = null) {
     val colors = (0..4).map { heatColor(it) }
     val outline = Hub.colors.outline; val skin = Hub.colors.surface
     val desc = values.entries.filter { it.value > 0 }.sortedByDescending { it.value }.joinToString { "${it.key.label} ${it.value}" }.ifEmpty { "no tracked muscles" }
-    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)) {
+    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(if (figureWidth != null) 28.dp else 12.dp, Alignment.CenterHorizontally)) {
         val views = if (compact) listOf(true, false) else listOf(front)
         views.forEach { f ->
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Canvas(Modifier.width(if (compact) 90.dp else 150.dp).height(if (compact) 180.dp else 300.dp).semantics { contentDescription = "${if (f) "Front" else "Back"} muscle map: $desc" }) {
+                val fw = figureWidth ?: if (compact) 90.dp else 150.dp
+                Canvas(Modifier.width(fw).height(fw * 2).semantics { contentDescription = "${if (f) "Front" else "Back"} muscle map: $desc" }) {
                     drawFigure(if (f) FRONT else BACK, values, colors, outline, skin)
                 }
                 if (compact) Text(if (f) "Front" else "Back", style = MaterialTheme.typography.labelSmall, color = Hub.colors.inkSoft)

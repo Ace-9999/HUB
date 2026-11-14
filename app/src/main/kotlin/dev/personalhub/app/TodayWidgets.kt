@@ -13,6 +13,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.personalhub.college.api.CalendarKind
+import dev.personalhub.college.api.noClassesOn
 import dev.personalhub.design.*
 import dev.personalhub.feature.college.CollegeViewModel
 import dev.personalhub.feature.focus.FocusViewModel
@@ -28,13 +29,13 @@ import java.time.Duration
 import java.time.LocalDate
 import java.time.ZoneId
 
-/** Small emoji stat tile for the Today glance grid. */
-@Composable private fun Glance(emoji: String, value: String, label: String, color: Color, modifier: Modifier, onClick: () -> Unit) {
-    HubSurface(modifier, color = color, radius = 16.dp, shadow = 3.dp, onClick = onClick, onClickLabel = label) {
+/** Small emoji stat tile for the Today glance grid: plain surface, bold value (calm, like the workout history boxes). [color] is unused. */
+@Composable private fun Glance(emoji: String, value: String, label: String, @Suppress("UNUSED_PARAMETER") color: Color, modifier: Modifier, onClick: () -> Unit) {
+    HubSurface(modifier, color = Hub.colors.surface, radius = 16.dp, shadow = 3.dp, onClick = onClick, onClickLabel = label) {
         Column(Modifier.fillMaxWidth().padding(vertical = 12.dp, horizontal = 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(emoji, style = MaterialTheme.typography.headlineMedium)
-            Text(value, style = MaterialTheme.typography.headlineSmall, color = Hub.colors.onAccent, maxLines = 1, softWrap = false)
-            Text(label, style = MaterialTheme.typography.labelSmall, color = Hub.colors.onAccent, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
+            Text(value, style = MaterialTheme.typography.headlineSmall, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, color = Hub.colors.ink, maxLines = 1, softWrap = false)
+            Text(label, style = MaterialTheme.typography.labelSmall, color = Hub.colors.inkSoft, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
         }
     }
 }
@@ -47,7 +48,7 @@ import java.time.ZoneId
     val u by usage.state.collectAsStateWithLifecycle()
     val today = f.today
     val holiday = c.snapshot.calendarOn(today).any { it.kind == CalendarKind.HOLIDAY }
-    val classes = if (holiday) 0 else c.snapshot.meetingsOn(today.dayOfWeek).size
+    val classes = if (c.snapshot.noClassesOn(today)) 0 else c.snapshot.meetingsOn(today.dayOfWeek).size
     val tasksLeft = agenda(f.snapshot, today).filter { it.kind == SectionKind.OVERDUE || it.kind == SectionKind.TODAY }.sumOf { it.items.size }
     val habits = f.snapshot.habits
     val logged = habits.count { h -> f.snapshot.habitEntries.any { it.habitId == h.id && it.day == today } }

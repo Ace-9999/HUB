@@ -21,6 +21,7 @@ import dev.personalhub.vtop.SyncOutcome
 import dev.personalhub.vtop.VtopDiagnostics
 import dev.personalhub.vtop.VtopSyncView
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 
 /*
  * Owner-operated VTOP sign-in and sync (I04-T1/T2). The owner types credentials and solves captchas inside the
@@ -55,7 +56,10 @@ class CollegeConnectActivity : ComponentActivity() {
         portal.sync(semester, intent.getBooleanExtra(FULL, true)) { outcome ->
             when (outcome) {
                 is SyncOutcome.Success -> app.scope.launch {
+                    val before = runCatching { app.college.snapshots.first() }.getOrNull()
                     runCatching { app.college.save(outcome.import) }.onSuccess {
+                        before?.let { b -> runCatching { CollegeNotices.afterSync(app, b, outcome.import) } }
+                        runCatching { CollegeNotices.scheduleClassAlert(app) }
                         val s = outcome.import
                         result.value = s.statuses.map { "${it.dataset.label}: ${it.detail}" }
                         status.value = "Saved ${s.semester.name}."

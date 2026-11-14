@@ -79,6 +79,8 @@ class TrainingViewModel(private val repo: TrainingRepository, val time: AppTime,
     }
     fun discard() = run { repo.discardActive(); skipRest() }
     fun deleteWorkout(w: Workout) = run { repo.deleteWorkout(w.id) }
+    /** Saves an edited finished workout (replaces its exercises and sets). */
+    fun saveEdited(w: Workout) = run { require(!w.active) { "Only finished workouts can be edited here." }; repo.saveFinished(w) }
 
     // ---------------------------------------------------------------- rest timer
     fun startRest(seconds: Int) { restState.value = RestTimer.start(seconds, now()); restState.value.deadline?.let { alerts?.schedule(it) } }

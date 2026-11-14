@@ -109,6 +109,41 @@ fun personalRecords(workouts: List<Workout>, catalog: Map<String, Exercise>): Ma
     return out
 }
 
+/** A new best lift: [setIndex] in exercise [exerciseIndex] of workout [workoutId] beat every earlier workout's best for that exercise. */
+data class PrHit(val workoutId: String, val exerciseIndex: Int, val setIndex: Int, val exerciseId: String, val value: Double, val previous: Double)
+
+/**
+ * Lift PRs, chronologically: per exercise the measure is heaviest kg (weighted), most reps (bodyweight) or longest hold (time).
+ * Within a workout only the top working set can be a PR, and only if it strictly beats the best from all EARLIER workouts.
+ * The first time an exercise is logged sets the baseline and is not a PR.
+ */
+fun liftPrs(workouts: List<Workout>, catalog: Map<String, Exercise>): List<PrHit> {
+    val best = mutableMapOf<String, Double>()
+    val out = mutableListOf<PrHit>()
+    workouts.filter { !it.active }.sortedBy { it.startedAt }.forEach { w ->
+        val top = mutableMapOf<String, Triple<Int, Int, Double>>()
+        w.exercises.forEachIndexed { i, e ->
+            val metric = catalog[e.exerciseId]?.metric ?: return@forEachIndexed
+            e.sets.forEachIndexed { j, s ->
+                if (!s.working) return@forEachIndexed
+                val v = when (metric) {
+                    Metric.WEIGHT_REPS -> s.weightKg?.takeIf { it > 0 }
+                    Metric.BODYWEIGHT_REPS -> s.reps?.takeIf { it > 0 }?.toDouble()
+                    Metric.DURATION -> s.seconds?.takeIf { it > 0 }?.toDouble()
+                    else -> null
+                } ?: return@forEachIndexed
+                if ((top[e.exerciseId]?.third ?: -1.0) < v) top[e.exerciseId] = Triple(i, j, v)
+            }
+        }
+        top.forEach { (id, t) ->
+            val prev = best[id]
+            if (prev != null && t.third > prev) out += PrHit(w.id, t.first, t.second, id, t.third, prev)
+            best[id] = maxOf(prev ?: t.third, t.third)
+        }
+    }
+    return out
+}
+
 /** Most recent completed values for an exercise, used as greyed suggestions (never counted). */
 fun previousSets(workouts: List<Workout>, exerciseId: String): List<WorkoutSet> =
     workouts.filter { !it.active }.sortedByDescending { it.startedAt }.firstNotNullOfOrNull { w -> w.exercises.firstOrNull { it.exerciseId == exerciseId }?.sets?.filter { it.done }?.takeIf { it.isNotEmpty() } }.orEmpty()

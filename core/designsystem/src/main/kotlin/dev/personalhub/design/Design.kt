@@ -208,15 +208,16 @@ enum class ButtonTone { Primary, Plain, Danger, Mint }
     }
 }
 
-@Composable fun Pill(text: String, color: Color = Hub.colors.lime, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null, selected: Boolean = true) {
+/** Rounded label. [small] = tighter padding and smaller text, for rows that must fit without scrolling. */
+@Composable fun Pill(text: String, color: Color = Hub.colors.lime, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null, selected: Boolean = true, small: Boolean = false) {
     val c = Hub.colors
     val target = if (selected) color else c.surface
     val fill by animateColorAsState(target, tween(200), label = "pill")
     val shape = RoundedCornerShape(50)
     Box(modifier.clip(shape).background(fill).border(1.5.dp, c.outline, shape)
         .then(if (onClick != null) Modifier.clickable(role = Role.Tab, onClick = onClick).defaultMinSize(minHeight = 40.dp) else Modifier)
-        .padding(horizontal = 12.dp, vertical = 5.dp), contentAlignment = Alignment.Center) {
-        Text(text, style = MaterialTheme.typography.labelMedium, color = if (target == c.surface) c.ink else c.onAccent, maxLines = 1, softWrap = false)
+        .padding(horizontal = if (small) 8.dp else 12.dp, vertical = if (small) 3.dp else 5.dp), contentAlignment = Alignment.Center) {
+        Text(text, style = if (small) MaterialTheme.typography.labelSmall else MaterialTheme.typography.labelMedium, color = if (target == c.surface) c.ink else c.onAccent, maxLines = 1, softWrap = false)
     }
 }
 
@@ -248,7 +249,10 @@ enum class ButtonTone { Primary, Plain, Danger, Mint }
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Box(Modifier.fillMaxWidth().heightIn(min = 52.dp), contentAlignment = Alignment.Center) {
             if (onBack != null && back != null) HubIconButton(back, "Back", onBack, Modifier.align(Alignment.CenterStart))
-            Text(title, style = MaterialTheme.typography.displayMedium, color = Hub.colors.ink, textAlign = TextAlign.Center,
+            // One line always: long titles ("Notifications", "Edit workout") shrink to fit between the buttons instead of wrapping.
+            androidx.compose.foundation.text.BasicText(title, style = MaterialTheme.typography.displayMedium.copy(color = Hub.colors.ink, textAlign = TextAlign.Center),
+                maxLines = 1, softWrap = false,
+                autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 18.sp, maxFontSize = MaterialTheme.typography.displayMedium.fontSize),
                 modifier = Modifier.padding(horizontal = if (onBack != null || action != null) 60.dp else 0.dp).align(if (onBack != null) Alignment.Center else Alignment.CenterStart))
             action?.let { Box(Modifier.align(Alignment.CenterEnd)) { it() } }
         }

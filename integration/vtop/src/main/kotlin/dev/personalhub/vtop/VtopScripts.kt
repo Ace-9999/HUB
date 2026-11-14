@@ -171,7 +171,9 @@ internal object VtopScripts {
                 if (d.status !== 200 || !d.doc.querySelectorAll('table').length) d = await postMultipart('examinations/examGradeView/getGradeViewDetails', fields);
                 details.push({ code: b.code, status: d.status, tables: d.status === 200 ? tables(d.doc) : [] });
               }
-              out.push({ semester: sm, name, tables: tbs, details });
+              // The portal prints the semester GPA on this page (often outside any table): keep only that number.
+              const gm = ((r.doc.body && r.doc.body.textContent) || '').replace(/\s+/g, ' ').match(/(?:^|[^C])GPA\s*[:\-]?\s*(\d{1,2}\.\d{1,3})/i);
+              out.push({ semester: sm, name, tables: tbs, details, gpa: gm ? gm[1] : null });
             }
             result.datasets.results = { status: 200, semesters: out };
             const d0 = (out[0] && out[0].details[0]) || null;

@@ -31,7 +31,7 @@ internal data class ExamRow(val semesterId: String, val position: Int, val examT
 internal data class CalendarRow(val semesterId: String, val position: Int, val date: String, val label: String, val kind: String)
 @Entity(tableName = "result_courses", primaryKeys = ["semesterId", "position"])
 internal data class ResultCourseRow(val semesterId: String, val position: Int, val semesterName: String, val semesterOrder: Int, val code: String, val title: String,
-    val type: String?, val credits: Double?, val gradingType: String?, val grandTotal: Double?, val grade: String?)
+    val type: String?, val credits: Double?, val gradingType: String?, val grandTotal: Double?, val grade: String?, val semesterGpa: Double? = null)
 @Entity(tableName = "result_components", primaryKeys = ["semesterId", "coursePosition", "position"])
 internal data class ResultComponentRow(val semesterId: String, val coursePosition: Int, val position: Int, val title: String, val maxMark: Double?,
     val weightage: Double?, val scored: Double?, val weighted: Double?, val status: String?)
@@ -96,7 +96,7 @@ internal data class ResultRangeRow(val semesterId: String, val coursePosition: I
     @Query("DELETE FROM marks") suspend fun clearAllMarks()
 }
 
-@Database(entities = [MetaRow::class, SemesterRow::class, CourseRow::class, MeetingRow::class, AttendanceRow::class, MarkRow::class, GradeRow::class, SummaryRow::class, StatusRow::class, ExamRow::class, CalendarRow::class, ResultCourseRow::class, ResultComponentRow::class, ResultRangeRow::class], version = 3, exportSchema = true)
+@Database(entities = [MetaRow::class, SemesterRow::class, CourseRow::class, MeetingRow::class, AttendanceRow::class, MarkRow::class, GradeRow::class, SummaryRow::class, StatusRow::class, ExamRow::class, CalendarRow::class, ResultCourseRow::class, ResultComponentRow::class, ResultRangeRow::class], version = 4, exportSchema = true)
 internal abstract class CollegeDatabase : RoomDatabase() {
     abstract fun dao(): CollegeDao
     companion object {
@@ -114,6 +114,10 @@ internal abstract class CollegeDatabase : RoomDatabase() {
                 db.execSQL("CREATE TABLE IF NOT EXISTS `result_components` (`semesterId` TEXT NOT NULL, `coursePosition` INTEGER NOT NULL, `position` INTEGER NOT NULL, `title` TEXT NOT NULL, `maxMark` REAL, `weightage` REAL, `scored` REAL, `weighted` REAL, `status` TEXT, PRIMARY KEY(`semesterId`, `coursePosition`, `position`))")
                 db.execSQL("CREATE TABLE IF NOT EXISTS `result_ranges` (`semesterId` TEXT NOT NULL, `coursePosition` INTEGER NOT NULL, `grade` TEXT NOT NULL, `range` TEXT NOT NULL, `position` INTEGER NOT NULL, PRIMARY KEY(`semesterId`, `coursePosition`, `grade`))")
             }
+        }
+        /** Additive: the semester GPA as printed by the portal (stored on each result row of that semester). */
+        val MIGRATION_3_4 = object : androidx.room.migration.Migration(3, 4) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) { db.execSQL("ALTER TABLE `result_courses` ADD COLUMN `semesterGpa` REAL") }
         }
     }
 }
@@ -150,7 +154,7 @@ class RoomCollegeRepository private constructor(private val db: CollegeDatabase)
                 GradedCourse(r.code, r.title, r.type, r.credits, r.gradingType, r.grandTotal, r.grade,
                     comps[r.semesterId to r.position].orEmpty().map { MarkComponent(r.code, r.type, it.title, it.maxMark, it.weightage, it.scored, it.weighted, it.status) },
                     ranges[r.semesterId to r.position].orEmpty().map { GradeRange(it.grade, it.range) })
-            })
+            }, rows.firstNotNullOfOrNull { it.semesterGpa })
         }
     }
 
@@ -176,7 +180,7 @@ class RoomCollegeRepository private constructor(private val db: CollegeDatabase)
         if (import.ok(Dataset.RESULTS)) import.results.forEachIndexed { order, res ->
             val sid = res.semester.id
             dao.clearResultCourses(sid); dao.clearResultComponents(sid); dao.clearResultRanges(sid)
-            dao.resultCourses(res.courses.mapIndexed { i, c -> ResultCourseRow(sid, i, res.semester.name, order, c.code, c.title, c.type, c.credits, c.gradingType, c.grandTotal, c.grade) })
+            dao.resultCourses(res.courses.mapIndexed { i, c -> ResultCourseRow(sid, i, res.semester.name, order, c.code, c.title, c.type, c.credits, c.gradingType, c.grandTotal, c.grade, res.portalGpa) })
             dao.resultComponents(res.courses.flatMapIndexed { i, c -> c.components.mapIndexed { j, m -> ResultComponentRow(sid, i, j, m.title, m.maxMark, m.weightage, m.scored, m.weighted, m.status) } })
             dao.resultRanges(res.courses.flatMapIndexed { i, c -> c.ranges.distinctBy { it.grade }.mapIndexed { j, g -> ResultRangeRow(sid, i, g.grade, g.range, j) } })
         }
@@ -197,6 +201,6 @@ class RoomCollegeRepository private constructor(private val db: CollegeDatabase)
     override fun close() = db.close()
 
     companion object {
-        fun open(context: Context, name: String = "college.db") = RoomCollegeRepository(Room.databaseBuilder(context, CollegeDatabase::class.java, name).addMigrations(CollegeDatabase.MIGRATION_1_2, CollegeDatabase.MIGRATION_2_3).build())
+        fun open(context: Context, name: String = "college.db") = RoomCollegeRepository(Room.databaseBuilder(context, CollegeDatabase::class.java, name).addMigrations(CollegeDatabase.MIGRATION_1_2, CollegeDatabase.MIGRATION_2_3, CollegeDatabase.MIGRATION_3_4).build())
     }
 }

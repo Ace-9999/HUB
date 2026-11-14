@@ -61,13 +61,24 @@ object Reminders {
             .setInitialDelay(Duration.between(now, next).toMinutes(), TimeUnit.MINUTES).build())
     }
 
-    fun notify(context: Context, id: Int, title: String, body: String) {
-        val nm = context.getSystemService(NotificationManager::class.java)
-        if (Build.VERSION.SDK_INT >= 26) nm.createNotificationChannel(NotificationChannel(CHANNEL, "Reminders", NotificationManager.IMPORTANCE_DEFAULT))
+    /** Posts a notification that opens [open] when tapped (e.g. the system's update confirmation). */
+    fun notifyIntent(context: Context, id: Int, title: String, body: String, channel: String, open: PendingIntent) {
+        Channels.create(context)
         if (Build.VERSION.SDK_INT >= 33 && context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) return
-        val open = PendingIntent.getActivity(context, id, Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), PendingIntent.FLAG_IMMUTABLE)
-        val n = (if (Build.VERSION.SDK_INT >= 26) android.app.Notification.Builder(context, CHANNEL) else @Suppress("DEPRECATION") android.app.Notification.Builder(context))
-            .setSmallIcon(R.drawable.ic_launcher_monochrome).setContentTitle(title).setContentText(body).setContentIntent(open).setAutoCancel(true).build()
+        context.getSystemService(NotificationManager::class.java).notify(id, android.app.Notification.Builder(context, channel)
+            .setSmallIcon(R.drawable.ic_launcher_monochrome).setContentTitle(title).setContentText(body).setContentIntent(open).setAutoCancel(true).build())
+    }
+
+    /** Posts a notification on [channel]; [target] (e.g. "marks", "timetable") is opened when it's tapped. Silently skipped without permission. */
+    fun notify(context: Context, id: Int, title: String, body: String, channel: String = CHANNEL, target: String? = null) {
+        val nm = context.getSystemService(NotificationManager::class.java)
+        Channels.create(context)
+        if (Build.VERSION.SDK_INT >= 33 && context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) return
+        val open = PendingIntent.getActivity(context, id, Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            .apply { target?.let { putExtra(MainActivity.OPEN_TARGET, it) } }, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+        val n = android.app.Notification.Builder(context, channel)
+            .setSmallIcon(R.drawable.ic_launcher_monochrome).setContentTitle(title).setContentText(body).setStyle(android.app.Notification.BigTextStyle().bigText(body))
+            .setContentIntent(open).setAutoCancel(true).build()
         nm.notify(id, n)
     }
 }
@@ -87,7 +98,11 @@ class TaskReminderWorker(context: Context, params: WorkerParameters) : Coroutine
 }
 
 class RestAlertWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
-    override suspend fun doWork(): Result { Reminders.notify(applicationContext, 7101, "Rest over", "Time for your next set."); return Result.success() }
+    override suspend fun doWork(): Result {
+        val app = applicationContext as PersonalHubApplication
+        if (app.settings.notifyRest.first()) Reminders.notify(app, 7101, "Rest over 💪", "Time for your next set.", Channels.REST, "workout")
+        return Result.success()
+    }
 }
 
 class HabitNudgeWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {

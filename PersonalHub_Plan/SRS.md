@@ -1,4 +1,4 @@
-# PersonalHub — Software Requirements Specification
+# HUB (formerly PersonalHub) — Software Requirements Specification
 
 **Baseline:** 1.1 · **Date:** 12 November 2026 · **Status:** Ready for incremental implementation; feasibility gates remain open. Version 1.1 adds Mood Log, shared trend views, the final Spotify module and scheduled local JSON backup/export.
 
@@ -292,6 +292,30 @@ These are engineering budgets to measure, not current measurements. Increment 0 
 Do not request microphone, camera, contacts, location, root, device administration or all-files access for these features. An accessibility overlay may be used within service capabilities; request general overlay access only if a separately justified implementation needs it. Do not automate changing Android settings or preventing service disable/uninstall.
 
 Credentials and CSRF/cookies are never uploaded to development agents. All live sign-in occurs on the owner's device. Production diagnostics contain dataset/status codes, duration and parser version, never portal HTML, personal grade rows, browser text, URLs with query strings, images, usernames or credentials. Accessibility processing is package-allowlisted, avoids password fields and discards transient text as soon as context is classified. The Music listener drops non-Spotify notification content immediately and retains only needed structured playback data. No screenshots/keylogging archive. Personal JSON exports are owner-controlled data files, separate from redacted diagnostics.
+
+## 9A. Release 1.1 additions (owner request, 14 November 2026)
+
+The app is renamed **HUB** everywhere the owner sees it (launcher label, screens, notifications, release assets, repository). The Android application ID `dev.personalhub` and the signing key stay unchanged so updates keep all data and permissions.
+
+| ID | Requirement | Acceptance |
+|---|---|---|
+| NAV-01 | Going to a different sub-page (forward or Back) SHALL start that page at its top. | Scroll Marks, press Back: College home shows from the top. |
+| NAV-02 | Tapping the bottom-bar destination already selected SHALL return to that destination's home page, scrolled to the top. | From College → Exams, tapping College opens College home. |
+| GYM-13 | Workout history SHALL show compact cards (title, date/time, duration, sets, reps, volume); tapping one SHALL open a pop-up with every exercise (small square photo as bullet) and every completed set. | No exercise lists on the history page; pop-up lists all sets. |
+| GYM-14 | Finished workouts SHALL be editable (name, duration, exercises, sets, done state) as a draft saved only on Save. | Edited values replace the stored workout; Cancel changes nothing. |
+| GYM-15 | History SHALL start with a last-7-days panel: day strip, front/back muscle map (REF-08), workouts, volume and PR count. | Panel totals equal the sum of the week's finished workouts. |
+| GYM-16 | A lift PR is a top working set that strictly beats the best of all earlier workouts for that exercise (kg for weighted, reps for bodyweight, seconds for timed); the first time an exercise is logged is the baseline, not a PR. PRs SHALL show a 🥇 beside the set and on the workout card. | Unit test: equal or lower lifts, warm-ups, unfinished sets and active sessions never count. |
+| COL-14 | Exams SHALL show seat number and seat position (e.g. R1C4) as bubbles beside the course code, plus exam time, reporting time, venue and session; the date appears only in the date badge. | Parser reads "Seat Location" or any cell shaped like R<n>C<n>. |
+| COL-15 | Grade History SHALL show the semester GPA exactly as VTOP prints it on Grade View; the app SHALL NOT compute a semester GPA. Missing values show "—". | Parser test: "GPA : 8.61" read, CGPA ignored. |
+| COL-16 | Grade History course cards SHALL be compact (title, code/type/credits in small bubbles, grade); component marks, total and grade ranges open in a pop-up on tap. | Code, type and credits fit on one line on a 360 dp screen. |
+| COL-17 | Today SHALL state the kind of day from the academic calendar: holiday ("Today is a holiday! Enjoy your day" + a random fun fact from a bundled list of 500), no classes, next class, or classes done. From 7 pm, tomorrow's first class shows only if tomorrow is a working day. | Unit tests cover holiday, working day, after last class, evening before working/holiday/free day. |
+| NOT-01 | Settings → Notifications SHALL offer per-kind switches: next class, new marks, rest finished, task due times, daily habit check-in. | Each switch independently enables/disables its notification. |
+| NOT-02 | Next-class alerts SHALL fire 10 minutes before a class, or immediately when a still-running previous class ends if that is later; holidays are skipped. | Unit test for normal, back-to-back and holiday cases. |
+| NOT-03 | A sync that finds new or changed marks for the same semester SHALL add an entry to the in-app bell inbox (badge with unread count beside Settings) and, if enabled, post a notification. The first sync of a semester never floods. | Unit test for new/changed/first-sync/semester change. |
+| HAB-08 | Google Tasks SHALL collapse to a small sync icon in the Tasks header once connected or dismissed; tap syncs (or reopens setup), long-press shows details; Settings SHALL always offer connect/disconnect and setup help. | Card hidden after connect or ✕; icon spins while syncing. |
+| UPD-01 | HUB SHALL check the public GitHub releases of the project (anonymous request, no personal data) every few hours and on demand, with an owner switch to turn automatic updates off. | Settings → App updates shows status and Check now. |
+| UPD-02 | An update SHALL be installed only if it is an APK for the same package, with a higher version code and the same signing certificate; anything else is discarded. | Unit test for version ordering and repository-only asset URLs. |
+| UPD-03 | Installation SHALL use the system PackageInstaller session API, preserving app data and granted permissions (notifications, accessibility, overlay, Google sign-in). After the owner's one-time "install unknown apps" approval, updates SHALL need no taps (Android 12+), and on Android 14+ SHALL wait until HUB is not in the foreground. | Device check: v1.1 → next version updates while HUB is closed; data and permissions remain. |
 
 ## 10. Completion and change control
 

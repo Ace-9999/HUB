@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -30,7 +31,7 @@ import java.time.*
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 
-enum class TrainPage(val title: String) { OVERVIEW("Train"), CATALOG("Exercises"), EXERCISE("Exercise"), ROUTINE("Routine"), WORKOUT("Workout"), HISTORY("History"), STATS("Statistics") }
+enum class TrainPage(val title: String) { OVERVIEW("Train"), CATALOG("Exercises"), EXERCISE("Exercise"), ROUTINE("Routine"), WORKOUT("Workout"), HISTORY("History"), STATS("Statistics"), EDIT("Edit workout") }
 /** Navigation inside Train. [arg] = exercise/routine id; [pickFor] = page that receives a picked exercise. */
 data class TrainNav(val page: TrainPage = TrainPage.OVERVIEW, val arg: String? = null, val pickFor: TrainPage? = null)
 
@@ -41,7 +42,8 @@ private fun dur(d: Duration) = d.seconds.let { if (it >= 3600) "${it / 3600}h ${
 
 @Composable fun TrainingContent(vm: TrainingViewModel, nav: TrainNav, go: (TrainNav) -> Unit) {
     val ui by vm.state.collectAsStateWithLifecycle()
-    val back = { go(if (nav.page == TrainPage.EXERCISE && nav.pickFor == null) TrainNav(TrainPage.CATALOG) else if (nav.pickFor != null) TrainNav(nav.pickFor, nav.arg) else TrainNav()) }
+    val back = { go(if (nav.page == TrainPage.EXERCISE && nav.pickFor == null) TrainNav(TrainPage.CATALOG) else if (nav.pickFor != null) TrainNav(nav.pickFor, nav.arg)
+        else if (nav.page == TrainPage.EDIT) TrainNav(TrainPage.HISTORY) else TrainNav()) }
     if (nav.page != TrainPage.OVERVIEW) ScreenTitle(nav.page.title, onBack = back, back = HubIcons.Back)
     vm.message.collectAsStateWithLifecycle().value?.let { m ->
         HubPanel(color = Hub.colors.peach, padding = 12.dp) { Row(verticalAlignment = Alignment.CenterVertically) {
@@ -54,7 +56,8 @@ private fun dur(d: Duration) = d.seconds.let { if (it >= 3600) "${it / 3600}h ${
         TrainPage.EXERCISE -> ExerciseDetail(ui, nav.arg)
         TrainPage.ROUTINE -> RoutineEditor(vm, ui, nav, go)
         TrainPage.WORKOUT -> ActiveWorkout(vm, ui, go)
-        TrainPage.HISTORY -> History(vm, ui)
+        TrainPage.HISTORY -> History(vm, ui, go)
+        TrainPage.EDIT -> EditWorkout(vm, ui, nav, go)
         TrainPage.STATS -> Stats(vm, ui)
     }
 }
@@ -355,21 +358,215 @@ private data class RoutineDraft(val id: String, val name: String, val items: Lis
 // ---------------------------------------------------------------- history + stats (TRN-06/07)
 private val ranges = listOf("7 days" to 7L, "30 days" to 30L, "90 days" to 90L, "All" to 36_500L)
 
-@Composable private fun History(vm: TrainingViewModel, ui: TrainingUi) {
-    var confirm by remember { mutableStateOf<String?>(null) }
+/** Compact summary cards; tapping one opens the full workout in a pop-up (with edit/delete). */
+@Composable private fun History(vm: TrainingViewModel, ui: TrainingUi, go: (TrainNav) -> Unit) {
+    var open by rememberSaveable { mutableStateOf<String?>(null) }
     if (ui.finished.isEmpty()) { EmptyState("No workouts yet", "Finished workouts appear here with their sets and volume."); return }
-    ui.finished.forEach { w ->
-        HubCard(w.name, trailing = { Pill(w.startedAt.atZone(vm.time.zone).toLocalDate().format(dateFmt), Hub.colors.cyan) }) {
-            Text("${dur(Duration.between(w.startedAt, w.finishedAt))} · ${workingSets(w)} sets · ${totalReps(w)} reps · ${kg(volumeKg(w, ui.catalog))} kg",
-                style = MaterialTheme.typography.bodyMedium, color = Hub.colors.ink)
-            w.exercises.forEach { e ->
-                Text("${ui.catalog[e.exerciseId]?.name ?: "Removed exercise"} — " + e.sets.filter { it.working }.joinToString("  ") { s ->
-                    listOfNotNull(s.weightKg?.let { "${kg(it)}kg" }, s.reps?.let { "×$it" }, s.seconds?.let { "${it}s" }).joinToString("") }.ifEmpty { "no completed sets" },
-                    style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
+    val zone = vm.time.zone
+    val prs = remember(ui.workouts, ui.exercises) { liftPrs(ui.finished, ui.catalog) }
+    WeekOverview(vm, ui, prs)
+    ui.finished.groupBy { YearMonth.from(it.startedAt.atZone(zone)) }.forEach { (month, list) ->
+        SectionHeader("${month.month.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.getDefault())} ${month.year} · ${list.size}")
+        list.forEach { w -> WorkoutSummaryCard(w, ui, zone, prs.count { it.workoutId == w.id }) { open = w.id } }
+    }
+    ui.finished.firstOrNull { it.id == open }?.let { w -> WorkoutDialog(w, ui, zone, prs.filter { it.workoutId == w.id }, onClose = { open = null },
+        onEdit = { open = null; go(TrainNav(TrainPage.EDIT, w.id)) }, onDelete = { open = null; vm.deleteWorkout(w) }) }
+}
+
+@Composable private fun WorkoutStats(w: Workout, ui: TrainingUi) {
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        MiniStat("TIME", dur(Duration.between(w.startedAt, w.finishedAt)), Hub.colors.cyan, Modifier.weight(1f))
+        MiniStat("SETS", workingSets(w).toString(), Hub.colors.lime, Modifier.weight(1f))
+        MiniStat("REPS", totalReps(w).toString(), Hub.colors.mint, Modifier.weight(1f))
+        MiniStat("VOLUME", vol(volumeKg(w, ui.catalog)), Hub.colors.apricot, Modifier.weight(1.3f))
+    }
+}
+
+/** REF-08-style "last 7 days" panel: day strip, front/back muscle map, volume and PRs. */
+@Composable private fun WeekOverview(vm: TrainingViewModel, ui: TrainingUi, prs: List<PrHit>) {
+    val zone = vm.time.zone; val today = LocalDate.now(zone)
+    val from = today.minusDays(6)
+    val week = ui.finished.filter { inRange(it, from, today, zone) }
+    val weekPrs = prs.filter { p -> week.any { it.id == p.workoutId } }
+    HubCard("💪 Last 7 days") {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            (0L..6L).map { from.plusDays(it) }.forEach { d ->
+                val trained = week.any { it.startedAt.atZone(zone).toLocalDate() == d }
+                val shape = RoundedCornerShape(10.dp)
+                Column(Modifier.weight(1f).clip(shape).background(if (trained) Hub.colors.lime else Hub.colors.raised)
+                    .border(if (d == today) 2.5.dp else 1.dp, Hub.colors.outline, shape).padding(vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(d.dayOfWeek.getDisplayName(java.time.format.TextStyle.NARROW, java.util.Locale.getDefault()), style = MaterialTheme.typography.labelSmall,
+                        color = if (trained) Hub.colors.onAccent else Hub.colors.ink)
+                    Text("${d.dayOfMonth}", style = MaterialTheme.typography.titleSmall, color = if (trained) Hub.colors.onAccent else Hub.colors.ink)
+                }
             }
-            HubButton(if (confirm == w.id) "Tap again to delete" else "Delete", { if (confirm == w.id) vm.deleteWorkout(w) else confirm = w.id }, tone = ButtonTone.Danger, compact = true)
+        }
+        BodyMap(muscleContributions(week, ui.catalog).byMuscle, compact = true, figureWidth = 110.dp)
+        HeatLegend()
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            MiniStat("WORKOUTS", week.size.toString(), Hub.colors.cyan, Modifier.weight(1f))
+            MiniStat("VOLUME", vol(week.sumOf { volumeKg(it, ui.catalog) }), Hub.colors.apricot, Modifier.weight(1.3f))
+            MiniStat("PRS", "🥇 ${weekPrs.size}", Hub.colors.lime, Modifier.weight(1f))
+        }
+        if (weekPrs.isEmpty()) Text("No new personal records this week. Beat your best lift on any exercise to earn a 🥇.", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
+        weekPrs.forEach { p -> PrLine(p, ui) }
+    }
+}
+
+private fun prValue(p: PrHit, metric: Metric?) = when (metric) {
+    Metric.BODYWEIGHT_REPS -> "${p.value.toInt()} reps · was ${p.previous.toInt()}"
+    Metric.DURATION -> "${p.value.toInt()}s · was ${p.previous.toInt()}s"
+    else -> "${kg(p.value)} kg · was ${kg(p.previous)} kg"
+}
+
+@Composable private fun PrLine(p: PrHit, ui: TrainingUi) {
+    val ex = ui.catalog[p.exerciseId]
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        ExerciseThumb(ex, 30.dp, square = true)
+        Text("🥇", style = MaterialTheme.typography.titleMedium)
+        Column(Modifier.weight(1f)) {
+            Text(ex?.name ?: "Removed exercise", style = MaterialTheme.typography.titleSmall, color = Hub.colors.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(prValue(p, ex?.metric), style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
         }
     }
+}
+
+@Composable private fun WorkoutSummaryCard(w: Workout, ui: TrainingUi, zone: ZoneId, prCount: Int, onClick: () -> Unit) {
+    val start = w.startedAt.atZone(zone)
+    HubSurface(Modifier.fillMaxWidth(), shadow = 3.dp, onClick = onClick, onClickLabel = "Open ${w.name}") {
+        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(Modifier.weight(1f)) {
+                    Text(w.name, style = MaterialTheme.typography.titleLarge, color = Hub.colors.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text("${start.toLocalDate().format(dateFmt)} · ${start.toLocalTime().format(timeFmt)} · ${w.exercises.size} exercise${if (w.exercises.size == 1) "" else "s"}",
+                        style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
+                }
+                if (prCount > 0) Pill("🥇 $prCount PR${if (prCount > 1) "s" else ""}", Hub.colors.lime)
+                Icon(HubIcons.Arrow)
+            }
+            WorkoutStats(w, ui)
+        }
+    }
+}
+
+private val timeFmt = DateTimeFormatter.ofPattern("h:mm a")
+
+/** Quiet stat box: plain surface, bold value, small label. [color] is kept for call-site compatibility but not used (owner prefers calm boxes). */
+@Composable private fun MiniStat(label: String, value: String, @Suppress("UNUSED_PARAMETER") color: androidx.compose.ui.graphics.Color, modifier: Modifier) {
+    val shape = RoundedCornerShape(10.dp)
+    Column(modifier.clip(shape).background(Hub.colors.surface).border(1.dp, Hub.colors.outline, shape).padding(vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, style = MaterialTheme.typography.titleSmall, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, color = Hub.colors.ink, maxLines = 1, softWrap = false)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = Hub.colors.inkSoft)
+    }
+}
+
+private fun setText(s: WorkoutSet) = listOfNotNull(s.weightKg?.let { "${kg(it)} kg" }, s.reps?.let { "× $it" }, s.seconds?.let { "${it}s" }).joinToString(" ").ifEmpty { "—" }
+
+/** Full workout: every exercise with a small square photo as its bullet, and every completed set. */
+@Composable private fun WorkoutDialog(w: Workout, ui: TrainingUi, zone: ZoneId, prs: List<PrHit>, onClose: () -> Unit, onEdit: () -> Unit, onDelete: () -> Unit) {
+    var confirm by remember { mutableStateOf(false) }
+    androidx.compose.ui.window.Dialog(onDismissRequest = onClose) {
+        HubPanel(padding = 18.dp) {
+            Column(Modifier.heightIn(max = 600.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(w.name, style = MaterialTheme.typography.headlineSmall, color = Hub.colors.ink)
+                val start = w.startedAt.atZone(zone)
+                Text("${start.toLocalDate().format(DateTimeFormatter.ofPattern("EEEE d MMMM yyyy"))} · ${start.toLocalTime().format(timeFmt)}",
+                    style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
+                WorkoutStats(w, ui)
+                HubDivider()
+                if (w.exercises.isEmpty()) Text("No exercises logged.", style = MaterialTheme.typography.bodyMedium, color = Hub.colors.inkSoft)
+                w.exercises.forEachIndexed { ei, e ->
+                    val ex = ui.catalog[e.exerciseId]
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Top) {
+                        ExerciseThumb(ex, 36.dp, square = true)
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(ex?.name ?: "Removed exercise", style = MaterialTheme.typography.titleMedium, color = Hub.colors.ink)
+                            val done = e.sets.filter { it.done }
+                            if (done.isEmpty()) Text("No completed sets", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
+                            var n = 0
+                            e.sets.forEachIndexed { si, s ->
+                                if (!s.done) return@forEachIndexed
+                                val label = if (s.type == SetType.WARMUP) "W" else "${++n}"
+                                val pr = prs.any { it.exerciseIndex == ei && it.setIndex == si }
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(label, style = MaterialTheme.typography.labelMedium, color = Hub.colors.inkSoft, modifier = Modifier.width(22.dp))
+                                    Text(setText(s), style = MaterialTheme.typography.bodyMedium, color = Hub.colors.ink)
+                                    if (pr) Text("  🥇 PR", style = MaterialTheme.typography.labelMedium, color = Hub.colors.ink)
+                                }
+                            }
+                        }
+                    }
+                }
+                HubDivider()
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    HubButton("Edit", onEdit, Modifier.weight(1f), icon = HubIcons.Edit, compact = true)
+                    HubButton(if (confirm) "Confirm" else "Delete", { if (confirm) onDelete() else confirm = true }, Modifier.weight(1f), tone = ButtonTone.Danger, compact = true)
+                }
+                HubButton("Close", onClose, Modifier.fillMaxWidth(), tone = ButtonTone.Plain, compact = true)
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------- edit a finished workout
+private var editDraftHold: Workout? = null
+
+/** Edits a finished workout as a local draft; nothing is written until Save. Only ticked sets count, as when logging. */
+@Composable private fun EditWorkout(vm: TrainingViewModel, ui: TrainingUi, nav: TrainNav, go: (TrainNav) -> Unit) {
+    val original = ui.finished.firstOrNull { it.id == nav.arg }
+    if (original == null) { EmptyState("Workout not found", "It may have been deleted."); return }
+    var draft by remember(original.id) { mutableStateOf(
+        editDraftHold?.takeIf { it.id == original.id }?.let { held ->
+            editDraftHold = null
+            held.copy(exercises = held.exercises + listOfNotNull(pickedExercise?.let { WorkoutExercise(it, listOf(WorkoutSet(SetType.NORMAL, null, null, null, null, null, true)), 90) }))
+                .also { pickedExercise = null }
+        } ?: original) }
+    val minutes = Duration.between(draft.startedAt, draft.finishedAt).toMinutes()
+    HubField(draft.name, { draft = draft.copy(name = it.take(60)) }, "Name")
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        NumberBox("Duration (min)", minutes.toString(), Modifier.weight(1f)) { v -> v.toLongOrNull()?.coerceIn(1, 600)?.let { draft = draft.copy(finishedAt = draft.startedAt.plus(Duration.ofMinutes(it))) } }
+        Column(Modifier.weight(1f)) {
+            Text("DATE", style = MaterialTheme.typography.labelSmall, color = Hub.colors.inkSoft)
+            Text(draft.startedAt.atZone(vm.time.zone).toLocalDate().format(dateFmt), style = MaterialTheme.typography.titleMedium, color = Hub.colors.ink, modifier = Modifier.padding(top = 10.dp))
+        }
+    }
+    draft.exercises.forEachIndexed { i, e ->
+        val ex = ui.catalog[e.exerciseId]
+        val metric = ex?.metric ?: Metric.WEIGHT_REPS
+        fun upd(f: (WorkoutExercise) -> WorkoutExercise?) { draft = draft.copy(exercises = draft.exercises.mapIndexedNotNull { j, x -> if (j == i) f(x) else x }) }
+        HubPanel(padding = 12.dp) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                ExerciseThumb(ex, 40.dp, square = true)
+                Text(ex?.name ?: "Removed exercise", style = MaterialTheme.typography.titleMedium, color = Hub.colors.ink, modifier = Modifier.weight(1f))
+                HubIconButton(HubIcons.Trash, "Remove exercise", { upd { null } }, color = Hub.colors.peach)
+            }
+            e.sets.forEachIndexed { s, set ->
+                fun updSet(f: (WorkoutSet) -> WorkoutSet) = upd { x -> x.copy(sets = x.sets.mapIndexed { k, y -> if (k == s) f(y) else y }) }
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(if (set.type == SetType.WARMUP) "W" else "${e.sets.take(s + 1).count { it.type != SetType.WARMUP }}", style = MaterialTheme.typography.titleSmall,
+                        color = Hub.colors.ink, textAlign = TextAlign.Center, modifier = Modifier.width(28.dp).clickable(role = Role.Button, onClickLabel = "Toggle warm-up") {
+                            updSet { it.copy(type = if (it.type == SetType.WARMUP) SetType.NORMAL else SetType.WARMUP) } })
+                    if (metric == Metric.DURATION) SetCell(set.seconds?.toString() ?: "", "sec", Modifier.weight(1f)) { v -> updSet { it.copy(seconds = v.toIntOrNull()) } }
+                    else {
+                        SetCell(set.weightKg?.let(::kg) ?: "", "kg", Modifier.weight(1f)) { v -> updSet { it.copy(weightKg = v.toDoubleOrNull()) } }
+                        SetCell(set.reps?.toString() ?: "", "reps", Modifier.weight(1f)) { v -> updSet { it.copy(reps = v.toIntOrNull()) } }
+                    }
+                    HubCheck(set.done, { updSet { it.copy(done = !it.done) } }, if (set.done) "Mark set not done" else "Mark set done", color = Hub.colors.lime, check = HubIcons.Check)
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                HubButton("Add set", { upd { x -> val last = x.sets.lastOrNull(); x.copy(sets = x.sets + WorkoutSet(SetType.NORMAL, last?.weightKg, last?.reps, last?.seconds, null, null, true)) } },
+                    compact = true, tone = ButtonTone.Plain, icon = HubIcons.Plus)
+                if (e.sets.isNotEmpty()) HubButton("Remove last", { upd { x -> x.copy(sets = x.sets.dropLast(1)) } }, compact = true, tone = ButtonTone.Plain)
+            }
+        }
+    }
+    HubButton("Add exercise", { editDraftHold = draft; go(TrainNav(TrainPage.CATALOG, draft.id, TrainPage.EDIT)) }, Modifier.fillMaxWidth(), tone = ButtonTone.Plain, icon = HubIcons.Plus)
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        HubButton("Save changes", { vm.saveEdited(draft.copy(name = draft.name.ifBlank { "Workout" })); go(TrainNav(TrainPage.HISTORY)) }, Modifier.weight(1f), icon = HubIcons.Check)
+        HubButton("Cancel", { go(TrainNav(TrainPage.HISTORY)) }, tone = ButtonTone.Plain)
+    }
+    Text("Only ticked sets count toward totals and statistics.", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
 }
 
 @Composable private fun Stats(vm: TrainingViewModel, ui: TrainingUi) {

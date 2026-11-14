@@ -1,3 +1,3 @@
 <resources>
-    <string name="probe_accessibility_description">PersonalHub debug feasibility probe. Only selected app package/event counts are observed after opt-in. No screen text is read or saved. A separately selected test app may be redirected Home. Disable at any time.</string>
+    <string name="probe_accessibility_description">HUB debug feasibility probe. Only selected app package/event counts are observed after opt-in. No screen text is read or saved. A separately selected test app may be redirected Home. Disable at any time.</string>
 </resources>

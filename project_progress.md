@@ -63,6 +63,18 @@ Implementation is being handed off at the owner's request. Read
 
 ## Changes and evidence
 
+v1.1 (14 Nov 2026, SRS §9A): app renamed HUB (application ID `dev.personalhub` and signing key unchanged so data and
+permissions survive updates). NAV-01/02 scroll-to-top and tab reselect; GYM-13..16 compact history + pop-up, edit finished
+workouts, last-7-days body map, lift PRs with 🥇 (`liftPrs`); COL-14 exam seat number/R1C4 bubbles; COL-15 portal GPA
+(college DB v4, additive `semesterGpa`); COL-16 compact grade cards + pop-up; credits read from the last sub-column of the
+spanning "Credits" header (was reading L hours); COL-17 day status (holiday + 500 bundled fun facts, exam day from calendar
+or exam schedule, next class, done, 7 pm tomorrow rule), next exam skips finished papers, General-Semester-only calendar
+entries; NOT-01..03 notifications page, bell inbox, next-class alert, new-marks detection; HAB-08 compact Google Tasks icon
++ Settings card; UPD-01..03 GitHub self-updater via PackageInstaller (same package, higher versionCode, same signer only).
+Regression: JVM tests, assembleDemoDebug/ConnectedDebug, lintDemoDebug, emulator Compose + Room (college 3→4 migration)
+suites passed; owner tested on phone. PENDING device gate: first real self-update (v1.1 → next) — needs a later release.
+Signing: releases use this machine's debug keystore; back it up or updates will be refused.
+
 v1.0 (13 Nov 2026): greeting auto-sizes to one line; screen-time tile shows whole minutes
 ("12m", "1h 28m"); Google Cloud setup pop-up on the Google Tasks card (SHA-1 computed at
 runtime from the installed signing certificate). Regression: JVM tests, assembleDemoDebug,

@@ -20,7 +20,7 @@ class ShellTest {
         rule.activityRule.scenario.recreate()
         rule.onNodeWithText("How are you?").assertIsDisplayed()
         rule.onNodeWithContentDescription("Settings").performClick()
-        rule.onNodeWithText("Appearance").assertIsDisplayed()
+        rule.onNodeWithText("Appearance").performScrollTo().assertIsDisplayed()
         rule.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
         rule.onNodeWithText("How are you?").assertIsDisplayed()
         rule.onAllNodesWithText("College").onLast().performClick()
@@ -60,9 +60,12 @@ class ShellTest {
         rule.onNodeWithText("TAP AGAIN TO FINISH").performClick()
         rule.waitUntil(5_000) { rule.onAllNodesWithText("History").fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithText("History").performClick()
-        rule.waitUntil(5_000) { rule.onAllNodesWithText("Workout").fetchSemanticsNodes().isNotEmpty() }
-        rule.onAllNodesWithText("Delete").onFirst().performScrollTo().performClick()
-        rule.onNodeWithText("Tap again to delete").performClick()
+        rule.waitUntil(5_000) { rule.onAllNodes(hasClickLabel("Open Workout"), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+        // Compact card -> pop-up with the full workout, then delete from the pop-up (two taps).
+        rule.onNode(hasClickLabel("Open Workout"), useUnmergedTree = true).performScrollTo().performClick()
+        rule.waitUntil(5_000) { rule.onAllNodesWithText("Bench Press").fetchSemanticsNodes().isNotEmpty() }
+        rule.onNodeWithText("Delete").performClick()
+        rule.onNodeWithText("Confirm").performClick()
         rule.waitUntil(5_000) { rule.onAllNodesWithText("No workouts yet").fetchSemanticsNodes().isNotEmpty() }
     }
 

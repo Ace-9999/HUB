@@ -97,7 +97,7 @@ object BackupCodec {
             .opt("date", e.date?.toString()).opt("session", e.session).opt("reportingTime", e.reportingTime).opt("examTime", e.examTime).opt("venue", e.venue)
             .opt("seatLocation", e.seatLocation).opt("seatNumber", e.seatNumber) })
         .put("calendar", arr(c.calendar) { d -> JSONObject().put("date", d.date.toString()).put("label", d.label).put("kind", d.kind.name) })
-        .put("results", arr(c.results) { r -> JSONObject().put("semester", JSONObject().put("id", r.semester.id).put("name", r.semester.name))
+        .put("results", arr(c.results) { r -> JSONObject().put("semester", JSONObject().put("id", r.semester.id).put("name", r.semester.name)).opt("portalGpa", r.portalGpa)
             .put("courses", arr(r.courses) { g -> JSONObject().put("code", g.code).put("title", g.title).opt("type", g.type).opt("credits", g.credits).opt("gradingType", g.gradingType)
                 .opt("grandTotal", g.grandTotal).opt("grade", g.grade).put("components", arr(g.components, ::mark))
                 .put("ranges", arr(g.ranges) { x -> JSONObject().put("grade", x.grade).put("range", x.range) }) }) })
@@ -123,7 +123,7 @@ object BackupCodec {
         if (text.length > MAX_BACKUP_BYTES) throw BackupFormatException("Backup file is too large.")
         budget = 0
         val root = runCatching { JSONObject(text) }.getOrElse { throw BackupFormatException("Not a JSON backup file.") }
-        if (root.optString("format") != BACKUP_FORMAT) throw BackupFormatException("Not a PersonalHub backup.")
+        if (root.optString("format") != BACKUP_FORMAT) throw BackupFormatException("Not a HUB backup.")
         if (root.optInt("schemaVersion") != BACKUP_SCHEMA) throw BackupFormatException("Unsupported backup version ${root.optInt("schemaVersion")}.")
         if (root.optString("exportKind") != "full_backup" || !root.optBoolean("restorable")) throw BackupFormatException("This file is a review export and can't be restored.")
         return try {
@@ -213,6 +213,6 @@ object BackupCodec {
         objs(o.getJSONArray("calendar")).map { d -> CalendarDay(LocalDate.parse(d.getString("date")), d.getString("label"), en(d.getString("kind"))) },
         objs(o.getJSONArray("results")).map { r -> r.getJSONObject("semester").let { s -> SemesterResult(Semester(s.getString("id"), s.getString("name")),
             objs(r.getJSONArray("courses")).map { g -> GradedCourse(g.getString("code"), g.getString("title"), g.s("type"), g.d("credits"), g.s("gradingType"), g.d("grandTotal"), g.s("grade"),
-                objs(g.getJSONArray("components")).map(::mk), objs(g.getJSONArray("ranges")).map { x -> GradeRange(x.getString("grade"), x.getString("range")) }) }) } },
+                objs(g.getJSONArray("components")).map(::mk), objs(g.getJSONArray("ranges")).map { x -> GradeRange(x.getString("grade"), x.getString("range")) }) }, r.d("portalGpa")) } },
     )
 }

@@ -112,7 +112,7 @@ private fun mins(d: Duration) = formatDuration(d)
             HubButton("Turn on tracking", { vm.setTracking(true) }, Modifier.fillMaxWidth(), icon = HubIcons.Eye)
         } else {
             if (!h.connected) {
-                Text("Step 2: enable “PersonalHub Focus tracking” in Android Accessibility settings (Installed/Downloaded apps). Until then nothing is measured or blocked.",
+                Text("Step 2: enable “HUB Focus tracking” in Android Accessibility settings (Installed/Downloaded apps). Until then nothing is measured or blocked.",
                     style = MaterialTheme.typography.bodyMedium, color = Hub.colors.ink)
                 HubButton("Open accessibility settings", openSettings, Modifier.fillMaxWidth(), trailingIcon = HubIcons.Arrow)
             } else {

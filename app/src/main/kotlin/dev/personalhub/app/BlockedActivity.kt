@@ -47,7 +47,7 @@ class BlockedActivity : ComponentActivity() {
                         Text(title, style = MaterialTheme.typography.displayMedium, color = Hub.colors.ink, textAlign = TextAlign.Center)
                         HubPanel(padding = 20.dp) {
                             Text(body, style = MaterialTheme.typography.bodyLarge, color = Hub.colors.ink)
-                            Text("PersonalHub sent you to the home screen. $target was not closed or force-stopped; it will redirect again while this limit is active.",
+                            Text("HUB sent you to the home screen. $target was not closed or force-stopped; it will redirect again while this limit is active.",
                                 style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
                         }
                         HubButton("Back to home", { finish() }, Modifier.fillMaxWidth(), icon = HubIcons.Home)
@@ -57,7 +57,7 @@ class BlockedActivity : ComponentActivity() {
                                 app.usage.addOverride(o); app.usageEngine.noteOverride(o); finish()
                             }
                         }, Modifier.fillMaxWidth(), tone = ButtonTone.Plain, enabled = wait == 0)
-                        else Text("Strict mode is on, so there is no override. You can still change limits or turn tracking off in PersonalHub → Focus → Usage.",
+                        else Text("Strict mode is on, so there is no override. You can still change limits or turn tracking off in HUB → Focus → Usage.",
                             style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft, textAlign = TextAlign.Center)
                         HubButton("Open Focus settings", {
                             startActivity(Intent(this@BlockedActivity, MainActivity::class.java).putExtra(MainActivity.OPEN_USAGE, true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))

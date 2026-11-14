@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -67,7 +68,7 @@ private val palette @Composable get() = listOf(Hub.colors.lime, Hub.colors.mint,
     HubPanel(padding = 22.dp) {
         Pill("VTOP · CHENNAI", Hub.colors.lime)
         Text("Connect your college account", style = MaterialTheme.typography.displaySmall, color = Hub.colors.ink)
-        Text("You'll sign in on the official portal inside this app. Your password and captcha stay on the portal page — PersonalHub never reads or stores them.",
+        Text("You'll sign in on the official portal inside this app. Your password and captcha stay on the portal page — HUB never reads or stores them.",
             style = MaterialTheme.typography.bodyLarge, color = Hub.colors.inkSoft)
         HubButton("Connect VTOP", { onConnect(null, true) }, Modifier.fillMaxWidth(), trailingIcon = HubIcons.Arrow)
         Text("Timetable, attendance, marks and grade history are saved on this device for offline use.", style = MaterialTheme.typography.bodySmall,
@@ -345,7 +346,7 @@ private val weekDays = listOf(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WED
                     val date = rowStart.plusDays(i.toLong())
                     val inMonth = date.month == ym.month
                     val weekend = date.dayOfWeek == DayOfWeek.SATURDAY || date.dayOfWeek == DayOfWeek.SUNDAY
-                    val portal = s.calendarOn(date)
+                    val portal = s.relevantCalendarOn(date)
                     val kinds = portal.map { it.kind }.toSet()
                     val hasExam = s.examsOn(date).isNotEmpty()
                     val fill = when {
@@ -374,10 +375,10 @@ private val weekDays = listOf(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WED
             Dot(c, 12.dp); Text(l, style = MaterialTheme.typography.bodySmall, color = Hub.colors.ink)
         }
     }
-    val labels = s.calendarOn(sel)
+    val labels = s.relevantCalendarOn(sel)
     val exams = s.examsOn(sel)
     val holiday = labels.any { it.kind == CalendarKind.HOLIDAY }
-    val classes = if (holiday) emptyList() else s.meetingsOn(sel.dayOfWeek)
+    val classes = if (s.noClassesOn(sel) || exams.isNotEmpty()) emptyList() else s.meetingsOn(sel.dayOfWeek)
     HubCard(sel.format(DateTimeFormatter.ofPattern("EEEE, MMMM d")), trailing = {
         val first = labels.firstOrNull()
         if (first != null) Pill(kindLabel(first.kind), kindColor(first.kind))
@@ -385,10 +386,12 @@ private val weekDays = listOf(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WED
     }) {
         labels.forEach { Text(it.label, style = MaterialTheme.typography.titleMedium, color = Hub.colors.ink) }
         exams.forEach { e -> Text("${e.examType} · ${s.course(e.courseCode)?.title ?: e.courseTitle ?: e.courseCode}${e.examTime?.let { " · $it" } ?: ""}", style = MaterialTheme.typography.bodyMedium, color = Hub.colors.ink) }
+        if (classes.isEmpty() && (exams.isNotEmpty() || labels.any { it.kind == CalendarKind.EXAM })) Text("Exam day — no regular classes.", style = MaterialTheme.typography.bodyMedium, color = Hub.colors.ink)
         classes.forEach { m -> Text("${m.start.format(timeFmt)}  ${s.course(m.courseCode, m.component)?.title ?: m.courseCode} · ${componentLabel(m.component)}", style = MaterialTheme.typography.bodyMedium, color = Hub.colors.ink) }
         Text(when {
             s.calendar.isEmpty() -> "Academic calendar not synced yet; classes come from the weekly timetable."
             holiday -> "Holiday per the academic calendar - weekly classes hidden."
+            labels.any { it.kind == CalendarKind.EXAM } -> "Exam day per the academic calendar - weekly classes hidden."
             else -> "Labels: VTOP academic calendar. Classes: weekly timetable."
         }, style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
     }
@@ -416,7 +419,13 @@ private val examDateFmt = DateTimeFormatter.ofPattern("EEE d MMM")
         Row(verticalAlignment = Alignment.Top) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(s.course(e.courseCode)?.title ?: e.courseTitle ?: e.courseCode, style = MaterialTheme.typography.titleLarge, color = Hub.colors.ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { Pill(e.courseCode, Hub.colors.cyan); e.session?.let { Pill(it, Hub.colors.mint) } }
+                // Seat number and seat position (e.g. R1C4) are what a student needs at the hall, so they get bubbles like the course code.
+                // Everything visible at a glance: compact bubbles that wrap to a second line rather than scrolling sideways.
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Pill(e.courseCode, Hub.colors.cyan, small = true)
+                    e.seatNumber?.let { Pill("Seat $it", Hub.colors.lime, small = true) }
+                    e.seatLocation?.let { Pill(it, Hub.colors.lime, small = true) }
+                }
             }
             HubSurface(color = if (past) Hub.colors.surface else Hub.colors.lime, radius = 12.dp, shadow = 3.dp) {
                 Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -425,10 +434,10 @@ private val examDateFmt = DateTimeFormatter.ofPattern("EEE d MMM")
                 }
             }
         }
-        listOfNotNull(date?.format(examDateFmt), e.examTime, e.reportingTime?.let { "report $it" }).takeIf { it.isNotEmpty() }?.let {
+        listOfNotNull(e.examTime, e.reportingTime?.let { "report by $it" }).takeIf { it.isNotEmpty() }?.let {
             Text(it.joinToString(" · "), style = MaterialTheme.typography.bodyMedium, color = Hub.colors.ink)
         }
-        listOfNotNull(e.venue, e.seatLocation, e.seatNumber?.let { "seat $it" }).takeIf { it.isNotEmpty() }?.let {
+        listOfNotNull(e.venue, e.session).takeIf { it.isNotEmpty() }?.let {
             Text(it.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
         }
     }
@@ -502,13 +511,12 @@ private val examDateFmt = DateTimeFormatter.ofPattern("EEE d MMM")
         val r = results[index.coerceIn(0, results.lastIndex)]
         PillTabs(results.map { shortSemester(it.semester.name) }, index.coerceIn(0, results.lastIndex), { index = it }, color = Hub.colors.cyan)
         Text(r.semester.name, style = MaterialTheme.typography.titleMedium, color = Hub.colors.ink)
-        val g = r.gpa
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            BigStat("GPA", g.gpa?.let { "%.2f".format(it) } ?: "—", caption = "computed")
-            BigStat("Credits", trim(g.credits), caption = "graded")
-            BigStat("CGPA", s.summary?.cgpa?.let { "%.2f".format(it) } ?: "—", caption = "official")
+            BigStat("GPA", r.portalGpa?.let { "%.2f".format(it) } ?: "—", caption = "from VTOP")
+            BigStat("Credits", trim(r.credits), caption = "this semester")
+            BigStat("CGPA", s.summary?.cgpa?.let { "%.2f".format(it) } ?: "—", caption = "from VTOP")
         }
-        Text("Semester GPA is computed from the credits and letters below (S=10 … F=0); the portal's own value may differ for non-letter grades.",
+        if (r.portalGpa == null) Text("VTOP's GPA for this semester hasn't been imported yet — use Full refresh in College → Portal sync.",
             style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
         r.courses.forEach { c -> ResultCard(c) }
     }
@@ -533,50 +541,81 @@ private fun shortSemester(name: String): String {
     return "$season $year"
 }
 
+/** Compact course result: title, code/type/credits and the grade. Tap for the full breakdown and grade ranges in a pop-up. */
 @Composable private fun ResultCard(c: GradedCourse) {
-    HubPanel {
-        Row(verticalAlignment = Alignment.Top) {
+    var open by remember { mutableStateOf(false) }
+    HubSurface(Modifier.fillMaxWidth(), shadow = 3.dp, onClick = { open = true }, onClickLabel = "Show ${c.title} marks") {
+        Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(c.title, style = MaterialTheme.typography.titleLarge, color = Hub.colors.ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScrollRow()) {
-                    Pill(c.code, Hub.colors.cyan); c.type?.let { Pill(componentLabel(it), Hub.colors.mint) }
-                    c.credits?.let { Pill("${trim(it)} Credits", Hub.colors.apricot) }
+                Text(c.title, style = MaterialTheme.typography.titleMedium, color = Hub.colors.ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Pill(c.code, Hub.colors.cyan, small = true); c.type?.let { Pill(componentLabel(it), Hub.colors.mint, small = true) }
+                    c.credits?.let { Pill("${trim(it)} ${if (it == 1.0) "Credit" else "Credits"}", Hub.colors.apricot, small = true) }
                 }
             }
-            HubSurface(color = if (c.grade == "F") Hub.colors.peach else Hub.colors.lime, radius = 12.dp, shadow = 3.dp) {
-                Column(Modifier.widthIn(min = 58.dp).padding(horizontal = 12.dp, vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(c.grade ?: "—", style = MaterialTheme.typography.displaySmall, color = Hub.colors.onAccent)
-                    c.grandTotal?.let { Text(trim(it), style = MaterialTheme.typography.labelMedium, color = Hub.colors.onAccent) }
+            GradeBadge(c)
+        }
+    }
+    if (open) ResultDialog(c) { open = false }
+}
+
+@Composable private fun GradeBadge(c: GradedCourse) {
+    HubSurface(color = if (c.grade == "F") Hub.colors.peach else Hub.colors.lime, radius = 12.dp, shadow = 3.dp) {
+        Column(Modifier.widthIn(min = 56.dp).padding(horizontal = 10.dp, vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(c.grade ?: "—", style = MaterialTheme.typography.headlineMedium, color = Hub.colors.onAccent)
+            c.grandTotal?.let { Text(trim(it), style = MaterialTheme.typography.labelSmall, color = Hub.colors.onAccent) }
+        }
+    }
+}
+
+@Composable private fun ResultDialog(c: GradedCourse, onClose: () -> Unit) {
+    androidx.compose.ui.window.Dialog(onDismissRequest = onClose) {
+        HubPanel(padding = 18.dp) {
+            Column(Modifier.heightIn(max = 600.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(c.title, style = MaterialTheme.typography.titleLarge, color = Hub.colors.ink)
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Pill(c.code, Hub.colors.cyan, small = true); c.type?.let { Pill(componentLabel(it), Hub.colors.mint, small = true) }
+                            c.credits?.let { Pill("${trim(it)} ${if (it == 1.0) "Credit" else "Credits"}", Hub.colors.apricot, small = true) }
+                        }
+                    }
+                    GradeBadge(c)
                 }
+                if (c.components.isNotEmpty()) {
+                    HubDivider()
+                    Row { listOf("COMPONENT" to 1f, "SCORED" to 0.6f, "WEIGHTED" to 0.6f).forEach { (h, w) ->
+                        Text(h, style = MaterialTheme.typography.labelSmall, color = Hub.colors.inkSoft, modifier = Modifier.weight(w), textAlign = if (w < 1f) TextAlign.End else TextAlign.Start) } }
+                    c.components.forEach { m ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(m.title, style = MaterialTheme.typography.bodyMedium, color = Hub.colors.ink, modifier = Modifier.weight(1f))
+                            Text(m.scored?.let { sc -> "${trim(sc)}/${m.maxMark?.let(::trim) ?: "?"}" } ?: "—", style = MaterialTheme.typography.titleSmall, color = Hub.colors.ink, modifier = Modifier.weight(0.6f), textAlign = TextAlign.End)
+                            Text(m.weighted?.let { "${trim(it)}${m.weightage?.let { w -> "/${trim(w)}" } ?: ""}" } ?: "—", style = MaterialTheme.typography.labelMedium, color = Hub.colors.inkSoft, modifier = Modifier.weight(0.6f), textAlign = TextAlign.End)
+                        }
+                    }
+                    c.grandTotal?.let {
+                        HubDivider()
+                        Row { Text("Total", style = MaterialTheme.typography.titleSmall, color = Hub.colors.ink, modifier = Modifier.weight(1f)); Text(trim(it), style = MaterialTheme.typography.titleSmall, color = Hub.colors.ink) }
+                    }
+                } else Text("No mark breakdown published for this course.", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
+                if (c.ranges.isNotEmpty()) {
+                    Text("GRADE RANGES", style = MaterialTheme.typography.labelMedium, color = Hub.colors.inkSoft)
+                    // Wrap onto rows of four so every range is visible without sideways scrolling.
+                    c.ranges.chunked(4).forEach { row ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) { row.forEach { g -> Pill("${g.grade} ${g.range}", if (g.grade == c.grade) Hub.colors.lime else Hub.colors.surface, small = true) } }
+                    }
+                }
+                HubButton("Close", onClose, Modifier.fillMaxWidth(), tone = ButtonTone.Plain, compact = true)
             }
         }
-        if (c.components.isNotEmpty()) {
-            HubDivider()
-            c.components.forEach { m ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(m.title, style = MaterialTheme.typography.bodyMedium, color = Hub.colors.ink, modifier = Modifier.weight(1f))
-                    Text(m.scored?.let { sc -> "${trim(sc)}/${m.maxMark?.let(::trim) ?: "?"}" } ?: "—", style = MaterialTheme.typography.titleSmall, color = Hub.colors.ink)
-                    Text(m.weighted?.let { " → ${trim(it)}" } ?: "", style = MaterialTheme.typography.labelMedium, color = Hub.colors.inkSoft, modifier = Modifier.widthIn(min = 56.dp), textAlign = TextAlign.End)
-                }
-            }
-            c.grandTotal?.let {
-                Row { Text("Total", style = MaterialTheme.typography.titleSmall, color = Hub.colors.ink, modifier = Modifier.weight(1f)); Text(trim(it), style = MaterialTheme.typography.titleSmall, color = Hub.colors.ink) }
-            }
-        }
-        if (c.ranges.isNotEmpty()) {
-            Text("GRADE RANGES", style = MaterialTheme.typography.labelMedium, color = Hub.colors.inkSoft)
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScrollRow()) {
-                c.ranges.forEach { g -> Pill("${g.grade}  ${g.range}", if (g.grade == c.grade) Hub.colors.lime else Hub.colors.surface) }
-            }
-        } else if (c.components.isEmpty()) Text("No mark breakdown published for this course.", style = MaterialTheme.typography.bodySmall, color = Hub.colors.inkSoft)
     }
 }
 
 fun componentLabel(type: String): String = when (componentOf(type)) { "THEORY" -> "Theory"; "LAB" -> "Lab"; "PROJECT" -> "Project"; else -> type }
 internal fun trim(v: Double) = if (v % 1.0 == 0.0) v.toLong().toString() else "%.1f".format(v)
 
-/** Today-page summary: next class and lowest attendance, opening College pages. */
-@Composable fun CollegeTodayCards(vm: CollegeViewModel, onOpen: (CollegePage) -> Unit) {
+/** Today-page summary: day status (holiday / working day / next class), next exam and lowest attendance. [fact] is shown on days off. */
+@Composable fun CollegeTodayCards(vm: CollegeViewModel, onOpen: (CollegePage) -> Unit, fact: String? = null) {
     val ui by vm.state.collectAsStateWithLifecycle()
     val s = ui.snapshot
     if (!ui.loaded) return
@@ -586,20 +625,77 @@ internal fun trim(v: Double) = if (v % 1.0 == 0.0) v.toLong().toString() else "%
         }
         return
     }
-    vm.nextClass(s)?.let { NextClassCard(it, s, onClick = { onOpen(CollegePage.TIMETABLE) }) }
-    val today = vm.time.today()
-    s.exams.filter { val d = it.date; d != null && !d.isBefore(today) && !d.isAfter(today.plusDays(14)) }.minByOrNull { it.date!! }?.let { e ->
-        HubCard("📝 Next exam · ${e.date!!.format(examDateFmt)}", color = Hub.colors.lime, onClick = { onOpen(CollegePage.EXAMS) }) {
+    // Re-evaluate every 30 s so "next class" / "next exam" move on as soon as one ends, without leaving the page.
+    var now by remember { mutableStateOf(java.time.LocalDateTime.now(vm.time.clock.withZone(vm.time.zone))) }
+    LaunchedEffect(Unit) { while (true) { kotlinx.coroutines.delay(30_000); now = java.time.LocalDateTime.now(vm.time.clock.withZone(vm.time.zone)) } }
+    DayStatusCard(vm, s, fact, onOpen, now)
+    nextExam(s, now)?.let { e ->
+        val today = now.toLocalDate()
+        HubCard("📝 Next exam · ${if (e.date == today) "Today" else e.date!!.format(examDateFmt)}", color = Hub.colors.lime, onClick = { onOpen(CollegePage.EXAMS) }) {
             Text("${e.examType} · ${s.course(e.courseCode)?.title ?: e.courseTitle ?: e.courseCode}", style = MaterialTheme.typography.titleMedium, color = Hub.colors.onAccent)
-            listOfNotNull(e.examTime, e.venue, e.seatNumber?.let { "seat $it" }).takeIf { it.isNotEmpty() }?.let { Text(it.joinToString(" · "), style = MaterialTheme.typography.bodyMedium, color = Hub.colors.onAccent) }
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                e.seatNumber?.let { Pill("Seat $it", Hub.colors.surface, small = true) }; e.seatLocation?.let { Pill(it, Hub.colors.surface, small = true) }; e.venue?.let { Pill(it, Hub.colors.surface, small = true) }
+            }
+            e.examTime?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = Hub.colors.onAccent) }
         }
-    }
-    s.calendarOn(today).firstOrNull { it.kind == CalendarKind.HOLIDAY }?.let { h ->
-        HubCard("🎉 Holiday today", color = Hub.colors.peach, onClick = { onOpen(CollegePage.CALENDAR) }) { Text(h.label, style = MaterialTheme.typography.bodyLarge, color = Hub.colors.onAccent) }
     }
     val low = s.attendance.filter { (it.percent ?: 100.0) < ui.target }.minByOrNull { it.percent ?: 100.0 }
     if (low != null) HubCard("⚠️ Attendance warning", color = Hub.colors.peach, onClick = { onOpen(CollegePage.ATTENDANCE) }) {
         val plan = attendancePlan(low.attended, low.total, ui.target)
         Text("${low.courseTitle ?: low.courseCode} is at %.0f%%. Attend the next ${plan.mustAttend} to reach ${ui.target}%%.".format(Math.floor(low.percent!!)), style = MaterialTheme.typography.bodyLarge, color = Hub.colors.onAccent)
+    }
+}
+
+/**
+ * What kind of day it is, from the portal academic calendar plus the weekly timetable:
+ * holiday (calendar) -> holiday card with a fun fact; working day -> next class today; after the last class -> "done" until 7 pm,
+ * then tomorrow's first class if tomorrow is a working day. Days without classes and no holiday label show "no classes".
+ */
+@Composable private fun DayStatusCard(vm: CollegeViewModel, s: CollegeSnapshot, fact: String?, onOpen: (CollegePage) -> Unit, now: java.time.LocalDateTime) {
+    val status = dayStatus(s, now)
+    when (status) {
+        is DayStatus.Holiday -> HubCard("🎉 Today is a holiday!", color = Hub.colors.peach, onClick = { onOpen(CollegePage.CALENDAR) }) {
+            Text("Enjoy your day.${status.label?.let { " ($it)" } ?: ""}", style = MaterialTheme.typography.titleMedium, color = Hub.colors.onAccent)
+            fact?.let { FactLine(it) }
+        }
+        is DayStatus.ExamDay -> HubCard("📝 Exam · No classes today", onClick = { onOpen(CollegePage.EXAMS) }) {
+            status.label?.let { Text(it, style = MaterialTheme.typography.titleMedium, color = Hub.colors.ink) }
+            val exams = s.examsOn(now.toLocalDate())
+            if (exams.isEmpty()) Text("Check the Exams page for your schedule. All the best! 🍀", style = MaterialTheme.typography.bodyMedium, color = Hub.colors.ink)
+            exams.forEach { e ->
+                val done = examEnd(e)?.isBefore(now) == true
+                Text("${if (done) "✅ " else ""}${s.course(e.courseCode)?.title ?: e.courseTitle ?: e.courseCode}${e.examTime?.let { " · $it" } ?: ""}", style = MaterialTheme.typography.bodyMedium,
+                    color = if (done) Hub.colors.inkSoft else Hub.colors.ink)
+                if (!done) FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    e.seatNumber?.let { Pill("Seat $it", Hub.colors.lime, small = true) }; e.seatLocation?.let { Pill(it, Hub.colors.lime, small = true) }; e.venue?.let { Pill(it, Hub.colors.surface, small = true) }
+                }
+            }
+        }
+        is DayStatus.NoClasses -> HubCard("😴 No classes today", color = Hub.colors.lavender, onClick = { onOpen(CollegePage.CALENDAR) }) {
+            Text(status.label ?: "Nothing on the timetable. Rest up.", style = MaterialTheme.typography.titleMedium, color = Hub.colors.onAccent)
+            fact?.let { FactLine(it) }
+        }
+        is DayStatus.Next -> NextClassCard(status.next, s, onClick = { onOpen(CollegePage.TIMETABLE) }, label = if (status.tomorrow) "Tomorrow" else "Next class")
+        is DayStatus.DoneToday -> HubCard("✅ Classes done for today", color = Hub.colors.mint, onClick = { onOpen(CollegePage.TIMETABLE) }) {
+            Text(when (status.tomorrow) {
+                TomorrowKind.HOLIDAY -> "Tomorrow is a holiday 🎉"
+                TomorrowKind.EXAM -> "Tomorrow is an exam day 📝 — no classes."
+                TomorrowKind.FREE -> "No classes tomorrow."
+                TomorrowKind.WORKING -> "Tomorrow's first class shows here after 7 pm."
+            }, style = MaterialTheme.typography.bodyLarge, color = Hub.colors.onAccent)
+        }
+        is DayStatus.TomorrowOff -> HubCard(when { status.exam -> "📝 Exam tomorrow"; status.holiday -> "🎉 Tomorrow is a holiday"; else -> "😴 No classes tomorrow" },
+            color = if (status.exam) Hub.colors.lime else Hub.colors.peach, onClick = { onOpen(if (status.exam) CollegePage.EXAMS else CollegePage.CALENDAR) }) {
+            Text(status.label ?: "Enjoy the evening.", style = MaterialTheme.typography.bodyLarge, color = Hub.colors.onAccent)
+        }
+    }
+}
+
+@Composable private fun FactLine(fact: String) {
+    HubSurface(Modifier.fillMaxWidth(), color = Hub.colors.surface, radius = 12.dp, shadow = 2.dp) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("FUN FACT", style = MaterialTheme.typography.labelSmall, color = Hub.colors.inkSoft)
+            Text(fact, style = MaterialTheme.typography.bodyMedium, color = Hub.colors.ink)
+        }
     }
 }

@@ -58,4 +58,18 @@ class TrainingRulesTest {
         assertEquals(0, RestTimer.start(0, t0).remainingMs(t0))
     }
     @Test(expected = IllegalArgumentException::class) fun negativeWeightRejected() { set(-5.0, 5) }
+    @Test fun liftPrsNeedAnEarlierBaselineAndStrictlyHigherTopSet() {
+        fun w(id: String, day: Long, vararg sets: WorkoutSet) = Workout(id, "P", null, t0.plusSeconds(day * 86_400), t0.plusSeconds(day * 86_400 + 3600),
+            listOf(WorkoutExercise(bench, sets.toList(), 90)))
+        val list = listOf(
+            w("a", 0, set(80.0, 5)),                                   // baseline, not a PR
+            w("b", 1, set(80.0, 5)),                                   // equal, not a PR
+            w("c", 2, set(82.5, 3), set(85.0, 1), set(120.0, 1, done = false), set(100.0, 5, type = SetType.WARMUP)), // top working set 85 is the PR
+            w("d", 3, set(84.0, 8)),                                   // below 85
+        )
+        val prs = liftPrs(list.shuffled(), cat)
+        assertEquals(1, prs.size)
+        assertEquals(PrHit("c", 0, 1, bench, 85.0, 80.0), prs.single())
+        assertTrue(liftPrs(list.map { it.copy(finishedAt = null) }, cat).isEmpty()) // active sessions never count
+    }
 }

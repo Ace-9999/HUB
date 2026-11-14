@@ -1,7 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
-    <application android:name=".PersonalHubApplication" android:label="PersonalHub" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round"
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Self-update through the system PackageInstaller (v1.1 UPD); the user approves "install unknown apps" once. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
+    <application android:name=".PersonalHubApplication" android:label="HUB" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round"
         android:theme="@style/Theme.PersonalHub" android:allowBackup="false"
         android:fullBackupContent="false" android:dataExtractionRules="@xml/data_extraction_rules"
         android:supportsRtl="true" android:usesCleartextTraffic="false"
@@ -21,5 +25,11 @@
             <intent-filter><action android:name="android.accessibilityservice.AccessibilityService" /></intent-filter>
             <meta-data android:name="android.accessibilityservice" android:resource="@xml/usage_tracker" />
         </service>
+        <receiver android:name=".update.UpdateStatusReceiver" android:exported="false">
+            <intent-filter><action android:name="dev.personalhub.UPDATE_STATUS" /></intent-filter>
+        </receiver>
+        <receiver android:name=".update.UpdatedReceiver" android:exported="false">
+            <intent-filter><action android:name="android.intent.action.MY_PACKAGE_REPLACED" /></intent-filter>
+        </receiver>
     </application>
 </manifest>

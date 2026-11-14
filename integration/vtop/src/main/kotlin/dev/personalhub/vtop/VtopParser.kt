@@ -25,6 +25,11 @@ private fun blank(s: String?) = s?.trim()?.takeUnless { it.isEmpty() || it == "-
 /** Locates the header row (within the first rows) that contains every required label fragment. */
 internal class Header(val row: Int, private val labels: List<String>) {
     fun col(vararg fragments: String): Int? = fragments.firstNotNullOfOrNull { f -> labels.indexOfFirst { it.contains(f) }.takeIf { it >= 0 } }
+    /**
+     * Last column of a header that spans several columns (colspan), e.g. "Credits" over L | T | P | J | C — the value we want
+     * is the final sub-column (C), not the first (L).
+     */
+    fun lastCol(vararg fragments: String): Int? = col(*fragments)?.let { i -> var j = i; while (j + 1 < labels.size && labels[j + 1] == labels[i]) j++; j }
     companion object {
         fun find(table: PortalTable, vararg required: String): Header? = (0 until minOf(4, table.rows.size)).firstNotNullOfOrNull { r ->
             val labels = expand(table.rows[r]).map(::norm)
@@ -193,6 +198,8 @@ object VtopParser {
         }
     }
 
+    private val SEAT = Regex("""(?<![A-Za-z0-9])[Rr]\s?\d{1,2}\s?[Cc]\s?\d{1,2}(?![A-Za-z0-9])""")
+
     /** Exam schedule: header-mapped rows; full-width rows (all cells equal) name the exam type (e.g. CAT1, FAT). */
     fun exams(tables: List<PortalTable>): Parsed<ExamSlot> {
         for (t in tables) {
@@ -200,7 +207,7 @@ object VtopParser {
             val code = h.col("course code", "course") ?: continue
             val title = h.col("course title"); val type = h.col("course type"); val dateCol = h.col("exam date", "date")
             val session = h.col("session"); val reporting = h.col("reporting"); val time = h.col("exam time")
-            val venue = h.col("venue"); val seatLoc = h.col("seat location"); val seatNo = h.col("seat no", "seat number")
+            val venue = h.col("venue"); val seatLoc = h.col("seat location", "seat loc"); val seatNo = h.col("seat no", "seat number")
             var examType = ""
             val out = mutableListOf<ExamSlot>()
             for (r in t.rows.drop(h.row + 1)) {
@@ -208,9 +215,11 @@ object VtopParser {
                 val distinct = c.filter { it.isNotEmpty() }.distinct()
                 if (distinct.size == 1 && CODE.find(distinct[0]) == null) { examType = distinct[0]; continue }
                 val cc = CODE.find(c.getOrNull(code).orEmpty())?.value ?: continue
+                // Seat position looks like "R1C4"; if no labelled column carries it, take the first cell in that shape.
+                val position = seatLoc?.let { blank(c.getOrNull(it)) } ?: c.firstNotNullOfOrNull { SEAT.find(it)?.value }
                 out += ExamSlot(examType, cc, title?.let { blank(c.getOrNull(it)) }, type?.let { blank(c.getOrNull(it)) }, date(dateCol?.let { c.getOrNull(it) }),
                     session?.let { blank(c.getOrNull(it)) }, reporting?.let { blank(c.getOrNull(it)) }, time?.let { blank(c.getOrNull(it)) },
-                    venue?.let { blank(c.getOrNull(it)) }, seatLoc?.let { blank(c.getOrNull(it)) }, seatNo?.let { blank(c.getOrNull(it)) })
+                    venue?.let { blank(c.getOrNull(it)) }, position?.let { v -> if (SEAT.matches(v.trim())) v.replace(" ", "").uppercase() else v }, seatNo?.let { blank(c.getOrNull(it)) })
             }
             if (out.isNotEmpty() || t.rows.size <= h.row + 1) return Parsed(out, DatasetStatus(Dataset.EXAMS, if (out.isEmpty()) ImportState.EMPTY else ImportState.OK, out.size, "${out.size} exams"))
         }
@@ -241,7 +250,7 @@ object VtopParser {
             val h = Header.find(t, "course code", "grade") ?: continue
             val code = h.col("course code") ?: continue
             val grade = h.col("grade") ?: continue
-            val title = h.col("course title"); val type = h.col("course type"); val credits = h.col("credit")
+            val title = h.col("course title"); val type = h.col("course type"); val credits = h.lastCol("credit")
             val gtype = h.col("grading type"); val total = h.col("grand total", "total")
             val out = t.rows.drop(h.row + 1).mapNotNull { r ->
                 val c = Header.expand(r)
@@ -253,6 +262,20 @@ object VtopParser {
             if (out.isNotEmpty()) return out
         }
         return emptyList()
+    }
+
+    /** Semester GPA printed on Grade View when it sits inside a table: a "GPA" label cell (not CGPA) followed by a number. */
+    fun gradeViewGpa(tables: List<PortalTable>): Double? {
+        val label = Regex("""(?<![A-Za-z])GPA\s*[:\-]?\s*(\d{1,2}\.\d{1,3})?""", RegexOption.IGNORE_CASE)
+        for (t in tables) for (r in t.rows) {
+            val cells = Header.expand(r).map { it.trim() }
+            cells.forEachIndexed { i, c ->
+                val m = label.find(c) ?: return@forEachIndexed
+                val v = m.groupValues[1].toDoubleOrNull() ?: cells.drop(i + 1).firstNotNullOfOrNull { n -> n.trim().toDoubleOrNull() }
+                if (v != null && v in 0.0..10.0) return v
+            }
+        }
+        return null
     }
 
     private val LETTERS = setOf("S", "A", "B", "C", "D", "E", "F", "N", "U", "P")
@@ -293,7 +316,7 @@ object VtopParser {
             val h = Header.find(t, "course code", "grade") ?: continue
             val code = h.col("course code") ?: continue
             val grade = h.col("grade") ?: continue
-            val title = h.col("course title"); val type = h.col("course type"); val credits = h.col("credit"); val month = h.col("exam month", "month")
+            val title = h.col("course title"); val type = h.col("course type"); val credits = h.lastCol("credit"); val month = h.col("exam month", "month")
             t.rows.drop(h.row + 1).forEach { r ->
                 val c = Header.expand(r)
                 val cc = CODE.find(c.getOrNull(code).orEmpty())?.value ?: return@forEach
